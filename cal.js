@@ -87,7 +87,7 @@ function updateCTA() {
   if (windowWidth >= 768) {
     $("#get-touch-cta").css({
       opacity: "0",
-      "pointer-events": "none",
+      "pointer-events": "none"
     });
   } else {
     $("#get-touch-cta")
@@ -96,7 +96,7 @@ function updateCTA() {
 
     $("#get-touch-cta").css({
       opacity: "1",
-      "pointer-events": "auto",
+      "pointer-events": "auto"
     });
   }
 }
@@ -138,7 +138,8 @@ if (typeof moment.tz !== "undefined") {
         providerCmsId
       ) {
         $.ajax({
-          url: "https://app.usenourish.com/api/scheduling/cms/provider-availability",
+          url:
+            "https://app.usenourish.com/api/scheduling/cms/provider-availability",
           method: "GET",
           data: {
             orgLevel: orgLevel,
@@ -146,17 +147,11 @@ if (typeof moment.tz !== "undefined") {
             startDate: startDate,
             endDate: endDate,
             isInitialAppointment: isInitialAppointment,
-            "providerCmsIds[0]": providerCmsId,
+            "providerCmsIds[0]": providerCmsId
           },
           success: function (response) {
-            if (response.availableTimes[0]) {
-              // Extract the first available start date from the array
-              var firstAvailableDate = response.availableDays[0];
-              var lastAvailableDate = response.availableDays.slice(-1)[0];
-
-              providerHealthId = response.availableTimes[0].providerHealthieId;
+            if (response) {
               var availableTimes = [];
-
               if (
                 response.availableTimes &&
                 response.availableTimes.length > 0
@@ -165,8 +160,7 @@ if (typeof moment.tz !== "undefined") {
                   response.availableTimes[0]?.providerAvailableTimes || [];
               }
 
-              $("#mobile-book-cta").attr("href", "#calendarSection");
-
+              // ---------- CALENDAR SETUP -----------
               // CALENDAR OPTIONS
               // Setup Calendar after getting provider data
               var availableDays = response.availableDays;
@@ -188,7 +182,7 @@ if (typeof moment.tz !== "undefined") {
                     const options = {
                       weekday: "long",
                       month: "long",
-                      day: "numeric",
+                      day: "numeric"
                     };
                     const convertedTime = availableDate.toLocaleDateString(
                       "en-US",
@@ -207,7 +201,7 @@ if (typeof moment.tz !== "undefined") {
                       var textTime = new Date(iso8601Time);
                       var formattedTime = textTime.toLocaleTimeString([], {
                         hour: "numeric",
-                        minute: "2-digit",
+                        minute: "2-digit"
                       });
 
                       // Check if the current item contains the firstAvailableDate
@@ -216,7 +210,7 @@ if (typeof moment.tz !== "undefined") {
                         var timeDiv = $("<div>", {
                           class: "calendar_time-tag",
                           text: formattedTime,
-                          "data-date": time,
+                          "data-date": time
                         });
 
                         // Append the timeDiv inside the '.calendar_tag-wrap' element
@@ -235,55 +229,62 @@ if (typeof moment.tz !== "undefined") {
                       });
                     }, 0);
                   }
-                },
+                }
               });
               calendar.render();
 
               // ---------- CALENDAR READY -----------
-
-              function setCal(date) {
-                // Update CTA based on whether calendar is displayed
-                updateCTA();
-                $(window).on("resize", function () {
-                  updateCTA();
-                });
-
-                var dateObj = new Date(date);
-                dateObj.setDate(dateObj.getDate() + 1);
-
-                // Update active day styles
-                setTimeout(function () {
-                  $(".fc-day").removeClass("fc-day-today");
-                  var $targetDay = $('.fc-day[data-date="' + date + '"]');
-                  $targetDay.addClass("fc-day-today");
-                  // Update title text of available date
-                  const options = {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                  };
-                  const convertedTime = dateObj.toLocaleDateString(
-                    "en-US",
-                    options
-                  );
-                  $("#day-title").html(firstBold(convertedTime));
-
-                  $(".fc-toolbar-title").html(
-                    firstBold($(".fc-toolbar-title").text())
-                  );
-                  $(".fc-day").each(function () {
-                    var dataDate = $(this).data("date");
-                    if (availableDays.includes(dataDate)) {
-                      $(this).find(".fc-daygrid-day-top").addClass("active");
-                    } else {
-                      $(this).unbind();
-                    }
-                  });
-                }, 0);
-              }
-
               // On first load, if provider has availability setup calendar
               if (availableDays.length > 0) {
+                // Extract the first available start date from the array
+                var firstAvailableDate = response.availableDays[0];
+                var lastAvailableDate = response.availableDays.slice(-1)[0];
+
+                providerHealthId =
+                  response.availableTimes[0].providerHealthieId;
+
+                $("#mobile-book-cta").attr("href", "#calendarSection");
+
+                function setCal(date) {
+                  // Update CTA based on whether calendar is displayed
+                  updateCTA();
+                  $(window).on("resize", function () {
+                    updateCTA();
+                  });
+
+                  var dateObj = new Date(date);
+                  dateObj.setDate(dateObj.getDate() + 1);
+
+                  // Update active day styles
+                  setTimeout(function () {
+                    $(".fc-day").removeClass("fc-day-today");
+                    var $targetDay = $('.fc-day[data-date="' + date + '"]');
+                    $targetDay.addClass("fc-day-today");
+                    // Update title text of available date
+                    const options = {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric"
+                    };
+                    const convertedTime = dateObj.toLocaleDateString(
+                      "en-US",
+                      options
+                    );
+                    $("#day-title").html(firstBold(convertedTime));
+
+                    $(".fc-toolbar-title").html(
+                      firstBold($(".fc-toolbar-title").text())
+                    );
+                    $(".fc-day").each(function () {
+                      var dataDate = $(this).data("date");
+                      if (availableDays.includes(dataDate)) {
+                        $(this).find(".fc-daygrid-day-top").addClass("active");
+                      } else {
+                        $(this).unbind();
+                      }
+                    });
+                  }, 0);
+                }
                 calendar.gotoDate(firstAvailableDate);
                 currentDate = firstAvailableDate;
                 setCal(firstAvailableDate);
@@ -296,7 +297,7 @@ if (typeof moment.tz !== "undefined") {
                   var textTime = new Date(iso8601Time);
                   var formattedTime = textTime.toLocaleTimeString([], {
                     hour: "numeric",
-                    minute: "2-digit",
+                    minute: "2-digit"
                   });
 
                   // Check if the current item contains the firstAvailableDate
@@ -305,7 +306,7 @@ if (typeof moment.tz !== "undefined") {
                     var timeDiv = $("<div>", {
                       class: "calendar_time-tag",
                       text: formattedTime,
-                      "data-date": time,
+                      "data-date": time
                     });
 
                     // Append the timeDiv inside the '.calendar_tag-wrap' element
@@ -364,7 +365,7 @@ if (typeof moment.tz !== "undefined") {
           error: function (error) {
             // Handle any errors that occurred during the API call
             console.error(error);
-          },
+          }
         });
       }
     }
