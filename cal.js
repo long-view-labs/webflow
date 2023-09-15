@@ -155,8 +155,15 @@ if (typeof moment.tz !== "undefined") {
               var lastAvailableDate = response.availableDays.slice(-1)[0];
 
               providerHealthId = response.availableTimes[0].providerHealthieId;
-              var availableTimes =
-                response.availableTimes[0]?.providerAvailableTimes || [];
+              var availableTimes = [];
+
+              if (
+                response.availableTimes &&
+                response.availableTimes.length > 0
+              ) {
+                availableTimes =
+                  response.availableTimes[0]?.providerAvailableTimes || [];
+              }
 
               $("#mobile-book-cta").attr("href", "#calendarSection");
 
