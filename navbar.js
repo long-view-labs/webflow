@@ -9,11 +9,54 @@ gsap.defaults({
   duration: 0.2,
 });
 
+$(document).ready(function () {
+  $(window).scroll(function () {
+    if ($(this).scrollTop() > 0) {
+      $(".nav_component-2").addClass("bottom-border");
+    } else {
+      $(".nav_component-2").removeClass("bottom-border");
+    }
+  });
+  handleMobileNavDisplay();
+  // Handle scroll event
+  $(window).on("scroll", handleMobileNavDisplay);
+  // Handle resize event
+  $(window).on("resize", handleMobileNavDisplay);
+});
+
+function handleMobileNavDisplay() {
+  if (window.innerWidth <= 1024) {
+    if ($(window).scrollTop() > 0) {
+      $(".button-12.mobile-nav").css("display", "block");
+      setTimeout(() => {
+        // Small timeout to ensure the block is rendered before animating
+        $(".button-12.mobile-nav").css("opacity", "1");
+      }, 10);
+    } else {
+      $(".button-12.mobile-nav").css("opacity", "0");
+      setTimeout(() => {
+        $(".button-12.mobile-nav").css("display", "none");
+      }, 300); // This timeout should match the duration of your CSS transition
+    }
+  } else {
+    // Optionally hide the button on larger screens
+    $(".button-12.mobile-nav").css("display", "none");
+  }
+}
+
 function revealDropdown(currentLink, currentContent) {
-  console.log("REVEAL");
   dropdownWrap.css("display", "flex");
   let linkText = currentLink.find(".menu_link-text");
-  let linkTextOffset = linkText.offset().left - 20;
+  let linkTextOffset; // center of the link
+
+  // Check if window's width is less than or equal to your breakpoint
+  if (window.innerWidth <= 1222) {
+    // change 1222 to your desired breakpoint
+    linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
+    linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
+  } else {
+    linkTextOffset = linkText.offset().left - 25; // original position
+  }
 
   // Set the initial width of menuBG
   gsap.set(menuBG, {
@@ -25,9 +68,6 @@ function revealDropdown(currentLink, currentContent) {
   // Update the x transform of menuBG
   gsap.to(menuBG, {
     x: linkTextOffset,
-    //width: currentContent.outerWidth(),
-    // height: currentContent.outerHeight(),
-    //duration: 0.2,
   });
 
   gsap.set(currentContent, {
@@ -43,7 +83,16 @@ function revealDropdown(currentLink, currentContent) {
 
 function switchDropdown(currentLink, previousContent, currentContent) {
   let linkText = currentLink.find(".menu_link-text");
-  let linkTextOffset = linkText.offset().left - 20;
+  let linkTextOffset;
+
+  // Check if window's width is less than or equal to your breakpoint
+  if (window.innerWidth <= 1222) {
+    // change 1222 to your desired breakpoint
+    linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
+    linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
+  } else {
+    linkTextOffset = linkText.offset().left - 25; // original position
+  }
 
   // invert moveDistance if needed
   let moveDistance = 10;
@@ -103,7 +152,7 @@ menuLink.on("mouseenter", function () {
 
   gsap.killTweensOf(content);
 
-  gsap.to(relatedCaret, { rotation: 180, duration: 0.2 });
+  gsap.to(relatedCaret, { rotation: 180, duration: 0 });
   // Set the display property of all dropdown content to "none"
   gsap.set(content, { display: "none" });
   // Set the display property of the currentContent to "flex"
@@ -135,7 +184,7 @@ menuLink.on("mouseleave", function () {
     // Set the display property of the previousContent to "none"
     gsap.set(currentContent, { display: "none" });
     showDropdown.reverse();
-    gsap.to(".menu_dropdown-caret", { rotation: 0, duration: 0.2 });
+    gsap.to(".menu_dropdown-caret", { rotation: 0, duration: 0 });
     menuLink.removeClass("active");
   }
 });
@@ -145,8 +194,18 @@ let showDropdown = gsap.timeline({
   onStart: function () {
     let currentLink = menuLink.filter(".active");
     let linkText = currentLink.find(".menu_link-text");
-    let linkTextOffset = linkText.offset().left - 20;
+    let linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
     let currentContent = content.eq(currentLink.index());
+
+    // Check if window's width is less than or equal to your breakpoint
+    if (window.innerWidth <= 1222) {
+      // change 1222 to your desired breakpoint
+      linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
+      linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
+    } else {
+      linkTextOffset = linkText.offset().left - 25; // original position
+    }
+
     gsap.killTweensOf(content);
 
     // Update the x transform of menuBG
@@ -169,7 +228,7 @@ showDropdown.from(dropdownWrap, { opacity: 0, rotateX: -10, duration: 0.2 });
 dropdownWrap.on("mouseleave", function () {
   gsap.killTweensOf(content);
   showDropdown.reverse();
-  gsap.to(".menu_dropdown-caret", { rotation: 0, duration: 0.2 }); // rotate the caret back
+  gsap.to(".menu_dropdown-caret", { rotation: 0, duration: 0 }); // rotate the caret back
 });
 
 function revealTab(currentLink, currentContent) {
@@ -256,7 +315,7 @@ $(".w-nav-button").on("click", function () {
       $("body").removeClass("menu-open");
       $(".nav_mobile-menu").removeClass("container-scroll");
     }
-  }, 1000);
+  }, 500);
 });
 
 function animateMenu(clickClass, animateClass) {
@@ -279,13 +338,16 @@ function animateMenu(clickClass, animateClass) {
     );
   });
 
-  $(".nav_container").on("click", function (event) {
-    event.preventDefault();
-    event.stopPropagation();
+  $(".nav_container-2").on("click", function (event) {
+    // Check if the mobile menu is open
+    if ($(".w-nav-overlay").css("display") === "block") {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   });
 
   // Back link click
-  $(".nav_back-link, .toggle-menu").on("click", function (event) {
+  $(".nav_back-link, .toggle-menu-2").on("click", function (event) {
     $("[class^='nav_mobile-']").removeClass("active");
     // Prevent the default action from closing menu
     event.preventDefault();
@@ -312,4 +374,4 @@ function animateMenu(clickClass, animateClass) {
 animateMenu(".nav_sublink-item.conditions", ".nav_mobile-conditions");
 animateMenu(".nav_sublink-item.locations", ".nav_mobile-locations");
 animateMenu(".nav_sublink-item.insurance", ".nav_mobile-insurance");
-animateMenu(".nav_link.resources", ".nav_mobile-resources");
+animateMenu(".nav_link-2.resources", ".nav_mobile-resources");
