@@ -32,6 +32,8 @@ $(function () {
 
       // Reset rotation for all tab arrows
       $(".tab-arrow").css("transform", "rotate(0deg)");
+      // Reset top padding for all tab titles
+      $(".tab-button-title").css("padding-top", "0px");
 
       // Hide the description for all tabs
       $(".auto-tabs_description, .auto-tabs_timer-wrap").css({

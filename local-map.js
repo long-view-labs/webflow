@@ -4,17 +4,20 @@ var mapOptions = {
   mapTypeId: "roadmap",
 };
 
-let locPop =
-  "<div>" +
-  "<p class='loc-pop-title'>" +
-  location.city +
-  ", " +
-  location.state +
-  "</p>" +
-  '<a class="button" href="/locations/' +
-  slug +
-  '"Go To Location</a>' +
-  "</div>";
+const geocoder = new google.maps.Geocoder();
+
+function geocodeAddress(cityState) {
+  return new Promise((resolve, reject) => {
+    geocoder.geocode({ address: cityState }, function (results, status) {
+      if (status === "OK") {
+        const location = results[0].geometry.location;
+        resolve(location);
+      } else {
+        reject(status);
+      }
+    });
+  });
+}
 
 function initialize() {
   // Loop through our array of cars
@@ -103,14 +106,14 @@ map.addControl(new mapboxgl.NavigationControl());
 // Get cms items
 let listLocations = document.getElementById("location-list").childNodes;
 
-// For each colleciton item, grab hidden fields and convert to geojson proerty
-// For each colleciton item, grab hidden fields and convert to geojson proerty
-function getGeoData() {
-  listLocations.forEach(function (location) {
-    let locationLat = location.querySelector("#locationLatitude").value;
-    let locationLong = location.querySelector("#locationLongitude").value;
+async function getGeoData() {
+  listLocations.forEach(async function (location) {
     let locationInfo = location.querySelector(".loc-pop").innerHTML;
-    let coordinates = [locationLong, locationLat];
+    let city = location.querySelector("#city").value;
+    let state = location.querySelector("#state ").value;
+    let cityState = city + ", " + state;
+    let coordObj = await geocodeAddress(cityState);
+    let coordinates = [coordObj.lng(), coordObj.lat()];
     let locationID = location.querySelector("#locationID").value;
     let geoData = {
       type: "Feature",
@@ -127,12 +130,35 @@ function getGeoData() {
     if (mapLocations.features.includes(geoData) === false) {
       mapLocations.features.push(geoData);
     }
+    location.onclick = function () {
+      map.flyTo({
+        center: coordinates,
+        speed: 0.5,
+        curve: 1,
+        easing(t) {
+          return t;
+        },
+      });
+
+      // Close the current popup if it exists
+      if (currentPopup) {
+        currentPopup.remove();
+      }
+
+      // Create a new popup and assign it to currentPopup
+      currentPopup = new mapboxgl.Popup()
+        .setLngLat(coordinates)
+        .setHTML(locationInfo)
+        .addTo(map);
+    };
   });
-  console.log(mapLocations);
 }
 // Invoke function
 getGeoData();
 
+let currentPopup = null;
+
+// Define mapping function to be invoked later
 // Define mapping function to be invoked later
 function addMapPoints() {
   /* Add the data to your map as a layer */
@@ -167,7 +193,16 @@ function addMapPoints() {
       coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
     }
 
-    new mapboxgl.Popup().setLngLat(coordinates).setHTML(description).addTo(map);
+    // Close the current popup if it exists
+    if (currentPopup) {
+      currentPopup.remove();
+    }
+
+    // Create a new popup and assign it to currentPopup
+    currentPopup = new mapboxgl.Popup()
+      .setLngLat(coordinates)
+      .setHTML(description)
+      .addTo(map);
   });
 
   // Center the map on the coordinates of any clicked circle from the 'locations' layer.
@@ -193,8 +228,66 @@ function addMapPoints() {
   });
 }
 
+function addClickEvents() {
+  let locationContainers = document.querySelectorAll(".location-block");
+  locationContainers.forEach(function (locationContainer) {
+    locationContainer.onclick = async function () {
+      let cityState = this.getAttribute("data-citystate");
+      let coordObj = await geocodeAddress(cityState);
+      let coordinates = [coordObj.lng(), coordObj.lat()];
+      let htmlMarkup = this.getAttribute("data-html");
+
+      map.flyTo({
+        center: coordinates,
+        speed: 0.5,
+        curve: 1,
+        easing(t) {
+          return t;
+        },
+      });
+
+      // Close the current popup if it exists
+      if (currentPopup) {
+        currentPopup.remove();
+      }
+
+      // Create a new popup and assign it to currentPopup
+      currentPopup = new mapboxgl.Popup()
+        .setLngLat(coordinates)
+        .setHTML(htmlMarkup)
+        .addTo(map);
+    };
+  });
+}
+
 //When map is loaded initialize with data
 map.on("load", function (e) {
   // Invoke function
   addMapPoints();
+  addClickEvents();
+});
+
+$(document).ready(function () {
+  var sortedStates = $(".state-container").sort(function (a, b) {
+    return $(a)
+      .find(".state-block")
+      .text()
+      .toUpperCase()
+      .localeCompare($(b).find(".state-block").text().toUpperCase());
+  });
+
+  $("#states_container").empty().append(sortedStates);
+
+  // New sorting logic for .location-block elements
+  $(".state-container-locations").each(function () {
+    var sortedLocations = $(this)
+      .find(".location-block")
+      .sort(function (a, b) {
+        return $(a)
+          .data("citystate")
+          .toUpperCase()
+          .localeCompare($(b).data("citystate").toUpperCase());
+      });
+    $(this).empty().append(sortedLocations);
+  });
 });
