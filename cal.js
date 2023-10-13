@@ -45,9 +45,30 @@ function setAptLink(time) {
   var url =
     "https://signup.usenourish.com/flow/get-started/variant/main_survey_direct_booking_ex1";
 
+  // Get the current URL's query parameters
+  var params = new URLSearchParams(window.location.search);
+
+  // Get the referralSource and referralName parameters
+  var referralSource = params.get("referralSource");
+  var referralName = params.get("referralName");
+
   // Add checks for each variable
   if (utmSourceFromSession) {
     url += "?utm_source=" + utmSourceFromSession;
+  }
+
+  if (referralSource) {
+    url +=
+      (url.includes("?") ? "&" : "?") +
+      "referralSource=" +
+      encodeURIComponent(referralSource);
+  }
+
+  if (referralName) {
+    url +=
+      (url.includes("?") ? "&" : "?") +
+      "referralName=" +
+      encodeURIComponent(referralName);
   }
 
   if (fullname) {

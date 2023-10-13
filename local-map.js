@@ -12,6 +12,9 @@ function geocodeAddress(cityState) {
       if (status === "OK") {
         const location = results[0].geometry.location;
         resolve(location);
+      } else if (status === "ZERO_RESULTS") {
+        console.error(`No results found for ${cityState}`);
+        resolve(null); // or handle it in some other way
       } else {
         reject(status);
       }
@@ -113,44 +116,49 @@ async function getGeoData() {
     let state = location.querySelector("#state ").value;
     let cityState = city + ", " + state;
     let coordObj = await geocodeAddress(cityState);
-    let coordinates = [coordObj.lng(), coordObj.lat()];
     let locationID = location.querySelector("#locationID").value;
-    let geoData = {
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: coordinates,
-      },
-      properties: {
-        id: locationID,
-        description: locationInfo,
-      },
-    };
-
-    if (mapLocations.features.includes(geoData) === false) {
-      mapLocations.features.push(geoData);
-    }
-    location.onclick = function () {
-      map.flyTo({
-        center: coordinates,
-        speed: 0.5,
-        curve: 1,
-        easing(t) {
-          return t;
+    if (coordObj) {
+      let coordinates = [coordObj.lng(), coordObj.lat()];
+      // Check if coordObj is not null
+      let geoData = {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: coordinates,
         },
-      });
+        properties: {
+          id: locationID,
+          description: locationInfo,
+        },
+      };
 
-      // Close the current popup if it exists
-      if (currentPopup) {
-        currentPopup.remove();
+      if (mapLocations.features.includes(geoData) === false) {
+        mapLocations.features.push(geoData);
       }
+      location.onclick = function () {
+        map.flyTo({
+          center: coordinates,
+          speed: 0.5,
+          curve: 1,
+          easing(t) {
+            return t;
+          },
+        });
 
-      // Create a new popup and assign it to currentPopup
-      currentPopup = new mapboxgl.Popup()
-        .setLngLat(coordinates)
-        .setHTML(locationInfo)
-        .addTo(map);
-    };
+        // Close the current popup if it exists
+        if (currentPopup) {
+          currentPopup.remove();
+        }
+
+        // Create a new popup and assign it to currentPopup
+        currentPopup = new mapboxgl.Popup()
+          .setLngLat(coordinates)
+          .setHTML(locationInfo)
+          .addTo(map);
+      };
+    } else {
+      console.error(`Geocoding failed for ${cityState}`);
+    }
   });
 }
 // Invoke function
