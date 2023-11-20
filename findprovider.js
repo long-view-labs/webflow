@@ -183,7 +183,7 @@ function showHideCommas() {
 
 // Update styles of specialty category card
 function updateSpecialty() {
-  var dropdownList = document.getElementById("w-dropdown-list-2");
+  var dropdownList = document.getElementById("specialty_filter");
   // See if active element exists in dropdown
   var activeElement = dropdownList.querySelector(".fs-cmsfilter_active");
   var providerSearchInputValue = document
