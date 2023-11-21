@@ -346,12 +346,10 @@ function showDetailText() {
   var subtextValue = $(".provider-filter_container").attr("subtext");
   var tagValue = $(".provider-filter_container").attr("tag");
 
-  if (subtextValue) {
-    // Replace text of class 'provider-list_detail' with 'Serves Los Angeles, California' and set opacity to 1
-    $(".provider-list_detail").text(subtextValue).css("opacity", "1");
-  }
   if (textValue) {
-    // Replace text of class 'provider-filter_active-tag-text' with 'Los Angeles, California'
+    // Update detail text
+    $(".provider-list_detail").text(textValue).css("opacity", "1");
+    // Update bubble text
     $(".provider-filter_active-tag-text").text(textValue);
   }
 }
