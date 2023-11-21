@@ -7,6 +7,8 @@ $(document).ready(function () {
     scrollAnchor();
     postnomReorder();
     showMoreTags();
+    showDetailText();
+
     $(".filter-list_input-group-parent").on("click", function () {
       // Find the child .w-checkbox-input element
       var checkboxInput = $(this).find(".w-checkbox-input");
@@ -31,6 +33,7 @@ filter.forEach(function (dropdown) {
       showMoreTags();
       postnomReorder();
       updateSpecialty();
+      showDetailText();
     }, 500);
   });
 });
@@ -45,6 +48,7 @@ providerSearchInput.addEventListener("input", function (event) {
     showMoreTags();
     postnomReorder();
     updateSpecialty();
+    showDetailText();
   }, 500);
 });
 
@@ -333,4 +337,43 @@ function showLabelTotals() {
         .toggle(count > 0);
     }, 0);
   });
+}
+
+function showInsuranceLogo() {}
+
+function showDetailText() {
+  var subtextValue = $(".provider-filter_container").attr("subtext");
+  var tagValue = $(".provider-filter_container").attr("tag");
+
+  if (subtextValue) {
+    // Replace text of class 'provider-list_detail' with 'Serves Los Angeles, California' and set opacity to 1
+    $(".provider-list_detail").text(subtextValue).css("opacity", "1");
+  }
+  if (textValue) {
+    // Replace text of class 'provider-filter_active-tag-text' with 'Los Angeles, California'
+    $(".provider-filter_active-tag-text").text(textValue);
+  }
+}
+
+function loadFilter() {
+  // Add pre-filters and update seo text detail
+  var stateValue = $(".provider-filter_container").attr("state");
+  var insValue = $(".provider-filter_container").attr("insurance");
+  var specValue = $(".provider-filter_container").attr("specialty");
+
+  // Update URL to add query slug for filter
+  var url = new URL(window.location.href);
+  if (!url.search && (stateValue || specValue || insValue)) {
+    if (stateValue) {
+      var newUrl = window.location.href + "?state=" + stateValue;
+    }
+    if (insValue) {
+      var newUrl = window.location.href + "?insurance=" + insValue;
+    }
+    if (specValue) {
+      var newUrl = window.location.href + "?specialty=" + specValue;
+    }
+    // Reload the page with the modified URL
+    window.location.href = newUrl;
+  }
 }
