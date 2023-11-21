@@ -81,6 +81,7 @@ $(".pagination").click(function () {
     showMoreTags();
     scrollAnchor();
     postnomReorder();
+    showDetailText();
   }, 200);
 });
 
