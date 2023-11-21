@@ -8,6 +8,7 @@ $(document).ready(function () {
     postnomReorder();
     showMoreTags();
     showDetailText();
+    showInsuranceLogo();
 
     $(".filter-list_input-group-parent").on("click", function () {
       // Find the child .w-checkbox-input element
@@ -340,7 +341,28 @@ function showLabelTotals() {
   });
 }
 
-function showInsuranceLogo() {}
+function showInsuranceLogo() {
+  $(document).ready(function () {
+    if (window.location.href.indexOf("Medicare") > -1) {
+      $(".medicare").css("display", "block");
+    }
+    if (window.location.href.indexOf("Cigna") > -1) {
+      $(".cigna").css("display", "block");
+    }
+    if (window.location.href.indexOf("BCBC") > -1) {
+      $(".bcbs").css("display", "block");
+    }
+    if (window.location.href.indexOf("United") > -1) {
+      $(".united").css("display", "block");
+    }
+    if (window.location.href.indexOf("Aetna") > -1) {
+      $(".aetna").css("display", "block");
+    }
+    if (window.location.href.indexOf("Anthem") > -1) {
+      $(".anthem").css("display", "block");
+    }
+  });
+}
 
 function showDetailText() {
   var subtextValue = $(".provider-filter_container").attr("subtext");
@@ -351,6 +373,10 @@ function showDetailText() {
     $(".provider-list_detail").text(textValue).css("opacity", "1");
     // Update bubble text
     $(".provider-filter_active-tag-text").text(textValue);
+  }
+  if (tagTextValue) {
+    // Update bubble text
+    $(".provider-filter_active-tag-text").text(tagTextValue);
   }
 }
 
