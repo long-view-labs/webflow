@@ -374,10 +374,6 @@ function showDetailText() {
     // Update bubble text
     $(".provider-filter_active-tag-text").text(textValue);
   }
-  if (tagTextValue) {
-    // Update bubble text
-    $(".provider-filter_active-tag-text").text(tagTextValue);
-  }
 }
 
 function loadFilter() {
