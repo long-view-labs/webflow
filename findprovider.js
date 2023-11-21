@@ -371,8 +371,6 @@ function showDetailText() {
   if (textValue) {
     // Update detail text
     $(".provider-list_detail").text(textValue).css("opacity", "1");
-    // Update bubble text
-    $(".provider-filter_active-tag-text").text(textValue);
   }
 }
 
