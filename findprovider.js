@@ -372,6 +372,10 @@ function showDetailText() {
     // Update detail text
     $(".provider-list_detail").text(textValue).css("opacity", "1");
   }
+  if (tagTextValue) {
+    // Update detail text
+    $(".provider-filter_active-tag-text").text(tagTextValue);
+  }
 }
 
 function loadFilter() {
