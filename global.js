@@ -1,4 +1,17 @@
-function loadScript(src, element, callback, isScroll) {
+function loadScript(src, callback) {
+  var script = document.createElement("script");
+  script.type = "text/javascript";
+  script.onload = function () {
+    if (typeof callback === "function") {
+      callback();
+    }
+  };
+  script.src = src;
+  script.async = true;
+  document.head.appendChild(script);
+}
+
+function loadScriptOnScroll(src, element, callback) {
   var script = document.createElement("script");
   script.type = "text/javascript";
   script.onload = function () {
@@ -13,26 +26,20 @@ function loadScript(src, element, callback, isScroll) {
   script.async = true;
   document.head.appendChild(script);
 
-  if (isScroll) {
-    window.addEventListener("scroll", function onScroll() {
-      var position = element.getBoundingClientRect().top;
-      var pageOffset =
-        window.innerHeight || document.documentElement.clientHeight;
+  window.addEventListener("scroll", function onScroll() {
+    var position = element.getBoundingClientRect().top;
+    var pageOffset =
+      window.innerHeight || document.documentElement.clientHeight;
 
-      if (
-        position <= pageOffset &&
-        !element.hasAttribute("data-script-loaded")
-      ) {
-        loadScript(
-          element.getAttribute("data-script-src"),
-          element,
-          callback,
-          false
-        );
-        window.removeEventListener("scroll", onScroll);
-      }
-    });
-  }
+    if (position <= pageOffset && !element.hasAttribute("data-script-loaded")) {
+      loadScriptOnScroll(
+        element.getAttribute("data-script-src"),
+        element,
+        callback
+      );
+      window.removeEventListener("scroll", onScroll);
+    }
+  });
 }
 
 // Register the scroll event listener
@@ -49,7 +56,7 @@ window.addEventListener("scroll", function onScroll() {
 
     // If the element is in the viewport and the script has not been loaded yet
     if (position <= pageOffset && !element.hasAttribute("data-script-loaded")) {
-      loadScript(
+      loadScriptOnScroll(
         element.getAttribute("data-script-src"),
         element,
         function () {
@@ -59,8 +66,7 @@ window.addEventListener("scroll", function onScroll() {
           ) {
             initializeSwiper();
           }
-        },
-        true
+        }
       );
     }
   });
