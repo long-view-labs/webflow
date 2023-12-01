@@ -87,10 +87,11 @@ document.addEventListener("DOMContentLoaded", function () {
     iframe.allowfullscreen = true;
     iframe.referrerPolicy = "no-referrer-when-downgrade";
     iframe.src =
-      "https://www.google.com/maps/embed/v1/place?key=AIzaSyBTMuJqj8-zpS6i-ePKVXoDFZyiwgLkfCE&q=" +
+      "https://www.google.com/maps/embed/v1/place?key=" +
+      googleAPI +
+      "&q=" +
       city +
       state;
-
     mapPlaceholder.appendChild(iframe);
   }, 2000);
 });
