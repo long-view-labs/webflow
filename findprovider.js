@@ -1,5 +1,6 @@
 $(document).ready(function () {
   showLabelTotals();
+  loadFilter();
   setTimeout(function () {
     $(".w-condition-invisible").remove();
     updatePageArrows();
