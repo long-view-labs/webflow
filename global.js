@@ -100,13 +100,30 @@ function loadGTM() {
   })(window, document, "script", "dataLayer", "GTM-5NMLCWB");
 }
 
-// Load scripts on scroll
+// Load Convert Script
 window.addEventListener("scroll", function onFirstScroll() {
   loadScriptOnScroll(
     "//cdn-4.convertexperiments.com/js/10041145-10041088.js",
     document.body
   );
   loadGTM();
+  window.removeEventListener("scroll", onFirstScroll);
+});
+
+// Load Rudderstack script on first scroll
+window.addEventListener("scroll", function onFirstScroll() {
+  loadScriptOnScroll(
+    "https://cdn.rudderlabs.com/v1.1/rudder-analytics.min.js",
+    document.body, // This can be any element, adjust as needed
+    function () {
+      window.rudderanalytics.load(
+        "2AgK8arpiMzPXb7Nkr8CTOgEzh4",
+        "https://usenourishxwq.dataplane.rudderstack.com"
+      );
+      window.rudderanalytics.page();
+      console.log("Rudderstack script loaded!");
+    }
+  );
   window.removeEventListener("scroll", onFirstScroll);
 });
 
