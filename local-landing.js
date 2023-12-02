@@ -30,7 +30,7 @@ $.ajax({
   },
 });
 
-// Load in all Finsweet Libraries for Find Provider Component
+// Load in all Finsweet Libraries for Find Provider Component & initialize Swiper
 window.onload = function () {
   setTimeout(function () {
     loadScript(
@@ -50,6 +50,7 @@ window.onload = function () {
       function () {}
     );
   }, 2000);
+  initializeSwiper();
 };
 
 // Update FAQ with Location info
@@ -109,44 +110,65 @@ var observer = new IntersectionObserver(function (entries) {
 observer.observe(document.querySelector("#map-placeholder"));
 
 function initializeSwiper() {
-  $(".condition_stories-component").each(function (index) {
-    const successSwiper = new Swiper($(this).find(".swiper")[0], {
-      slidesPerView: 1,
-      speed: 600,
-      spaceBetween: 64,
-      initialSlide: 0,
-      slideToClickedSlide: true,
-      centeredSlides: false,
-      loop: true,
-      slideActiveClass: "is-active",
-      slideDuplicateActiveClass: "is-active",
-      keyboard: false,
-      disableOnInteraction: false,
-      pagination: {
-        el: ".swiper_pagination-wrapper",
-        bulletElement: "div",
-        bulletClass: "swiper_pagination-bullet",
-        bulletActiveClass: "is-active",
-        clickable: true,
-      },
-      navigation: {
-        nextEl: "#story-right",
-        prevEl: "#story-left",
-      },
-      breakpoints: {
-        0: {
-          /* when window >=0px - webflow mobile landscape/portrait */
-        },
-        480: {
-          /* when window >=0px - webflow mobile landscape/portrait */
-        },
-        767: {
-          /* when window >= 767px - webflow tablet */ spaceBetween: 32,
-        },
-        992: {
-          /* when window >= 988px - webflow desktop */
-        },
-      },
+  // Create a new IntersectionObserver instance
+  var observer = new IntersectionObserver(function (entries) {
+    // Loop over the entries
+    entries.forEach(function (entry) {
+      // If the element is visible
+      if (entry.isIntersecting) {
+        // Load the Swiper script
+        loadScript(
+          "https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js",
+          function () {
+            $(".condition_stories-component").each(function (index) {
+              const successSwiper = new Swiper($(this).find(".swiper")[0], {
+                slidesPerView: 1,
+                speed: 600,
+                spaceBetween: 64,
+                initialSlide: 0,
+                slideToClickedSlide: true,
+                centeredSlides: false,
+                loop: true,
+                slideActiveClass: "is-active",
+                slideDuplicateActiveClass: "is-active",
+                keyboard: false,
+                disableOnInteraction: false,
+                pagination: {
+                  el: ".swiper_pagination-wrapper",
+                  bulletElement: "div",
+                  bulletClass: "swiper_pagination-bullet",
+                  bulletActiveClass: "is-active",
+                  clickable: true,
+                },
+                navigation: {
+                  nextEl: "#story-right",
+                  prevEl: "#story-left",
+                },
+                breakpoints: {
+                  0: {
+                    /* when window >=0px - webflow mobile landscape/portrait */
+                  },
+                  480: {
+                    /* when window >=0px - webflow mobile landscape/portrait */
+                  },
+                  767: {
+                    /* when window >= 767px - webflow tablet */ spaceBetween: 32,
+                  },
+                  992: {
+                    /* when window >= 988px - webflow desktop */
+                  },
+                },
+              });
+            });
+          }
+        );
+
+        // Stop observing the target element
+        observer.unobserve(entry.target);
+      }
     });
   });
+
+  // Start observing an element
+  observer.observe(document.querySelector(".section_stories"));
 }
