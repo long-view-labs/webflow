@@ -100,8 +100,12 @@ function loadGTM() {
   })(window, document, "script", "dataLayer", "GTM-5NMLCWB");
 }
 
-// Load GTM on first scroll
+// Load scripts on scroll
 window.addEventListener("scroll", function onFirstScroll() {
+  loadScriptOnScroll(
+    "//cdn-4.convertexperiments.com/js/10041145-10041088.js",
+    document.body
+  );
   loadGTM();
   window.removeEventListener("scroll", onFirstScroll);
 });
@@ -110,7 +114,6 @@ window.addEventListener("scroll", function onFirstScroll() {
 $(".menu_slug").each(function () {
   // Get the state text from the current .menu_slug element
   var state = $(this).text();
-
   // Find the previous sibling's 'a' element and update its 'href'
   $(this)
     .prev("a")
