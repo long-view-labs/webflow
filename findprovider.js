@@ -9,6 +9,7 @@ $(document).ready(function () {
     postnomReorder();
     showMoreTags();
     showDetailText();
+    updateActiveTag();
     showInsuranceLogo();
 
     $(".filter-list_input-group-parent").on("click", function () {
@@ -366,13 +367,13 @@ function showInsuranceLogo() {
 }
 
 function showDetailText() {
-  var subtextValue = $(".provider-filter_container").attr("subtext");
-  var tagValue = $(".provider-filter_container").attr("tag");
-
   if (textValue) {
     // Update detail text
     $(".provider-list_detail").text(textValue).css("opacity", "1");
   }
+}
+
+function updateActiveTag() {
   if (tagTextValue) {
     // Update detail text
     $(".provider-filter_active-tag-text").text(tagTextValue);
