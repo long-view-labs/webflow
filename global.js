@@ -121,7 +121,6 @@ window.addEventListener("scroll", function onFirstScroll() {
         "https://usenourishxwq.dataplane.rudderstack.com"
       );
       window.rudderanalytics.page();
-      console.log("Rudderstack script loaded!");
     }
   );
   window.removeEventListener("scroll", onFirstScroll);
