@@ -75,26 +75,38 @@ $(".success-story_details").each(function () {
 });
 
 // Update Google Map
-document.addEventListener("DOMContentLoaded", function () {
-  setTimeout(function () {
-    var mapPlaceholder = document.getElementById("map-placeholder");
-    var iframe = document.createElement("iframe");
+// Create a new IntersectionObserver instance
+var observer = new IntersectionObserver(function (entries) {
+  // Loop over the entries
+  entries.forEach(function (entry) {
+    // If the element is visible
+    if (entry.isIntersecting) {
+      // Update Google Map
+      var mapPlaceholder = document.getElementById("map-placeholder");
+      var iframe = document.createElement("iframe");
 
-    iframe.width = "100%";
-    iframe.height = "100%";
-    iframe.style.border = "0";
-    iframe.loading = "lazy";
-    iframe.allowfullscreen = true;
-    iframe.referrerPolicy = "no-referrer-when-downgrade";
-    iframe.src =
-      "https://www.google.com/maps/embed/v1/place?key=" +
-      googleAPI +
-      "&q=" +
-      city +
-      state;
-    mapPlaceholder.appendChild(iframe);
-  }, 2000);
+      iframe.width = "100%";
+      iframe.height = "100%";
+      iframe.style.border = "0";
+      iframe.loading = "lazy";
+      iframe.allowfullscreen = true;
+      iframe.referrerPolicy = "no-referrer-when-downgrade";
+      iframe.src =
+        "https://www.google.com/maps/embed/v1/place?key=" +
+        googleAPI +
+        "&q=" +
+        city +
+        state;
+      mapPlaceholder.appendChild(iframe);
+
+      // Stop observing the target element
+      observer.unobserve(entry.target);
+    }
+  });
 });
+
+// Start observing an element
+observer.observe(document.querySelector("#map-placeholder"));
 
 function initializeSwiper() {
   $(".condition_stories-component").each(function (index) {
