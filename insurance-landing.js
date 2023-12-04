@@ -1,13 +1,4 @@
-// Update Filter with URL query
-var url = new URL(window.location.href);
-if (url.pathname.includes("/conditions") && !url.search) {
-  var newUrl = window.location.href + "?specialty=" + filterSlug;
-  // Reload the page with the modified URL
-  window.location.href = newUrl;
-}
-
 // Update Header with user's Location info using IPinfo
-const apiKey = "89320a08dbdfa6";
 const apiURL = `https://ipinfo.io?token=${apiKey}`;
 $.ajax({
   url: apiURL,
@@ -44,34 +35,31 @@ window.onload = function () {
       "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsfilter@1/cmsfilter.js",
       function () {}
     );
+    loadScript(
+      "https://cdn.jsdelivr.net/npm/@finsweet/attributes-scrolldisable@1/scrolldisable.js",
+      function () {}
+    );
+    loadScript(
+      "https://cdn.jsdelivr.net/npm/@finsweet/attributes-mirrorclick@1/mirrorclick.js",
+      function () {}
+    );
   }, 2000);
   initializeSwiper();
 };
 
-// Update FAQ with Location info
 $(".faq_title").each(function () {
   var text = $(this).text();
-  var updatedText = text.replace("<City>", city).replace("<State>", state);
-  $(this).text(updatedText);
+  if (text.includes("<Insurance>")) {
+    var updatedText = text.replace("<Insurance>", insurance);
+    $(this).text(updatedText);
+  }
 });
 
-$(".faq_content-wrapper .condition_rich-text p").each(function () {
+$(".faq_content-wrapper .text-rich-text p").each(function () {
   var text = $(this).html();
-  var updatedText = text
-    .replace("&lt;City&gt;", city)
-    .replace("&lt;State&gt;", state);
+  var updatedText = text.replace("&lt;Insurance&gt;", insurance);
   $(this).html(updatedText);
 });
-
-// Update Success Stories with Location info
-$(".success-story_details").each(function () {
-  var text = $(this).text();
-  var updatedText = text.replace("{City}", city).replace("{State}", state);
-  $(this).text(updatedText);
-});
-
-// Start observing an element
-observer.observe(document.querySelector("#map-placeholder"));
 
 function initializeSwiper() {
   // Create a new IntersectionObserver instance

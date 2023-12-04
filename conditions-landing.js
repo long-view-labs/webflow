@@ -1,34 +1,3 @@
-// Update Filter with URL query
-var url = new URL(window.location.href);
-if (url.pathname.includes("/conditions") && !url.search) {
-  var newUrl = window.location.href + "?specialty=" + filterSlug;
-  // Reload the page with the modified URL
-  window.location.href = newUrl;
-}
-
-// Update Header with user's Location info using IPinfo
-const apiKey = "89320a08dbdfa6";
-const apiURL = `https://ipinfo.io?token=${apiKey}`;
-$.ajax({
-  url: apiURL,
-  method: "GET",
-  success: function (response) {
-    const locationData = response;
-    if (locationData) {
-      let nearMeText = " " + locationData.city + ", " + locationData.region;
-      const currentText = $(".condition-hero_default-header").text();
-      const newText = currentText.replace("You", nearMeText);
-      $(".condition-hero_default-header").text(newText);
-      var originalTitle = document.title; // "Find the Best Cigna Nutritionists Near Me"
-      var newTitle = originalTitle.replace("Me", nearMeText);
-      document.title = newTitle;
-    }
-  },
-  error: function (jqXHR, textStatus, errorThrown) {
-    console.log("Request failed: ", textStatus, errorThrown);
-  },
-});
-
 // Load in all Finsweet Libraries for Find Provider Component & initialize Swiper
 window.onload = function () {
   setTimeout(function () {
@@ -44,34 +13,29 @@ window.onload = function () {
       "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsfilter@1/cmsfilter.js",
       function () {}
     );
+    loadScript(
+      "https://cdn.jsdelivr.net/npm/@finsweet/attributes-scrolldisable@1/scrolldisable.js",
+      function () {}
+    );
+    loadScript(
+      "https://cdn.jsdelivr.net/npm/@finsweet/attributes-mirrorclick@1/mirrorclick.js",
+      function () {}
+    );
   }, 2000);
   initializeSwiper();
 };
 
-// Update FAQ with Location info
 $(".faq_title").each(function () {
   var text = $(this).text();
-  var updatedText = text.replace("<City>", city).replace("<State>", state);
+  var updatedText = text.replace("<Name>", name);
   $(this).text(updatedText);
 });
 
 $(".faq_content-wrapper .condition_rich-text p").each(function () {
   var text = $(this).html();
-  var updatedText = text
-    .replace("&lt;City&gt;", city)
-    .replace("&lt;State&gt;", state);
+  var updatedText = text.replace("&lt;Name&gt;", name);
   $(this).html(updatedText);
 });
-
-// Update Success Stories with Location info
-$(".success-story_details").each(function () {
-  var text = $(this).text();
-  var updatedText = text.replace("{City}", city).replace("{State}", state);
-  $(this).text(updatedText);
-});
-
-// Start observing an element
-observer.observe(document.querySelector("#map-placeholder"));
 
 function initializeSwiper() {
   // Create a new IntersectionObserver instance

@@ -1,11 +1,3 @@
-// Update Filter with URL query
-var url = new URL(window.location.href);
-if (url.pathname.includes("/conditions") && !url.search) {
-  var newUrl = window.location.href + "?specialty=" + filterSlug;
-  // Reload the page with the modified URL
-  window.location.href = newUrl;
-}
-
 // Update Header with user's Location info using IPinfo
 const apiKey = "89320a08dbdfa6";
 const apiURL = `https://ipinfo.io?token=${apiKey}`;
