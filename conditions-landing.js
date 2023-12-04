@@ -15,14 +15,13 @@ $.ajax({
   success: function (response) {
     const locationData = response;
     if (locationData) {
-      if (locationData.city) {
-      } else {
-        console.log("City information not available.");
-      }
-      if (locationData.postal) {
-      } else {
-        console.log("ZIP Code information not available.");
-      }
+      let nearMeText = " " + locationData.city + ", " + locationData.region;
+      const currentText = $(".condition-hero_default-header").text();
+      const newText = currentText.replace("You", nearMeText);
+      $(".condition-hero_default-header").text(newText);
+      var originalTitle = document.title; // "Find the Best Cigna Nutritionists Near Me"
+      var newTitle = originalTitle.replace("Me", nearMeText);
+      document.title = newTitle;
     }
   },
   error: function (jqXHR, textStatus, errorThrown) {
@@ -43,14 +42,6 @@ window.onload = function () {
     );
     loadScript(
       "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsfilter@1/cmsfilter.js",
-      function () {}
-    );
-    loadScript(
-      "https://cdn.jsdelivr.net/npm/@finsweet/attributes-scrolldisable@1/scrolldisable.js",
-      function () {}
-    );
-    loadScript(
-      "https://cdn.jsdelivr.net/npm/@finsweet/attributes-mirrorclick@1/mirrorclick.js",
       function () {}
     );
   }, 2000);
@@ -77,37 +68,6 @@ $(".success-story_details").each(function () {
   var text = $(this).text();
   var updatedText = text.replace("{City}", city).replace("{State}", state);
   $(this).text(updatedText);
-});
-
-// Update Google Map
-// Create a new IntersectionObserver instance
-var observer = new IntersectionObserver(function (entries) {
-  // Loop over the entries
-  entries.forEach(function (entry) {
-    // If the element is visible
-    if (entry.isIntersecting) {
-      // Update Google Map
-      var mapPlaceholder = document.getElementById("map-placeholder");
-      var iframe = document.createElement("iframe");
-
-      iframe.width = "100%";
-      iframe.height = "100%";
-      iframe.style.border = "0";
-      iframe.loading = "lazy";
-      iframe.allowfullscreen = true;
-      iframe.referrerPolicy = "no-referrer-when-downgrade";
-      iframe.src =
-        "https://www.google.com/maps/embed/v1/place?key=" +
-        googleAPI +
-        "&q=" +
-        city +
-        state;
-      mapPlaceholder.appendChild(iframe);
-
-      // Stop observing the target element
-      observer.unobserve(entry.target);
-    }
-  });
 });
 
 // Start observing an element
