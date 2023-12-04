@@ -346,22 +346,40 @@ function showLabelTotals() {
 function showInsuranceLogo() {
   $(document).ready(function () {
     if (window.location.href.indexOf("Medicare") > -1) {
-      $(".logos_link-provider-list.medicare").css("display", "block");
+      $(".provider_insurance-wrap .logos_link-provider-list.medicare").css(
+        "display",
+        "block"
+      );
     }
     if (window.location.href.indexOf("Cigna") > -1) {
-      $(".logos_link-provider-list.cigna").css("display", "block");
+      $(".provider_insurance-wrap .logos_link-provider-list.cigna").css(
+        "display",
+        "block"
+      );
     }
     if (window.location.href.indexOf("Blue+Cross+Blue+Shield") > -1) {
-      $(".logos_link-provider-list.blue-cross").css("display", "block");
+      $(".provider_insurance-wrap .logos_link-provider-list.blue-cross").css(
+        "display",
+        "block"
+      );
     }
     if (window.location.href.indexOf("United") > -1) {
-      $(".logos_link-provider-list.united").css("display", "block");
+      $(".provider_insurance-wrap .logos_link-provider-list.united").css(
+        "display",
+        "block"
+      );
     }
     if (window.location.href.indexOf("Aetna") > -1) {
-      $(".logos_link-provider-list.aetna").css("display", "block");
+      $(".provider_insurance-wrap .logos_link-provider-list.aetna").css(
+        "display",
+        "block"
+      );
     }
     if (window.location.href.indexOf("Anthem") > -1) {
-      $(".logos_link-provider-list.anthem").css("display", "block");
+      $(".provider_insurance-wrap .logos_link-provider-list.anthem").css(
+        "display",
+        "block"
+      );
     }
   });
 }
