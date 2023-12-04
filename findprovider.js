@@ -392,7 +392,7 @@ function showDetailText() {
 }
 
 function updateActiveTag() {
-  if (tagTextValue) {
+  if (typeof tagTextValue !== "undefined" && tagTextValue) {
     // Update detail text
     $(".provider-filter_active-tag-text").text(tagTextValue);
   }
