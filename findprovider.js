@@ -345,41 +345,46 @@ function showLabelTotals() {
 
 function showInsuranceLogo() {
   $(document).ready(function () {
+    // Function to add CSS rules to the page
+    function addStyles(styles) {
+      var styleSheet = document.createElement("style");
+      styleSheet.type = "text/css";
+      styleSheet.innerText = styles;
+      document.head.appendChild(styleSheet);
+    }
+
+    // Initialize the styles string
+    var stylesToAdd = "";
+
+    // Check the URL and conditionally add CSS rules
     if (window.location.href.indexOf("Medicare") > -1) {
-      $(".provider_insurance-wrap .logos_link-provider-list.medicare").css(
-        "display",
-        "block"
-      );
+      stylesToAdd +=
+        ".provider_insurance-wrap .logos_link-provider-list.medicare { display: block; }\n";
     }
     if (window.location.href.indexOf("Cigna") > -1) {
-      $(".provider_insurance-wrap .logos_link-provider-list.cigna").css(
-        "display",
-        "block"
-      );
+      stylesToAdd +=
+        ".provider_insurance-wrap .logos_link-provider-list.cigna { display: block; }\n";
     }
-    if (window.location.href.indexOf("Blue+Cross+Blue+Shield") > -1) {
-      $(".provider_insurance-wrap .logos_link-provider-list.blue-cross").css(
-        "display",
-        "block"
-      );
+    if (window.location.href.indexOf("BlueCross+BlueShield") > -1) {
+      stylesToAdd +=
+        ".provider_insurance-wrap .logos_link-provider-list.blue-cross { display: block; }\n";
     }
     if (window.location.href.indexOf("United") > -1) {
-      $(".provider_insurance-wrap .logos_link-provider-list.united").css(
-        "display",
-        "block"
-      );
+      stylesToAdd +=
+        ".provider_insurance-wrap .logos_link-provider-list.united { display: block; }\n";
     }
     if (window.location.href.indexOf("Aetna") > -1) {
-      $(".provider_insurance-wrap .logos_link-provider-list.aetna").css(
-        "display",
-        "block"
-      );
+      stylesToAdd +=
+        ".provider_insurance-wrap .logos_link-provider-list.aetna { display: block; }\n";
     }
     if (window.location.href.indexOf("Anthem") > -1) {
-      $(".provider_insurance-wrap .logos_link-provider-list.anthem").css(
-        "display",
-        "block"
-      );
+      stylesToAdd +=
+        ".provider_insurance-wrap .logos_link-provider-list.anthem { display: block; }\n";
+    }
+
+    // Add the styles if any were added to the string
+    if (stylesToAdd) {
+      addStyles(stylesToAdd);
     }
   });
 }
