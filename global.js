@@ -102,10 +102,6 @@ function loadGTM() {
 
 // Load Convert Script
 window.addEventListener("scroll", function onFirstScroll() {
-  loadScriptOnScroll(
-    "//cdn-4.convertexperiments.com/js/10041145-10041088.js",
-    document.body
-  );
   loadGTM();
   window.removeEventListener("scroll", onFirstScroll);
 });
