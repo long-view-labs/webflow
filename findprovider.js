@@ -11,7 +11,7 @@ $(document).ready(function () {
     showDetailText();
     updateActiveTag();
     showInsuranceLogo();
-
+    updateTags();
     $(".filter-list_input-group-parent").on("click", function () {
       // Find the child .w-checkbox-input element
       var checkboxInput = $(this).find(".w-checkbox-input");
@@ -37,6 +37,7 @@ filter.forEach(function (dropdown) {
       postnomReorder();
       updateSpecialty();
       showDetailText();
+      updateTags();
     }, 500);
   });
 });
@@ -52,6 +53,7 @@ providerSearchInput.addEventListener("input", function (event) {
     postnomReorder();
     updateSpecialty();
     showDetailText();
+    updateTags();
   }, 500);
 });
 
@@ -85,6 +87,7 @@ $(".pagination").click(function () {
     scrollAnchor();
     postnomReorder();
     showDetailText();
+    updateTags();
   }, 200);
 });
 
@@ -264,6 +267,21 @@ function updatePageArrows() {
   } else {
     $(".next").addClass("active");
     $(".previous").addClass("active");
+  }
+}
+
+function updateTags() {
+  if (slug) {
+    jQuery(function () {
+      jQuery("#postnominals-" + slug).load(
+        "/providers/" + slug + " .postnominals"
+      );
+      jQuery("#specialties-" + slug).load(
+        "/providers/" + slug + " .specialties"
+      );
+      jQuery("#styles-" + slug).load("/providers/" + slug + " .styles");
+      jQuery("#insurances-" + slug).load("/providers/" + slug + " .insurances");
+    });
   }
 }
 
