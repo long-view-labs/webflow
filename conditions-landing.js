@@ -88,47 +88,6 @@ function initializeSwiper() {
                 },
               });
             });
-
-            $(".related-articles_component").each(function (index) {
-              const swiper = new Swiper($(this).find(".swiper")[0], {
-                slidesPerView: 3,
-                speed: 600,
-                spaceBetween: 64,
-                initialSlide: 0,
-                slideToClickedSlide: true,
-                centeredSlides: false,
-                loop: true,
-                slideActiveClass: "is-active",
-                slideDuplicateActiveClass: "is-active",
-                keyboard: false,
-                disableOnInteraction: false,
-                pagination: {
-                  el: ".swiper_pagination-wrapper",
-                  bulletElement: "div",
-                  bulletClass: "swiper_pagination-bullet",
-                  bulletActiveClass: "is-active",
-                  clickable: true,
-                },
-                navigation: {
-                  nextEl: "#story-right",
-                  prevEl: "#story-left",
-                },
-                breakpoints: {
-                  0: {
-                    /* when window >=0px - webflow mobile landscape/portrait */
-                  },
-                  480: {
-                    /* when window >=0px - webflow mobile landscape/portrait */
-                  },
-                  767: {
-                    slidesPerView: 1,
-                  },
-                  992: {
-                    /* when window >= 988px - webflow desktop */
-                  },
-                },
-              });
-            });
           }
         );
 
@@ -140,4 +99,45 @@ function initializeSwiper() {
 
   // Start observing an element
   observer.observe(document.querySelector(".section_stories"));
+
+  $(".related-articles_component").each(function (index) {
+    const swiper = new Swiper($(this).find(".swiper")[0], {
+      slidesPerView: 3,
+      speed: 600,
+      spaceBetween: 64,
+      initialSlide: 0,
+      slideToClickedSlide: true,
+      centeredSlides: false,
+      loop: true,
+      slideActiveClass: "is-active",
+      slideDuplicateActiveClass: "is-active",
+      keyboard: false,
+      disableOnInteraction: false,
+      pagination: {
+        el: ".swiper_pagination-wrapper",
+        bulletElement: "div",
+        bulletClass: "swiper_pagination-bullet",
+        bulletActiveClass: "is-active",
+        clickable: true,
+      },
+      navigation: {
+        nextEl: "#story-right",
+        prevEl: "#story-left",
+      },
+      breakpoints: {
+        0: {
+          /* when window >=0px - webflow mobile landscape/portrait */
+        },
+        480: {
+          /* when window >=0px - webflow mobile landscape/portrait */
+        },
+        767: {
+          slidesPerView: 1,
+        },
+        992: {
+          /* when window >= 988px - webflow desktop */
+        },
+      },
+    });
+  });
 }
