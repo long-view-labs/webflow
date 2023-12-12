@@ -49,7 +49,7 @@ function initializeSwiper() {
           "https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js",
           function () {
             $(".condition_stories-component").each(function (index) {
-              const successSwiper = new Swiper($(this).find(".swiper")[0], {
+              const swiper = new Swiper($(this).find(".swiper")[0], {
                 slidesPerView: 1,
                 speed: 600,
                 spaceBetween: 64,
@@ -81,6 +81,47 @@ function initializeSwiper() {
                   },
                   767: {
                     /* when window >= 767px - webflow tablet */ spaceBetween: 32,
+                  },
+                  992: {
+                    /* when window >= 988px - webflow desktop */
+                  },
+                },
+              });
+            });
+
+            $(".related-articles_component").each(function (index) {
+              const swiper = new Swiper($(this).find(".swiper")[0], {
+                slidesPerView: 3,
+                speed: 600,
+                spaceBetween: 64,
+                initialSlide: 0,
+                slideToClickedSlide: true,
+                centeredSlides: false,
+                loop: true,
+                slideActiveClass: "is-active",
+                slideDuplicateActiveClass: "is-active",
+                keyboard: false,
+                disableOnInteraction: false,
+                pagination: {
+                  el: ".swiper_pagination-wrapper",
+                  bulletElement: "div",
+                  bulletClass: "swiper_pagination-bullet",
+                  bulletActiveClass: "is-active",
+                  clickable: true,
+                },
+                navigation: {
+                  nextEl: "#story-right",
+                  prevEl: "#story-left",
+                },
+                breakpoints: {
+                  0: {
+                    /* when window >=0px - webflow mobile landscape/portrait */
+                  },
+                  480: {
+                    /* when window >=0px - webflow mobile landscape/portrait */
+                  },
+                  767: {
+                    slidesPerView: 1,
                   },
                   992: {
                     /* when window >= 988px - webflow desktop */
