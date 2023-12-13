@@ -16,7 +16,7 @@ $(document).ready(function () {
       var checkboxInput = $(this).find(".w-checkbox-input");
       checkboxInput.toggleClass("w--redirected-checked");
     });
-  }, 2000);
+  }, 3000);
 });
 
 // Load in all Finsweet Libraries for Find Provider Component & initialize Swiper
