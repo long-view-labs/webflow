@@ -20,6 +20,53 @@ $(document).ready(function () {
   }, 2000);
 });
 
+// Load in all Finsweet Libraries for Find Provider Component & initialize Swiper
+window.onload = function () {
+  window.fsAttributes = window.fsAttributes || [];
+  window.fsAttributes.push([
+    "cmsload",
+    (listInstances) => {
+      scrollAnchor();
+      showMoreTags();
+      showDetailText();
+      updatePageArrows();
+      updateTotalCount();
+      console.log("cmsload Successfully loaded!");
+
+      // The callback passes a `listInstances` array with all the `CMSList` instances on the page.
+      const [listInstance] = listInstances;
+
+      // The `renderitems` event runs whenever the list renders items after switching pages.
+      listInstance.on("renderitems", (renderedItems) => {
+        console.log(renderedItems);
+      });
+    },
+  ]);
+
+  //setTimeout(function () {
+  loadScript(
+    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsload@1/cmsload.js"
+  );
+  loadScript(
+    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsnest@1/cmsnest.js",
+    function () {}
+  );
+  loadScript(
+    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsfilter@1/cmsfilter.js",
+    function () {}
+  );
+  loadScript(
+    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-scrolldisable@1/scrolldisable.js",
+    function () {}
+  );
+  loadScript(
+    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-mirrorclick@1/mirrorclick.js",
+    function () {}
+  );
+  //}, 2000);
+  initializeSwiper();
+};
+
 $("input[filter-button]").click(function () {
   var value = $(this).attr("filter-button");
   $("#" + value).trigger("w-close");
