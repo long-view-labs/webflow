@@ -25,11 +25,20 @@ window.onload = function () {
   loadScript(
     "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsload@1/cmsload.js",
     function () {
-      scrollAnchor();
-      showMoreTags();
-      showDetailText();
-      updatePageArrows();
-      updateTotalCount();
+      window.fsAttributes = window.fsAttributes || [];
+      window.fsAttributes.push([
+        "cmsload",
+        (listInstances) => {
+          scrollAnchor();
+          showMoreTags();
+          showDetailText();
+          updatePageArrows();
+          updateTotalCount();
+
+          // The callback passes a `listInstances` array with all the `CMSList` instances on the page.
+          const [listInstance] = listInstances;
+        },
+      ]);
     }
   );
   loadScript(
