@@ -25,17 +25,11 @@ window.onload = function () {
   loadScript(
     "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsload@1/cmsload.js",
     function () {
-      window.fsAttributes = window.fsAttributes || [];
-      window.fsAttributes.push([
-        "cmsload",
-        (listInstances) => {
-          scrollAnchor();
-          showMoreTags();
-          showDetailText();
-          updatePageArrows();
-          updateTotalCount();
-        },
-      ]);
+      scrollAnchor();
+      showMoreTags();
+      showDetailText();
+      updatePageArrows();
+      updateTotalCount();
     }
   );
   loadScript(
