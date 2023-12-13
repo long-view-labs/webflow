@@ -11,7 +11,6 @@ $(document).ready(function () {
     showDetailText();
     updateActiveTag();
     showInsuranceLogo();
-    updateTags();
     $(".filter-list_input-group-parent").on("click", function () {
       // Find the child .w-checkbox-input element
       var checkboxInput = $(this).find(".w-checkbox-input");
@@ -22,30 +21,22 @@ $(document).ready(function () {
 
 // Load in all Finsweet Libraries for Find Provider Component & initialize Swiper
 window.onload = function () {
-  window.fsAttributes = window.fsAttributes || [];
-  window.fsAttributes.push([
-    "cmsload",
-    (listInstances) => {
-      scrollAnchor();
-      showMoreTags();
-      showDetailText();
-      updatePageArrows();
-      updateTotalCount();
-      console.log("cmsload Successfully loaded!");
-
-      // The callback passes a `listInstances` array with all the `CMSList` instances on the page.
-      const [listInstance] = listInstances;
-
-      // The `renderitems` event runs whenever the list renders items after switching pages.
-      listInstance.on("renderitems", (renderedItems) => {
-        console.log(renderedItems);
-      });
-    },
-  ]);
-
   //setTimeout(function () {
   loadScript(
-    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsload@1/cmsload.js"
+    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsload@1/cmsload.js",
+    function () {
+      window.fsAttributes = window.fsAttributes || [];
+      window.fsAttributes.push([
+        "cmsload",
+        (listInstances) => {
+          scrollAnchor();
+          showMoreTags();
+          showDetailText();
+          updatePageArrows();
+          updateTotalCount();
+        },
+      ]);
+    }
   );
   loadScript(
     "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsnest@1/cmsnest.js",
@@ -84,7 +75,6 @@ filter.forEach(function (dropdown) {
       postnomReorder();
       updateSpecialty();
       showDetailText();
-      updateTags();
     }, 500);
   });
 });
@@ -100,7 +90,6 @@ providerSearchInput.addEventListener("input", function (event) {
     postnomReorder();
     updateSpecialty();
     showDetailText();
-    updateTags();
   }, 500);
 });
 
@@ -134,7 +123,6 @@ $(".pagination").click(function () {
     scrollAnchor();
     postnomReorder();
     showDetailText();
-    updateTags();
   }, 200);
 });
 
@@ -314,21 +302,6 @@ function updatePageArrows() {
   } else {
     $(".next").addClass("active");
     $(".previous").addClass("active");
-  }
-}
-
-function updateTags() {
-  if (slug) {
-    jQuery(function () {
-      jQuery("#postnominals-" + slug).load(
-        "/providers/" + slug + " .postnominals"
-      );
-      jQuery("#specialties-" + slug).load(
-        "/providers/" + slug + " .specialties"
-      );
-      jQuery("#styles-" + slug).load("/providers/" + slug + " .styles");
-      jQuery("#insurances-" + slug).load("/providers/" + slug + " .insurances");
-    });
   }
 }
 
