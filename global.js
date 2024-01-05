@@ -72,18 +72,6 @@ window.addEventListener("scroll", function onScroll() {
   });
 });
 
-// First, load the GSAP script.
-loadScript(
-  "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js",
-  function () {
-    // Once GSAP is fully loaded, then load the navbar.js script.
-    loadScript(
-      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow/navbar.js",
-      function () {}
-    );
-  }
-);
-
 function loadGTM() {
   (function (w, d, s, l, i) {
     w[l] = w[l] || [];
