@@ -33,10 +33,6 @@ $(document).ready(function () {
   parallaxScroll();
 });
 
-$(document).ready(function () {
-  $(".overflow-hidden-load").css("overflow", "hidden");
-});
-
 function loadScript(url, callback) {
   var script = document.createElement("script");
   script.type = "text/javascript";
