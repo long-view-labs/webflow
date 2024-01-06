@@ -1,4 +1,3 @@
-// get elements
 let menuLink = $(".menu_dp-link");
 let tabLink = $(".menu_dropdown-tab-item");
 let content = $(".menu_dropdown_content");
