@@ -12,6 +12,10 @@ function loadScript(src, callback) {
 }
 
 function loadScriptOnScroll(src, element, callback) {
+  if (!src) {
+    return; // Exit the function if the src is not valid
+  }
+
   var script = document.createElement("script");
   script.type = "text/javascript";
   script.onload = function () {
@@ -21,6 +25,9 @@ function loadScriptOnScroll(src, element, callback) {
     if (typeof callback === "function") {
       callback();
     }
+  };
+  script.onerror = function () {
+    return;
   };
   script.src = src;
   script.async = true;
