@@ -1,6 +1,6 @@
 $(document).ready(function () {
   $(".condition_stories-component").each(function (index) {
-    const testSwiper = new Swiper($(this).find(".swiper")[0], {
+    const swiper = new Swiper($(this).find(".swiper")[0], {
       slidesPerView: 1,
       speed: 600,
       spaceBetween: 24,
@@ -75,13 +75,13 @@ $(document).ready(function () {
   // Call the function on load to set the initial position
   parallaxScroll();
 });
-// Create an intersection observer
+
 var observer = new IntersectionObserver(
   function (entries, observer) {
     entries.forEach(function (entry) {
       // Check if the element is in view
       if (entry.isIntersecting) {
-        // Initialize Swiper here
+        // Swiper initialization and options
         $(".employee-quotes_slider").each(function (index) {
           const swiper = new Swiper($(this).find(".swiper")[0], {
             slidesPerView: 1,
@@ -150,7 +150,6 @@ var observer = new IntersectionObserver(
             swiper.autoplay.start();
           });
         });
-
         // Stop observing the element after it has come into view and the slider is initialized
         observer.unobserve(entry.target);
       }
@@ -160,9 +159,5 @@ var observer = new IntersectionObserver(
     // Options for the observer (which part of the item must be visible to trigger the event, etc.)
     threshold: 0.1, // Trigger when at least 10% of the target is visible
   }
-);
-
-// Tell the observer which element(s) to track
-document.querySelectorAll(".employee-quotes_grid").forEach(function (grid) {
-  observer.observe(grid);
-});
+  // Tell the observer which element(s) to track
+).observe(document.querySelector(".employee-quotes_grid"));
