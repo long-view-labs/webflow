@@ -185,19 +185,16 @@ if (blogPostRtbText.includes("{{local}}")) {
         // Assume 'userState' is the state obtained from the ipinfo API
         const userState = locationData.region; // Replace with actual API response field if different
         // Get all instances of the component where {splash} is added
-        console.log(userState);
         const splashComponents = document.querySelectorAll(
           '[fs-richtext-component="local"]'
         );
+        // Get all the items in the .local-list within the current component
+        const listItems = document.querySelectorAll(".local-list .w-dyn-item");
+
         // Iterate over each splash component
         splashComponents.forEach((component) => {
           // Inside this loop, apply your logic to each component
           // For example, if you're inserting links, do it for each 'component' instead of a single element
-
-          // Get all the items in the .local-list within the current component
-          const listItems = component.querySelectorAll(
-            ".local-list .w-dyn-item"
-          );
 
           // Filter the items that match the user's state within the current component
           const matchingItems = Array.from(listItems).filter((item) => {
