@@ -162,8 +162,8 @@ ready(function () {
 // Get the text content of the .blog-post-rtb element
 var blogPostRtbText = document.querySelector(".blog-post-rtb").textContent;
 
-// Check if the text includes 'diabetes-quiz'
-if (blogPostRtbText.includes("diabetes-quiz")) {
+// Check if the text includes 'local'
+if (blogPostRtbText.includes("{{local}}")) {
   // Call the IPInfo API
   const apiKey = "69d052a0093ef5";
   const apiURL = `https://ipinfo.io?token=${apiKey}`;
