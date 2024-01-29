@@ -185,6 +185,7 @@ if (blogPostRtbText.includes("{{local}}")) {
         // Assume 'userState' is the state obtained from the ipinfo API
         const userState = locationData.region; // Replace with actual API response field if different
         // Get all instances of the component where {splash} is added
+        console.log(userState);
         const splashComponents = document.querySelectorAll(
           '[fs-richtext-component="local"]'
         );
