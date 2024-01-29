@@ -159,125 +159,134 @@ ready(function () {
   addNoReferrer();
 });
 
-// Update Header with user's Location info using IPinfo
-const apiKey = "89320a08dbdfa6";
-const apiURL = `https://ipinfo.io?token=${apiKey}`;
-$.ajax({
-  url: apiURL,
-  method: "GET",
-  success: function (response) {
-    const locationData = response;
-    if (locationData) {
-      if (locationData.city) {
-      } else {
-        console.log("City information not available.");
-      }
-      if (locationData.postal) {
-      } else {
-        console.log("ZIP Code information not available.");
-      }
+// Get the text content of the .blog-post-rtb element
+var blogPostRtbText = document.querySelector(".blog-post-rtb").textContent;
 
-      // Assume 'userState' is the state obtained from the ipinfo API
-      const userState = locationData.region; // Replace with actual API response field if different
-      // Get all instances of the component where {splash} is added
-      const splashComponents = document.querySelectorAll(
-        '[fs-richtext-component="local"]'
-      );
-      const listItems = document.querySelectorAll(".local-list .w-dyn-item");
-      // Iterate over each splash component
-      splashComponents.forEach((component) => {
-        // Inside this loop, apply your logic to each component
-        // For example, if you're inserting links, do it for each 'component' instead of a single element
-
-        // Get all the items in the .local-list within the current component
-
-        // Filter the items that match the user's state within the current component
-        const matchingItems = Array.from(listItems).filter((item) => {
-          const stateFull = item
-            .querySelector(".state-full")
-            .textContent.trim();
-          return stateFull === userState;
-        });
-
-        // If there are matching items, insert them into the .local-splash-* divs
-        if (matchingItems.length > 0) {
-          // Replace {State} with the user's state in .splash-title.local
-          component.querySelectorAll(".splash-title.local").forEach((el) => {
-            el.textContent = el.textContent.replace("{State}", userState);
-          });
-
-          matchingItems.slice(0, 3).forEach((item, index) => {
-            // Clone the link to be inserted
-            const linkToInsert = item
-              .querySelector(".city-state")
-              .cloneNode(true);
-
-            // Select the target div based on the index
-            const targetDiv = component.querySelector(
-              `.local-splash-${index + 1}`
-            );
-
-            // Insert the cloned link into the target div
-            if (targetDiv) {
-              targetDiv.innerHTML = ""; // Clear existing content
-              targetDiv.appendChild(linkToInsert);
-            }
-          });
-
-          // Hide the remaining .local-splash-* divs and .line-separator.vertical elements
-          for (let i = matchingItems.length; i < 3; i++) {
-            component.querySelector(`.local-splash-${i + 1}`).style.display =
-              "none";
-            // Hide the .line-separator.vertical that follows the .local-splash-* div
-            let nextSeparator = component.querySelector(
-              `.local-splash-${i + 1}`
-            ).nextElementSibling;
-            if (
-              nextSeparator &&
-              nextSeparator.classList.contains("line-separator")
-            ) {
-              nextSeparator.style.display = "none";
-            }
-          }
-
-          // Additionally, if there is only one match, hide the first .line-separator.vertical
-          if (matchingItems.length === 1) {
-            let firstSeparator =
-              component.querySelector(".local-splash-1").nextElementSibling;
-            if (
-              firstSeparator &&
-              firstSeparator.classList.contains("line-seperator")
-            ) {
-              firstSeparator.style.display = "none";
-            }
-          }
-          // If there are only two matches, hide the second .line-separator.vertical
-          if (matchingItems.length === 2) {
-            let secondSeparator =
-              component.querySelector(".local-splash-2").nextElementSibling;
-            if (
-              secondSeparator &&
-              secondSeparator.classList.contains("line-seperator")
-            ) {
-              secondSeparator.style.display = "none";
-            }
-          }
+// Check if the text includes 'diabetes-quiz'
+if (blogPostRtbText.includes("diabetes-quiz")) {
+  // Call the IPInfo API
+  const apiKey = "69d052a0093ef5";
+  const apiURL = `https://ipinfo.io?token=${apiKey}`;
+  $.ajax({
+    url: apiURL,
+    method: "GET",
+    success: function (response) {
+      const locationData = response;
+      if (locationData) {
+        if (locationData.city) {
         } else {
-          // Hide .blog-content_bottom-splash and .splash-title.local
-          component.querySelector(".blog-content_bottom-splash").style.display =
-            "none";
-          component
-            .querySelectorAll(".splash-title.local")
-            .forEach((el) => (el.style.display = "none"));
-
-          // Show .splash-title.default
-          component.querySelector(".splash-title.default").style.display =
-            "block";
+          console.log("City information not available.");
         }
-      });
-    }
-  },
-  error: function (jqXHR, textStatus, errorThrown) {
-    console.log("Request failed: ", textStatus, errorThrown);
-  },
-});
+        if (locationData.postal) {
+        } else {
+          console.log("ZIP Code information not available.");
+        }
+
+        // Assume 'userState' is the state obtained from the ipinfo API
+        const userState = locationData.region; // Replace with actual API response field if different
+        // Get all instances of the component where {splash} is added
+        const splashComponents = document.querySelectorAll(
+          '[fs-richtext-component="local"]'
+        );
+        // Iterate over each splash component
+        splashComponents.forEach((component) => {
+          // Inside this loop, apply your logic to each component
+          // For example, if you're inserting links, do it for each 'component' instead of a single element
+
+          // Get all the items in the .local-list within the current component
+          const listItems = component.querySelectorAll(
+            ".local-list .w-dyn-item"
+          );
+
+          // Filter the items that match the user's state within the current component
+          const matchingItems = Array.from(listItems).filter((item) => {
+            const stateFull = item
+              .querySelector(".state-full")
+              .textContent.trim();
+            return stateFull === userState;
+          });
+
+          // If there are matching items, insert them into the .local-splash-* divs
+          if (matchingItems.length > 0) {
+            // Replace {State} with the user's state in .splash-title.local
+            component.querySelectorAll(".splash-title.local").forEach((el) => {
+              el.textContent = el.textContent.replace("{State}", userState);
+            });
+
+            matchingItems.slice(0, 3).forEach((item, index) => {
+              // Clone the link to be inserted
+              const linkToInsert = item
+                .querySelector(".city-state")
+                .cloneNode(true);
+
+              // Select the target div based on the index
+              const targetDiv = component.querySelector(
+                `.local-splash-${index + 1}`
+              );
+
+              // Insert the cloned link into the target div
+              if (targetDiv) {
+                targetDiv.innerHTML = ""; // Clear existing content
+                targetDiv.appendChild(linkToInsert);
+              }
+            });
+
+            // Hide the remaining .local-splash-* divs and .line-separator.vertical elements
+            for (let i = matchingItems.length; i < 3; i++) {
+              component.querySelector(`.local-splash-${i + 1}`).style.display =
+                "none";
+              // Hide the .line-separator.vertical that follows the .local-splash-* div
+              let nextSeparator = component.querySelector(
+                `.local-splash-${i + 1}`
+              ).nextElementSibling;
+              if (
+                nextSeparator &&
+                nextSeparator.classList.contains("line-separator")
+              ) {
+                nextSeparator.style.display = "none";
+              }
+            }
+
+            // Additionally, if there is only one match, hide the first .line-separator.vertical
+            if (matchingItems.length === 1) {
+              let firstSeparator =
+                component.querySelector(".local-splash-1").nextElementSibling;
+              if (
+                firstSeparator &&
+                firstSeparator.classList.contains("line-seperator")
+              ) {
+                firstSeparator.style.display = "none";
+              }
+            }
+            // If there are only two matches, hide the second .line-separator.vertical
+            if (matchingItems.length === 2) {
+              let secondSeparator =
+                component.querySelector(".local-splash-2").nextElementSibling;
+              if (
+                secondSeparator &&
+                secondSeparator.classList.contains("line-seperator")
+              ) {
+                secondSeparator.style.display = "none";
+              }
+            }
+          } else {
+            // Hide .blog-content_bottom-splash and .splash-title.local
+            component.querySelector(
+              ".blog-content_bottom-splash"
+            ).style.display = "none";
+            component
+              .querySelectorAll(".splash-title.local")
+              .forEach((el) => (el.style.display = "none"));
+
+            // Show .splash-title.default
+            component.querySelector(".splash-title.default").style.display =
+              "block";
+          }
+        });
+      }
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      console.log("Request failed: ", textStatus, errorThrown);
+    },
+  });
+}
