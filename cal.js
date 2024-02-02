@@ -1,14 +1,232 @@
+// On initial page load
+$(document).ready(function () {
+  postnomReorder();
+  showMoreTags();
+  reviewSlider();
+});
+
+var currentInsuranceList = $(".insurance-list.state-current");
+var texasInsuranceList = $(".insurance-list.texas");
+
+if ($(".provider-specialites_state-wrap.w-condition-invisible").length == 0) {
+  currentInsuranceList.children().appendTo(texasInsuranceList);
+
+  setTimeout(function () {
+    var uniqueItems = [];
+    var sortedItems = [];
+
+    texasInsuranceList.find(".w-dyn-item").each(function () {
+      var listItem = $(this);
+      var listItemHTML = listItem[0].outerHTML;
+
+      if (uniqueItems.includes(listItemHTML)) {
+        listItem.remove();
+      } else {
+        uniqueItems.push(listItemHTML);
+        sortedItems.push(listItem);
+      }
+    });
+
+    sortedItems.sort(function (a, b) {
+      var textA = $(a).text().toUpperCase();
+      var textB = $(b).text().toUpperCase();
+      return textA < textB ? -1 : textA > textB ? 1 : 0;
+    });
+
+    texasInsuranceList.empty();
+    $.each(sortedItems, function (index, element) {
+      texasInsuranceList.append(element);
+    });
+  }, 0);
+}
+
+// If new bio is visible (all new fields are filled), hide old bio
+if ($(".provider-grid-template.new.w-condition-invisible").length == 0) {
+  $(".provider-grid-template.old").hide();
+}
+
+function getUTMParameters() {
+  const params = new URLSearchParams(window.location.search);
+  const utms = {};
+  params.forEach((value, key) => {
+    if (key.startsWith("utm_")) {
+      utms[key] = value;
+    }
+  });
+  return utms;
+}
+
+function reviewSlider() {
+  $(".provider-reviews_slider").each(function (index) {
+    const swiper = new Swiper($(this).find(".swiper")[0], {
+      slidesPerView: 1,
+      speed: 600,
+      spaceBetween: 24,
+      initialSlide: 0,
+      slideClass: "swiper-slide",
+      slideToClickedSlide: true,
+      centeredSlides: false,
+      loop: false,
+      slideActiveClass: "is-active",
+      slideDuplicateActiveClass: "is-active",
+      keyboard: false,
+      disableOnInteraction: false,
+      pagination: {
+        el: ".swiper_pagination-component .swiper_pagination-wrapper",
+        bulletElement: "div",
+        bulletClass: "swiper_pagination-bullet-small",
+        bulletActiveClass: "is-active",
+        bulletSize: 8,
+        clickable: true,
+      },
+      breakpoints: {
+        0: {
+          /* when window >=0px - webflow mobile landscape/portrait */
+        },
+        480: {
+          /* when window >=0px - webflow mobile landscape/portrait */
+          spaceBetween: 12,
+        },
+        481: {
+          /* when window >= 767px - webflow tablet */ spaceBetween: 24,
+        },
+        767: {
+          /* when window >= 767px - webflow tablet */ spaceBetween: 24,
+        },
+        992: {
+          /* when window >= 988px - webflow desktop */ spaceBetween: 24,
+        },
+      },
+    });
+  });
+}
+
+function postnomReorder() {
+  $(".postnominals-list").each(function () {
+    // Reorder postnominal labels
+    var wrapper = $(this);
+    var items = wrapper.find(".w-dyn-item");
+
+    items.sort(function (a, b) {
+      var textA = $(a).find("div.postnominal-templ").text().trim();
+      var textB = $(b).find("div.postnominal-templ").text().trim();
+
+      // Priority 1: 'MS', 'MA', 'MPH', 'MEd'
+      var priority1 = ["MS", "MA", "MPH", "MEd", "MDA"];
+      if (priority1.includes(textA)) {
+        return -1;
+      } else if (priority1.includes(textB)) {
+        return 1;
+      }
+
+      // Priority 2: 'RD'
+      var priority2 = ["RD"];
+      if (priority2.includes(textA)) {
+        return -1;
+      } else if (priority2.includes(textB)) {
+        return 1;
+      }
+
+      // Priority 3: 'RDN'
+      var priority3 = ["RDN"];
+      if (priority3.includes(textA)) {
+        return -1;
+      } else if (priority3.includes(textB)) {
+        return 1;
+      }
+
+      // Priority 4: 'LD'
+      var priority4 = ["LD"];
+      if (priority4.includes(textA)) {
+        return -1;
+      } else if (priority4.includes(textB)) {
+        return 1;
+      }
+
+      // Priority 5: 'LDN'
+      var priority5 = ["LDN"];
+      if (priority5.includes(textA)) {
+        return -1;
+      } else if (priority5.includes(textB)) {
+        return 1;
+      }
+
+      // Priority 6: Sort all other titles alphabetically
+      return textA.localeCompare(textB);
+    });
+
+    // Reorder the elements
+    wrapper.append(items);
+  });
+}
+
+function showMoreTags() {
+  var showMoreAdded = false;
+  var specialtyDiv = $(".provider-specialty-tags_cms-list");
+  var specialtyChildren = specialtyDiv.children();
+  if ($(window).width() > 768) {
+    if (specialtyChildren.length > 8) {
+      specialtyChildren.slice(8).hide();
+
+      var hiddenCount = specialtyChildren.length - 8;
+      var showMoreText = $(
+        '<span class="provider-list_specialty show-more">+ ' +
+          hiddenCount +
+          " more specialties</span>"
+      );
+
+      showMoreText.on("click", function () {
+        specialtyChildren.slice(8).show();
+        $(this).hide();
+      });
+
+      specialtyDiv.append(showMoreText);
+      showMoreAdded = true; // Set flag to true once added
+    }
+  } else if ($(window).width() < 768) {
+    if (!showMoreAdded) {
+      if (specialtyChildren.length > 4) {
+        specialtyChildren.slice(4).hide();
+
+        var hiddenCount = specialtyChildren.length - 4;
+        var showMoreText = $(
+          '<span class="provider-list_specialty show-more">+ ' +
+            hiddenCount +
+            " more specialties</span>"
+        );
+
+        showMoreText.on("click", function () {
+          specialtyChildren.slice(4).show();
+          $(this).hide();
+        });
+
+        specialtyDiv.append(showMoreText);
+        showMoreAdded = true; // Set flag to true once added
+      }
+    }
+  }
+}
+
 function disableCal() {
   $(".calendar_time-wrap").hide();
   $(".calendar_noavail-wrap").show();
   $(".fc-day").addClass("unavail");
-
   // Disable click event listeners for calendar next/prev
   $("#next, #prev").off("click");
 
   $("#get-touch-cta").css("opacity", 1);
 
   $(".fc-toolbar-title").html(firstBold($(".fc-toolbar-title").text()));
+
+  // Update #find-provider-link with UTM parameters
+  const baseLink = "https://join.usenourish.com/flow/get-started";
+  const utmParams = getUTMParameters();
+  let utmString = "";
+  for (const [key, value] of Object.entries(utmParams)) {
+    utmString += `${utmString ? "&" : "?"}${key}=${value}`;
+  }
+  const updatedLink = baseLink + utmString;
+  $("#find-provider-link").attr("href", updatedLink);
 }
 
 function firstBold(select) {
