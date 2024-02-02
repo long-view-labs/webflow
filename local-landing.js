@@ -164,6 +164,49 @@ function initializeSwiper() {
           },
         });
       });
+
+      $(".condition_stories-component").each(function (index) {
+        const swiper = new Swiper($(this).find(".swiper")[0], {
+          slidesPerView: 1,
+          speed: 600,
+          spaceBetween: 24,
+          initialSlide: 0,
+          slideClass: "swiper-slide-home",
+          slideToClickedSlide: true,
+          centeredSlides: false,
+          loop: false,
+          slideActiveClass: "is-active",
+          slideDuplicateActiveClass: "is-active",
+          keyboard: false,
+          disableOnInteraction: false,
+          pagination: {
+            el: ".condition_stories-component .swiper_pagination-wrapper-home",
+            bulletElement: "div",
+            bulletClass: "swiper_pagination-bullet",
+            bulletActiveClass: "is-active",
+            bulletSize: 8,
+            clickable: true,
+          },
+          breakpoints: {
+            0: {
+              /* when window >=0px - webflow mobile landscape/portrait */
+            },
+            480: {
+              /* when window >=0px - webflow mobile landscape/portrait */
+              spaceBetween: 12,
+            },
+            481: {
+              /* when window >= 767px - webflow tablet */ spaceBetween: 24,
+            },
+            767: {
+              /* when window >= 767px - webflow tablet */ spaceBetween: 24,
+            },
+            992: {
+              /* when window >= 988px - webflow desktop */ spaceBetween: 24,
+            },
+          },
+        });
+      });
     }
   );
 }
