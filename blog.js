@@ -1,7 +1,7 @@
 $(document).ready(function () {
   $(".sticky-question_answer-wrap.activity").on("click", function () {
     window.location.href =
-      "https://signup.usenourish.com/flow/get-started/variant/blog_sticky_question_ex2?utm_medium=blog&utm_campaign=sticky-question&utm_source=blog&utm_content=&utm_term=activity-level";
+      "https://signup.usenourish.com/?redirect=false&utm_medium=blog&utm_campaign=sticky-question&utm_source=blog&utm_content=&utm_term=activity-level";
   });
 });
 
