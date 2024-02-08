@@ -3,6 +3,7 @@ $(document).ready(function () {
   postnomReorder();
   showMoreTags();
   reviewSlider();
+  updateCTA();
 });
 
 var currentInsuranceList = $(".insurance-list.state-current");
@@ -52,14 +53,18 @@ var observer = new IntersectionObserver(
       if (entry.isIntersecting) {
         // Swiper initialization and options
         $(".provider-reviews_slider").each(function (index) {
-          const swiper = new Swiper($(this).find(".swiper")[0], {
+          const swiperContainer = $(this);
+          const slides = swiperContainer.find(".swiper-slide");
+          const numberOfSlides = slides.length;
+
+          const swiperOptions = {
             slidesPerView: 1,
             speed: 600,
             spaceBetween: 32,
             initialSlide: 0,
             slideToClickedSlide: true,
             centeredSlides: true,
-            loop: true,
+            loop: numberOfSlides > 2, // Only enable loop if more than 2 slides
             parallax: true,
             grabCursor: true,
             slideActiveClass: "is-active",
@@ -81,41 +86,31 @@ var observer = new IntersectionObserver(
               prevEl: "#left",
             },
             breakpoints: {
-              0: {
-                /* when window >=0px - webflow mobile landscape/portrait */
-              },
-              480: {
-                /* when window >=0px - webflow mobile landscape/portrait */
-              },
-              767: {
-                /* when window >= 767px - webflow tablet */
-              },
-              992: {
-                /* when window >= 988px - webflow desktop */
-              },
+              0: {},
+              480: { spaceBetween: 12 },
+              767: { spaceBetween: 24 },
+              992: { spaceBetween: 24 },
             },
             on: {
               slideChangeTransitionEnd: function () {
                 this.update(); // Update Swiper to re-calculate the slides
                 this.wrapperEl.style.transition = "transform .3s ease-out";
               },
-              transitionStart: function () {
-                // Add a custom class or directly add styles to enable the transition
-                // this.wrapperEl.style.transition = "transform .3s ease-out";
-              },
-              transitionEnd: function () {
-                // Remove the custom class or directly remove styles to disable the transition
-                //this.wrapperEl.style.transition = "none";
-                //this.update();
-              },
             },
-          });
+          };
+
+          // Initialize Swiper
+          const swiper = new Swiper(
+            swiperContainer.find(".swiper")[0],
+            swiperOptions
+          );
+
           // On hover, stop autoplay
-          $(this).mouseenter(function () {
+          swiperContainer.mouseenter(function () {
             swiper.autoplay.stop();
           });
 
-          $(this).mouseleave(function () {
+          swiperContainer.mouseleave(function () {
             swiper.autoplay.start();
           });
         });
@@ -369,8 +364,31 @@ function updateCTA() {
       "pointer-events": "none",
     });
   } else {
+    var utmParameters = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_content",
+      "utm_term",
+      "gclid",
+      "fbclid",
+    ];
+    var URLSearchParams_wb = new URLSearchParams(window.location.search);
+    var baseUrl = "https://signup.usenourish.com/flow/get-started";
+    var utmString = "";
+
+    utmParameters.forEach((param) => {
+      if (URLSearchParams_wb.has(param)) {
+        utmString += `${utmString ? "&" : "?"}${param}=${URLSearchParams_wb.get(
+          param
+        )}`;
+      }
+    });
+
+    var finalUrl = baseUrl + utmString;
+
     $("#get-touch-cta")
-      .attr("href", "#calendarSection")
+      .attr("href", finalUrl)
       .text("Book your first appointment →");
 
     $("#get-touch-cta").css({
