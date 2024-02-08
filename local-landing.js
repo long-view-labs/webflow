@@ -150,10 +150,10 @@ function initializeSwiper() {
           },
           breakpoints: {
             0: {
-              /* when window >=0px - webflow mobile landscape/portrait */
+              slidesPerView: 1,
             },
             480: {
-              /* when window >=0px - webflow mobile landscape/portrait */
+              slidesPerView: 1,
             },
             767: {
               slidesPerView: 1,
