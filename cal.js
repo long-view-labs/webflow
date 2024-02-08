@@ -45,6 +45,24 @@ if ($(".provider-grid-template.new.w-condition-invisible").length == 0) {
   $(".provider-grid-template.old").hide();
 }
 
+var observer = new IntersectionObserver(
+  function (entries, observer) {
+    entries.forEach(function (entry) {
+      // Check if the element is in view
+      if (entry.isIntersecting) {
+        reviewSlider();
+        // Stop observing the element after it has come into view and the slider is initialized
+        observer.unobserve(entry.target);
+      }
+    });
+  },
+  {
+    // Options for the observer (which part of the item must be visible to trigger the event, etc.)
+    threshold: 0.1, // Trigger when at least 10% of the target is visible
+  }
+  // Tell the observer which element(s) to track
+).observe(document.querySelector(".provider-reviews_slider"));
+
 function getUTMParameters() {
   const params = new URLSearchParams(window.location.search);
   const utms = {};
@@ -66,11 +84,14 @@ function reviewSlider() {
       slideClass: "swiper-slide",
       slideToClickedSlide: true,
       centeredSlides: false,
-      loop: false,
+      loop: true,
       slideActiveClass: "is-active",
       slideDuplicateActiveClass: "is-active",
       keyboard: false,
       disableOnInteraction: false,
+      autoplay: {
+        delay: 5500,
+      },
       pagination: {
         el: ".swiper_pagination-component .swiper_pagination-wrapper",
         bulletElement: "div",
