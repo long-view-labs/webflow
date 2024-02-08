@@ -50,7 +50,75 @@ var observer = new IntersectionObserver(
     entries.forEach(function (entry) {
       // Check if the element is in view
       if (entry.isIntersecting) {
-        reviewSlider();
+        // Swiper initialization and options
+        $(".provider-reviews_slider").each(function (index) {
+          const swiper = new Swiper($(this).find(".swiper")[0], {
+            slidesPerView: 1,
+            speed: 600,
+            spaceBetween: 32,
+            initialSlide: 0,
+            slideToClickedSlide: true,
+            centeredSlides: true,
+            loop: true,
+            parallax: true,
+            grabCursor: true,
+            slideActiveClass: "is-active",
+            slideDuplicateActiveClass: "is-active",
+            keyboard: false,
+            disableOnInteraction: false,
+            autoplay: {
+              delay: 5500,
+            },
+            pagination: {
+              el: ".swiper_pagination-wrapper",
+              bulletElement: "div",
+              bulletClass: "swiper_pagination-bullet-small",
+              bulletActiveClass: "is-active",
+              clickable: true,
+            },
+            navigation: {
+              nextEl: "#right",
+              prevEl: "#left",
+            },
+            breakpoints: {
+              0: {
+                /* when window >=0px - webflow mobile landscape/portrait */
+              },
+              480: {
+                /* when window >=0px - webflow mobile landscape/portrait */
+              },
+              767: {
+                /* when window >= 767px - webflow tablet */
+              },
+              992: {
+                /* when window >= 988px - webflow desktop */
+              },
+            },
+            on: {
+              slideChangeTransitionEnd: function () {
+                this.update(); // Update Swiper to re-calculate the slides
+                this.wrapperEl.style.transition = "transform .3s ease-out";
+              },
+              transitionStart: function () {
+                // Add a custom class or directly add styles to enable the transition
+                // this.wrapperEl.style.transition = "transform .3s ease-out";
+              },
+              transitionEnd: function () {
+                // Remove the custom class or directly remove styles to disable the transition
+                //this.wrapperEl.style.transition = "none";
+                //this.update();
+              },
+            },
+          });
+          // On hover, stop autoplay
+          $(this).mouseenter(function () {
+            swiper.autoplay.stop();
+          });
+
+          $(this).mouseleave(function () {
+            swiper.autoplay.start();
+          });
+        });
         // Stop observing the element after it has come into view and the slider is initialized
         observer.unobserve(entry.target);
       }
@@ -72,54 +140,6 @@ function getUTMParameters() {
     }
   });
   return utms;
-}
-
-function reviewSlider() {
-  $(".provider-reviews_slider").each(function (index) {
-    const swiper = new Swiper($(this).find(".swiper")[0], {
-      slidesPerView: 1,
-      speed: 600,
-      spaceBetween: 24,
-      initialSlide: 0,
-      slideClass: "swiper-slide",
-      slideToClickedSlide: true,
-      centeredSlides: false,
-      loop: true,
-      slideActiveClass: "is-active",
-      slideDuplicateActiveClass: "is-active",
-      keyboard: false,
-      disableOnInteraction: false,
-      autoplay: {
-        delay: 5500,
-      },
-      pagination: {
-        el: ".swiper_pagination-component .swiper_pagination-wrapper",
-        bulletElement: "div",
-        bulletClass: "swiper_pagination-bullet-small",
-        bulletActiveClass: "is-active",
-        bulletSize: 8,
-        clickable: true,
-      },
-      breakpoints: {
-        0: {
-          /* when window >=0px - webflow mobile landscape/portrait */
-        },
-        480: {
-          /* when window >=0px - webflow mobile landscape/portrait */
-          spaceBetween: 12,
-        },
-        481: {
-          /* when window >= 767px - webflow tablet */ spaceBetween: 24,
-        },
-        767: {
-          /* when window >= 767px - webflow tablet */ spaceBetween: 24,
-        },
-        992: {
-          /* when window >= 988px - webflow desktop */ spaceBetween: 24,
-        },
-      },
-    });
-  });
 }
 
 function postnomReorder() {
