@@ -5,12 +5,12 @@ $(function () {
   // Function to update content pane based on the active tab
   function updateContentPane(trigger) {
     // Remove active class from all content panes
-    $(".auto-tabs_tab").removeClass("w--tab-active");
+    $(".auto-tabs_pane").removeClass("w--tab-active");
     // Get the index of the active tab
     let tabIndex = $(".auto-tabs_tab").index(trigger);
 
     // Add the active class to the content pane with the same index
-    let activePane = $(".w-tab-pane").eq(tabIndex);
+    let activePane = $(".auto-tabs_pane").eq(tabIndex);
     activePane.addClass("w--tab-active");
   }
 
