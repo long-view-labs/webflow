@@ -6,7 +6,43 @@ $(document).ready(function () {
     reviewSlider();
   }
   updateCTA();
+  // Use the mock function instead of the actual API call
+  handleApiResponse(getMockApiResponse());
 });
+
+// Mock function to simulate API response
+function getMockApiResponse() {
+  return {
+    availableDays: ["2024-02-14", "2024-02-16", "2024-02-28"],
+    availableTimes: [
+      {
+        providerHealthieId: "3590019",
+        providerAvailableTimes: [
+          "2024-02-14 13:00:00 -0800",
+          "2024-02-14 14:00:00 -0800",
+          "2024-02-14 15:00:00 -0800",
+          "2024-02-14 16:00:00 -0800",
+          "2024-02-14 18:00:00 -0800",
+          "2024-02-14 19:00:00 -0800",
+          "2024-02-14 20:00:00 -0800",
+          "2024-02-16 06:00:00 -0800",
+          "2024-02-28 05:00:00 -0800",
+          "2024-02-28 11:00:00 -0800",
+          "2024-02-28 12:00:00 -0800",
+          "2024-02-28 13:00:00 -0800",
+          "2024-02-28 14:00:00 -0800",
+        ],
+        providerName: "Allison Stowell",
+      },
+    ],
+  };
+}
+
+// Define the function that processes the API response
+function handleApiResponse(response) {
+  // Process the response object
+  // For example, update the calendar with the available days and times
+}
 
 var currentInsuranceList = $(".insurance-list.state-current");
 var texasInsuranceList = $(".insurance-list.texas");
@@ -125,8 +161,14 @@ var observer = new IntersectionObserver(
     // Options for the observer (which part of the item must be visible to trigger the event, etc.)
     threshold: 0.1, // Trigger when at least 10% of the target is visible
   }
-  // Tell the observer which element(s) to track
-).observe(document.querySelector(".provider-reviews_slider"));
+);
+// Tell the observer which element(s) to track
+var target = document.querySelector(".provider-reviews_slider");
+if (target) {
+  observer.observe(target);
+} else {
+  console.error("Element not found: .provider-reviews_slider");
+}
 
 function getUTMParameters() {
   const params = new URLSearchParams(window.location.search);
@@ -419,245 +461,201 @@ if (typeof moment.tz !== "undefined") {
     $(".provider-grid-template.new.w-condition-invisible").length === 0;
   $(document).ready(function () {
     if (cmsItemID && newBio) {
-      var response = fetchData(
-        true,
-        timezone,
-        twoDaysOut,
-        nineteenDaysOut,
-        true,
-        cmsItemID
-      );
+      var response = getMockApiResponse();
+      if (response) {
+        var availableTimes = [];
+        if (response.availableTimes && response.availableTimes.length > 0) {
+          availableTimes =
+            response.availableTimes[0]?.providerAvailableTimes || [];
+        }
 
-      function fetchData(
-        orgLevel,
-        timezone,
-        startDate,
-        endDate,
-        isInitialAppointment,
-        providerCmsId
-      ) {
-        $.ajax({
-          url: "https://app.usenourish.com/api/scheduling/cms/provider-availability",
-          method: "GET",
-          data: {
-            orgLevel: orgLevel,
-            timezone: timezone,
-            startDate: startDate,
-            endDate: endDate,
-            isInitialAppointment: isInitialAppointment,
-            "providerCmsIds[0]": providerCmsId,
-          },
-          success: function (response) {
-            if (response) {
-              var availableTimes = [];
-              if (
-                response.availableTimes &&
-                response.availableTimes.length > 0
-              ) {
-                availableTimes =
-                  response.availableTimes[0]?.providerAvailableTimes || [];
+        // ---------- CALENDAR SETUP -----------
+        var availableDays = response.availableDays;
+        var calendarEl = $("#calendar")[0];
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          showNonCurrentDates: false,
+          dateClick: function (info) {
+            var newDate = info.dateStr;
+            $("#confirm-apt").addClass("disable");
+            currentDate = newDate;
+            if (availableDays.includes(currentDate)) {
+              calendar.gotoDate(newDate);
+              $(".fc-day").removeClass("fc-day-today");
+              var $targetDay = $('.fc-day[data-date="' + newDate + '"]');
+              $targetDay.addClass("fc-day-today");
+
+              // Update title text of available date
+              var availableDate = calendar.getDate();
+              const options = {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              };
+              const convertedTime = availableDate.toLocaleDateString(
+                "en-US",
+                options
+              );
+              $("#day-title").html(firstBold(convertedTime));
+              $(".fc-toolbar-title").html(
+                firstBold($(".fc-toolbar-title").text())
+              );
+              // Add time tags based on available times
+              $(".calendar_tag-wrap").empty();
+
+              for (var i = 0; i < availableTimes.length; i++) {
+                var time = availableTimes[i];
+                var iso8601Time = formatTimeToISO8601(time);
+                var textTime = new Date(iso8601Time);
+                var formattedTime = textTime.toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                });
+
+                // Check if the current item contains the firstAvailableDate
+                if (time.includes(newDate)) {
+                  // Create a <div> element with the class '.calendar_time-tag' and the text of the current item
+                  var timeDiv = $("<div>", {
+                    class: "calendar_time-tag",
+                    text: formattedTime,
+                    "data-date": time,
+                  });
+
+                  // Append the timeDiv inside the '.calendar_tag-wrap' element
+                  $(".calendar_tag-wrap").append(timeDiv);
+                }
               }
-
-              // ---------- CALENDAR SETUP -----------
-              var availableDays = response.availableDays;
-              var calendarEl = $("#calendar")[0];
-              var calendar = new FullCalendar.Calendar(calendarEl, {
-                showNonCurrentDates: false,
-                dateClick: function (info) {
-                  var newDate = info.dateStr;
-                  $("#confirm-apt").addClass("disable");
-                  currentDate = newDate;
-                  if (availableDays.includes(currentDate)) {
-                    calendar.gotoDate(newDate);
-                    $(".fc-day").removeClass("fc-day-today");
-                    var $targetDay = $('.fc-day[data-date="' + newDate + '"]');
-                    $targetDay.addClass("fc-day-today");
-
-                    // Update title text of available date
-                    var availableDate = calendar.getDate();
-                    const options = {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                    };
-                    const convertedTime = availableDate.toLocaleDateString(
-                      "en-US",
-                      options
-                    );
-                    $("#day-title").html(firstBold(convertedTime));
-                    $(".fc-toolbar-title").html(
-                      firstBold($(".fc-toolbar-title").text())
-                    );
-                    // Add time tags based on available times
-                    $(".calendar_tag-wrap").empty();
-
-                    for (var i = 0; i < availableTimes.length; i++) {
-                      var time = availableTimes[i];
-                      var iso8601Time = formatTimeToISO8601(time);
-                      var textTime = new Date(iso8601Time);
-                      var formattedTime = textTime.toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      });
-
-                      // Check if the current item contains the firstAvailableDate
-                      if (time.includes(newDate)) {
-                        // Create a <div> element with the class '.calendar_time-tag' and the text of the current item
-                        var timeDiv = $("<div>", {
-                          class: "calendar_time-tag",
-                          text: formattedTime,
-                          "data-date": time,
-                        });
-
-                        // Append the timeDiv inside the '.calendar_tag-wrap' element
-                        $(".calendar_tag-wrap").append(timeDiv);
-                      }
-                    }
-                    // Add click event to time tags
-                    setTimeout(function () {
-                      $(".calendar_time-tag").on("click", function () {
-                        // Remove .active class from all .calendar_time-tag items
-                        $(".calendar_time-tag").removeClass("active");
-                        // Add .active class to the clicked item
-                        $(this).addClass("active");
-                        var selectedTime = $(this).data("date");
-                        setAptLink(selectedTime);
-                      });
-                    }, 0);
-                  }
-                },
-              });
-              calendar.render();
-
-              // ---------- CALENDAR READY -----------
-              // On first load, if provider has availability setup calendar
-              if (availableDays.length > 0) {
-                // Extract the first available start date from the array
-                var firstAvailableDate = response.availableDays[0];
-                var lastAvailableDate = response.availableDays.slice(-1)[0];
-
-                providerHealthId =
-                  response.availableTimes[0].providerHealthieId;
-
-                $("#mobile-book-cta").attr("href", "#calendarSection");
-
-                function setCal(date) {
-                  // Update CTA based on whether calendar is displayed
-                  updateCTA();
-                  $(window).on("resize", function () {
-                    updateCTA();
-                  });
-
-                  var dateObj = new Date(date);
-                  dateObj.setDate(dateObj.getDate() + 1);
-
-                  // Update active day styles
-                  setTimeout(function () {
-                    $(".fc-day").removeClass("fc-day-today");
-                    var $targetDay = $('.fc-day[data-date="' + date + '"]');
-                    $targetDay.addClass("fc-day-today");
-                    // Update title text of available date
-                    const options = {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                    };
-                    const convertedTime = dateObj.toLocaleDateString(
-                      "en-US",
-                      options
-                    );
-                    $("#day-title").html(firstBold(convertedTime));
-
-                    $(".fc-toolbar-title").html(
-                      firstBold($(".fc-toolbar-title").text())
-                    );
-                    $(".fc-day").each(function () {
-                      var dataDate = $(this).data("date");
-                      if (availableDays.includes(dataDate)) {
-                        $(this).find(".fc-daygrid-day-top").addClass("active");
-                      } else {
-                        $(this).unbind();
-                      }
-                    });
-                  }, 0);
-                }
-                calendar.gotoDate(firstAvailableDate);
-                currentDate = firstAvailableDate;
-                setCal(firstAvailableDate);
-                // Add time tags based on available times
-                $(".calendar_tag-wrap").empty();
-
-                for (var i = 0; i < availableTimes.length; i++) {
-                  var time = availableTimes[i];
-                  var iso8601Time = formatTimeToISO8601(time);
-                  var textTime = new Date(iso8601Time);
-                  var formattedTime = textTime.toLocaleTimeString([], {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  });
-
-                  // Check if the current item contains the firstAvailableDate
-                  if (time.includes(firstAvailableDate)) {
-                    var timeDiv = $("<div>", {
-                      class: "calendar_time-tag",
-                      text: formattedTime,
-                      "data-date": time,
-                    });
-
-                    $(".calendar_tag-wrap").append(timeDiv);
-                  }
-                }
-                // Add click event to time tags
-                setTimeout(function () {
-                  $(".calendar_time-tag").on("click", function () {
-                    $(".calendar_time-tag").removeClass("active");
-                    $(this).addClass("active");
-                    var selectedTime = $(this).data("date");
-                    setAptLink(selectedTime);
-                  });
-                }, 0);
-                // Add click event to calendar arrows
-                $("#prev").on("click", function () {
-                  handleCalendarNavigation("prev");
-                });
-
-                $("#next").on("click", function () {
-                  handleCalendarNavigation("next");
-                });
-
-                function handleCalendarNavigation(direction) {
-                  $("#confirm-apt").addClass("disable");
+              // Add click event to time tags
+              setTimeout(function () {
+                $(".calendar_time-tag").on("click", function () {
+                  // Remove .active class from all .calendar_time-tag items
                   $(".calendar_time-tag").removeClass("active");
-
-                  var date1Month = parseInt(
-                    firstAvailableDate.split("-")[1],
-                    10
-                  ); // Extract month from date1 and convert to integer
-                  var date2Month = parseInt(
-                    lastAvailableDate.split("-")[1],
-                    10
-                  ); // Extract month from date2 and convert to integer
-
-                  var isSameMonth = date1Month === date2Month;
-
-                  if (isSameMonth) {
-                  } else {
-                    $(".fc-toolbar-title").empty().html();
-                    setCal(currentDate);
-                    calendar[direction]();
-                  }
-                }
-              } else {
-                disableCal();
-              }
-            } else {
-              disableCal();
+                  // Add .active class to the clicked item
+                  $(this).addClass("active");
+                  var selectedTime = $(this).data("date");
+                  setAptLink(selectedTime);
+                });
+              }, 0);
             }
           },
-          error: function (error) {
-            console.error(error);
-          },
         });
+        calendar.render();
+
+        // ---------- CALENDAR READY -----------
+        // On first load, if provider has availability setup calendar
+        if (availableDays.length > 0) {
+          // Extract the first available start date from the array
+          var firstAvailableDate = response.availableDays[0];
+          var lastAvailableDate = response.availableDays.slice(-1)[0];
+
+          providerHealthId = response.availableTimes[0].providerHealthieId;
+
+          $("#mobile-book-cta").attr("href", "#calendarSection");
+
+          function setCal(date) {
+            // Update CTA based on whether calendar is displayed
+            updateCTA();
+            $(window).on("resize", function () {
+              updateCTA();
+            });
+
+            var dateObj = new Date(date);
+            dateObj.setDate(dateObj.getDate() + 1);
+
+            // Update active day styles
+            setTimeout(function () {
+              $(".fc-day").removeClass("fc-day-today");
+              var $targetDay = $('.fc-day[data-date="' + date + '"]');
+              $targetDay.addClass("fc-day-today");
+              // Update title text of available date
+              const options = {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              };
+              const convertedTime = dateObj.toLocaleDateString(
+                "en-US",
+                options
+              );
+              $("#day-title").html(firstBold(convertedTime));
+
+              $(".fc-toolbar-title").html(
+                firstBold($(".fc-toolbar-title").text())
+              );
+              $(".fc-day").each(function () {
+                var dataDate = $(this).data("date");
+                if (availableDays.includes(dataDate)) {
+                  $(this).find(".fc-daygrid-day-top").addClass("active");
+                } else {
+                  $(this).unbind();
+                }
+              });
+            }, 0);
+          }
+          calendar.gotoDate(firstAvailableDate);
+          currentDate = firstAvailableDate;
+          setCal(firstAvailableDate);
+          // Add time tags based on available times
+          $(".calendar_tag-wrap").empty();
+
+          for (var i = 0; i < availableTimes.length; i++) {
+            var time = availableTimes[i];
+            var iso8601Time = formatTimeToISO8601(time);
+            var textTime = new Date(iso8601Time);
+            var formattedTime = textTime.toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit",
+            });
+
+            // Check if the current item contains the firstAvailableDate
+            if (time.includes(firstAvailableDate)) {
+              var timeDiv = $("<div>", {
+                class: "calendar_time-tag",
+                text: formattedTime,
+                "data-date": time,
+              });
+
+              $(".calendar_tag-wrap").append(timeDiv);
+            }
+          }
+          // Add click event to time tags
+          setTimeout(function () {
+            $(".calendar_time-tag").on("click", function () {
+              $(".calendar_time-tag").removeClass("active");
+              $(this).addClass("active");
+              var selectedTime = $(this).data("date");
+              setAptLink(selectedTime);
+            });
+          }, 0);
+          // Add click event to calendar arrows
+          $("#prev").on("click", function () {
+            handleCalendarNavigation("prev");
+          });
+
+          $("#next").on("click", function () {
+            handleCalendarNavigation("next");
+          });
+
+          function handleCalendarNavigation(direction) {
+            $("#confirm-apt").addClass("disable");
+            $(".calendar_time-tag").removeClass("active");
+
+            var date1Month = parseInt(firstAvailableDate.split("-")[1], 10); // Extract month from date1 and convert to integer
+            var date2Month = parseInt(lastAvailableDate.split("-")[1], 10); // Extract month from date2 and convert to integer
+
+            var isSameMonth = date1Month === date2Month;
+
+            if (isSameMonth) {
+            } else {
+              $(".fc-toolbar-title").empty().html();
+              setCal(currentDate);
+              calendar[direction]();
+            }
+          }
+        } else {
+          disableCal();
+        }
+      } else {
+        disableCal();
       }
     }
   });
