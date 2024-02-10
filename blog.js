@@ -173,17 +173,10 @@ if (blogPostRtbText.includes("{{local}}")) {
     success: function (response) {
       const locationData = response;
       if (locationData) {
-        if (locationData.city) {
-        } else {
-          console.log("City information not available.");
-        }
-        if (locationData.postal) {
-        } else {
-          console.log("ZIP Code information not available.");
-        }
-
         // Assume 'userState' is the state obtained from the ipinfo API
         const userState = locationData.region; // Replace with actual API response field if different
+        const [userLat, userLon] = locationData.loc.split(",").map(Number);
+
         // Get all instances of the component where {splash} is added
         const splashComponents = document.querySelectorAll(
           '[fs-richtext-component="local"]'
@@ -191,13 +184,34 @@ if (blogPostRtbText.includes("{{local}}")) {
         // Get all the items in the .local-list within the current component
         const listItems = document.querySelectorAll(".local-list .w-dyn-item");
 
+        // Sort listItems based on distance to user's location
+        // Sort listItems based on distance to user's location
+        const sortedItems = Array.from(listItems).sort((a, b) => {
+          const aLocationDiv = a.querySelector(".long-lat");
+          const bLocationDiv = b.querySelector(".long-lat");
+
+          if (!aLocationDiv || !bLocationDiv) {
+            console.error(
+              "One of the list items does not contain location data."
+            );
+            return 0;
+          }
+
+          const aCoords = aLocationDiv.textContent.split(",").map(Number);
+          const bCoords = bLocationDiv.textContent.split(",").map(Number);
+
+          const distanceA = calculateDistance(userLat, userLon, ...aCoords);
+          const distanceB = calculateDistance(userLat, userLon, ...bCoords);
+
+          return distanceA - distanceB;
+        });
+
         // Iterate over each splash component
         splashComponents.forEach((component) => {
           // Inside this loop, apply your logic to each component
-          // For example, if you're inserting links, do it for each 'component' instead of a single element
 
           // Filter the items that match the user's state within the current component
-          const matchingItems = Array.from(listItems).filter((item) => {
+          const matchingItems = Array.from(sortedItems).filter((item) => {
             const stateFull = item
               .querySelector(".state-full")
               .textContent.trim();
@@ -287,4 +301,24 @@ if (blogPostRtbText.includes("{{local}}")) {
       console.log("Request failed: ", textStatus, errorThrown);
     },
   });
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  // Haversine formula to calculate distance
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance in km
+  return distance;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
 }
