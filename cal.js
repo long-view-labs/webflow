@@ -241,8 +241,10 @@ function disableCal() {
   // Disable click event listeners for calendar next/prev
   $("#next, #prev").off("click");
 
-  $("#get-touch-cta").css("opacity", 1);
-
+  $("#get-touch-cta").css({
+    opacity: "1",
+    "pointer-events": "auto",
+  });
   $(".fc-toolbar-title").html(firstBold($(".fc-toolbar-title").text()));
 
   // Update #find-provider-link with UTM parameters
