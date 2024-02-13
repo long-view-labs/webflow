@@ -128,17 +128,6 @@ var observer = new IntersectionObserver(
   // Tell the observer which element(s) to track
 ).observe(document.querySelector(".provider-reviews_slider"));
 
-function getUTMParameters() {
-  const params = new URLSearchParams(window.location.search);
-  const utms = {};
-  params.forEach((value, key) => {
-    if (key.startsWith("utm_")) {
-      utms[key] = value;
-    }
-  });
-  return utms;
-}
-
 function postnomReorder() {
   $(".postnominals-list").each(function () {
     // Reorder postnominal labels
@@ -259,7 +248,7 @@ function disableCal() {
   // Update #find-provider-link with UTM parameters
   const baseLink =
     "https://join.usenourish.com/flow/get-started/variant/main_survey_direct_booking_ex1";
-  const utmParams = getUTMParameters();
+  const utmParams = new URLSearchParams(window.location.search);
   let utmString = "";
   for (const [key, value] of Object.entries(utmParams)) {
     utmString += `${utmString ? "&" : "?"}${key}=${value}`;

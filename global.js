@@ -166,14 +166,12 @@ function setUtmCookies(utmParameters, URLSearchParams_wb) {
   for (const utm_element of utmParameters) {
     /* if utm_source exist */
     if (URLSearchParams_wb.has(utm_element)) {
-      console.log(utm_element + " does exist");
       /* get UTM value of this utm param */
       var value = URLSearchParams_wb.get(utm_element);
       /* set cookie */
       document.cookie =
         utm_element + "=" + value + "; path=/; domain=.usenourish.com";
     } else {
-      console.log(utm_element + " does not exist");
       document.cookie = utm_element + "=" + "; path=/; domain=.usenourish.com";
     }
   } /* end for loop */
