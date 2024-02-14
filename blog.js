@@ -1,12 +1,12 @@
 $(document).ready(function () {
   $(".sticky-question_answer-wrap.activity").on("click", function () {
     window.location.href =
-      "https://signup.usenourish.com/?redirect=false&utm_medium=blog&utm_campaign=sticky-question&utm_source=blog&utm_content=&utm_term=activity-level";
+      "https://signup.usenourish.com/?utm_medium=blog&utm_campaign=sticky-question&utm_source=blog&utm_content=&utm_term=activity-level";
   });
 });
 
 $(document).ready(function () {
-  // Check if the child element with class .empty-state exists inside .cms-main-blog_wrapper
+  // Check if the child element with class .empty-state exists inside .cms-main-blog_wrappers
   if ($(".cms-main-blog_wrapper .empty-state").length > 0) {
     // Hide the element with class .blog-page_side-navigation_card-wrapper
     $(".blog-page_side-navigation_card-wrapper").hide();
