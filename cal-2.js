@@ -197,7 +197,7 @@ function showMoreTags() {
 
       var hiddenCount = specialtyChildren.length - 8;
       var showMoreText = $(
-        '<span class="provider-list_specialty show-more">+ ' +
+        '<span class="provider-list_tag show-more">+ ' +
           hiddenCount +
           " more specialties</span>"
       );
@@ -243,29 +243,20 @@ function disableCal() {
 
   $("#get-touch-cta").css("opacity", 1);
 
-  $(".fc-toolbar-title").html(firstBold($(".fc-toolbar-title").text()));
+  $(".fc-toolbar-title").html($(".fc-toolbar-title").text());
 
   // Update #find-provider-link with UTM parameters
   const baseLink =
     "https://join.usenourish.com/flow/get-started/variant/main_survey_direct_booking_ex1";
   const utmParams = new URLSearchParams(window.location.search);
   let utmString = "";
-  for (const [key, value] of Object.entries(utmParams)) {
+  for (const [key, value] of utmParams.entries()) {
     utmString += `${utmString ? "&" : "?"}${key}=${value}`;
   }
   const updatedLink = baseLink + utmString;
   $("#find-provider-link").attr("href", updatedLink);
 }
 
-function firstBold(select) {
-  var divContent = select;
-  var firstWord = divContent.split(" ")[0];
-  var modifiedContent = divContent.replace(
-    firstWord,
-    "<strong>" + firstWord + "</strong>"
-  );
-  return modifiedContent;
-}
 function convertLocalToUTC(datetimeStr) {
   var formatTime = replaceSpaceWithT(datetimeStr);
   return moment.utc(new Date(formatTime)).format("YYYY-MM-DDTHH:mm:ss.sss");
@@ -353,7 +344,6 @@ function updateCTA() {
   if (windowWidth >= 768) {
     $("#get-touch-cta").css({
       opacity: "0",
-      "pointer-events": "none",
     });
   } else {
     var utmParameters = [
@@ -378,10 +368,9 @@ function updateCTA() {
     });
 
     var finalUrl = baseUrl + utmString;
-
     $("#get-touch-cta")
-      .attr("href", finalUrl)
-      .text("Book your first appointment →");
+      .text("Book your first appointment →")
+      .attr("href", "#calendarSection");
 
     $("#get-touch-cta").css({
       opacity: "1",
@@ -390,13 +379,45 @@ function updateCTA() {
   }
 }
 
+// Function to update the count of time tags for each day
+function updateTimeTagCounts(providerAvailableTimes) {
+  // Create a map to count available times for each date
+  const dateCounts = providerAvailableTimes.reduce((acc, dateTime) => {
+    const date = dateTime.split(" ")[0]; // Extract the date part
+    acc[date] = (acc[date] || 0) + 1; // Increment the count for this date
+    return acc;
+  }, {});
+  setTimeout(() => {
+    // Update the time-tag-count for each date
+    Object.keys(dateCounts).forEach((date) => {
+      const count = dateCounts[date];
+      // Find the header cell for the date and update the time-tag-count
+      const headerCell = document.querySelector(
+        `.fc-col-header-cell[data-date="${date}"]`
+      );
+
+      if (headerCell) {
+        const timeTagCount = headerCell.querySelector(
+          ".time-tag-count span.count"
+        );
+        if (timeTagCount) {
+          timeTagCount.textContent = count; // Update the count
+          if (count > 0) {
+            headerCell.classList.add("available"); // Add class if count is greater than 0
+          }
+        }
+      }
+    });
+  }, 0);
+}
+
 // Check to see if moment-timezone library is loaded
 if (typeof moment.tz !== "undefined") {
   var timezone = moment.tz.guess();
   var currentDate = new Date();
-  currentDate.setDate(currentDate.getDate() + 2);
+  //currentDate.setDate(currentDate.getDate() + 2);
   var twoDaysOut = currentDate.toDateString();
-  currentDate.setDate(currentDate.getDate() + 19);
+  //currentDate.setDate(currentDate.getDate() + 19);
   var nineteenDaysOut = currentDate.toDateString();
 
   $("#timezone").text(timezone);
@@ -440,125 +461,125 @@ if (typeof moment.tz !== "undefined") {
           success: function (response) {
             var response = {
               availableDays: [
-                "2024-02-14",
-                "2024-02-15",
-                "2024-02-16",
-                "2024-02-19",
-                "2024-02-20",
-                "2024-02-21",
-                "2024-02-22",
-                "2024-02-23",
-                "2024-02-26",
-                "2024-02-27",
-                "2024-02-28",
-                "2024-02-29",
+                "2024-03-14",
+                "2024-03-15",
+                "2024-03-16",
+                "2024-03-19",
+                "2024-03-20",
+                "2024-03-21",
+                "2024-03-22",
+                "2024-03-23",
+                "2024-03-26",
+                "2024-03-27",
+                "2024-03-28",
+                "2024-03-29",
               ],
               availableTimes: [
                 {
                   providerHealthieId: "3710628",
                   providerAvailableTimes: [
-                    "2024-02-14 04:00:00 -0800",
-                    "2024-02-14 05:00:00 -0800",
-                    "2024-02-14 06:00:00 -0800",
-                    "2024-02-14 07:00:00 -0800",
-                    "2024-02-14 08:00:00 -0800",
-                    "2024-02-14 09:00:00 -0800",
-                    "2024-02-14 10:00:00 -0800",
-                    "2024-02-14 11:00:00 -0800",
-                    "2024-02-14 12:00:00 -0800",
-                    "2024-02-14 13:00:00 -0800",
-                    "2024-02-14 14:00:00 -0800",
-                    "2024-02-15 04:00:00 -0800",
-                    "2024-02-15 05:00:00 -0800",
-                    "2024-02-15 06:00:00 -0800",
-                    "2024-02-15 07:00:00 -0800",
-                    "2024-02-15 08:00:00 -0800",
-                    "2024-02-15 10:00:00 -0800",
-                    "2024-02-15 11:00:00 -0800",
-                    "2024-02-15 12:00:00 -0800",
-                    "2024-02-15 13:00:00 -0800",
-                    "2024-02-15 14:00:00 -0800",
-                    "2024-02-15 15:00:00 -0800",
-                    "2024-02-16 04:00:00 -0800",
-                    "2024-02-16 06:00:00 -0800",
-                    "2024-02-16 07:00:00 -0800",
-                    "2024-02-16 08:00:00 -0800",
-                    "2024-02-19 06:00:00 -0800",
-                    "2024-02-19 07:00:00 -0800",
-                    "2024-02-19 08:00:00 -0800",
-                    "2024-02-19 09:00:00 -0800",
-                    "2024-02-19 10:00:00 -0800",
-                    "2024-02-19 11:00:00 -0800",
-                    "2024-02-19 13:00:00 -0800",
-                    "2024-02-19 14:00:00 -0800",
-                    "2024-02-19 15:00:00 -0800",
-                    "2024-02-20 04:00:00 -0800",
-                    "2024-02-20 05:00:00 -0800",
-                    "2024-02-20 07:00:00 -0800",
-                    "2024-02-20 09:00:00 -0800",
-                    "2024-02-20 10:00:00 -0800",
-                    "2024-02-20 12:00:00 -0800",
-                    "2024-02-20 13:00:00 -0800",
-                    "2024-02-20 14:00:00 -0800",
-                    "2024-02-20 15:00:00 -0800",
-                    "2024-02-21 05:00:00 -0800",
-                    "2024-02-21 06:00:00 -0800",
-                    "2024-02-21 07:00:00 -0800",
-                    "2024-02-21 08:00:00 -0800",
-                    "2024-02-21 10:00:00 -0800",
-                    "2024-02-21 11:00:00 -0800",
-                    "2024-02-21 12:00:00 -0800",
-                    "2024-02-21 13:00:00 -0800",
-                    "2024-02-21 14:00:00 -0800",
-                    "2024-02-21 15:00:00 -0800",
-                    "2024-02-22 04:00:00 -0800",
-                    "2024-02-22 05:00:00 -0800",
-                    "2024-02-22 06:00:00 -0800",
-                    "2024-02-22 07:00:00 -0800",
-                    "2024-02-22 11:00:00 -0800",
-                    "2024-02-22 13:00:00 -0800",
-                    "2024-02-22 14:00:00 -0800",
-                    "2024-02-23 05:00:00 -0800",
-                    "2024-02-23 06:00:00 -0800",
-                    "2024-02-26 05:00:00 -0800",
-                    "2024-02-26 06:00:00 -0800",
-                    "2024-02-26 07:00:00 -0800",
-                    "2024-02-26 08:00:00 -0800",
-                    "2024-02-26 09:00:00 -0800",
-                    "2024-02-26 10:00:00 -0800",
-                    "2024-02-26 11:00:00 -0800",
-                    "2024-02-26 12:00:00 -0800",
-                    "2024-02-26 13:00:00 -0800",
-                    "2024-02-26 14:00:00 -0800",
-                    "2024-02-26 15:00:00 -0800",
-                    "2024-02-27 04:00:00 -0800",
-                    "2024-02-27 05:00:00 -0800",
-                    "2024-02-27 06:00:00 -0800",
-                    "2024-02-27 07:00:00 -0800",
-                    "2024-02-27 08:00:00 -0800",
-                    "2024-02-27 09:00:00 -0800",
-                    "2024-02-27 10:00:00 -0800",
-                    "2024-02-27 11:00:00 -0800",
-                    "2024-02-27 12:00:00 -0800",
-                    "2024-02-27 13:00:00 -0800",
-                    "2024-02-27 14:00:00 -0800",
-                    "2024-02-27 15:00:00 -0800",
-                    "2024-02-28 05:00:00 -0800",
-                    "2024-02-28 06:00:00 -0800",
-                    "2024-02-28 07:00:00 -0800",
-                    "2024-02-28 08:00:00 -0800",
-                    "2024-02-28 09:00:00 -0800",
-                    "2024-02-29 04:00:00 -0800",
-                    "2024-02-29 05:00:00 -0800",
-                    "2024-02-29 06:00:00 -0800",
-                    "2024-02-29 07:00:00 -0800",
-                    "2024-02-29 08:00:00 -0800",
-                    "2024-02-29 10:00:00 -0800",
-                    "2024-02-29 11:00:00 -0800",
-                    "2024-02-29 12:00:00 -0800",
-                    "2024-02-29 13:00:00 -0800",
-                    "2024-02-29 14:00:00 -0800",
-                    "2024-02-29 15:00:00 -0800",
+                    "2024-03-14 04:00:00 -0800",
+                    "2024-03-14 05:00:00 -0800",
+                    "2024-03-14 06:00:00 -0800",
+                    "2024-03-14 07:00:00 -0800",
+                    "2024-03-14 08:00:00 -0800",
+                    "2024-03-14 09:00:00 -0800",
+                    "2024-03-14 10:00:00 -0800",
+                    "2024-03-14 11:00:00 -0800",
+                    "2024-03-14 12:00:00 -0800",
+                    "2024-03-14 13:00:00 -0800",
+                    "2024-03-14 14:00:00 -0800",
+                    "2024-03-15 04:00:00 -0800",
+                    "2024-03-15 05:00:00 -0800",
+                    "2024-03-15 06:00:00 -0800",
+                    "2024-03-15 07:00:00 -0800",
+                    "2024-03-15 08:00:00 -0800",
+                    "2024-03-15 10:00:00 -0800",
+                    "2024-03-15 11:00:00 -0800",
+                    "2024-03-15 12:00:00 -0800",
+                    "2024-03-15 13:00:00 -0800",
+                    "2024-03-15 14:00:00 -0800",
+                    "2024-03-15 15:00:00 -0800",
+                    "2024-03-16 04:00:00 -0800",
+                    "2024-03-16 06:00:00 -0800",
+                    "2024-03-16 07:00:00 -0800",
+                    "2024-03-16 08:00:00 -0800",
+                    "2024-03-19 06:00:00 -0800",
+                    "2024-03-19 07:00:00 -0800",
+                    "2024-03-19 08:00:00 -0800",
+                    "2024-03-19 09:00:00 -0800",
+                    "2024-03-19 10:00:00 -0800",
+                    "2024-03-19 11:00:00 -0800",
+                    "2024-03-19 13:00:00 -0800",
+                    "2024-03-19 14:00:00 -0800",
+                    "2024-03-19 15:00:00 -0800",
+                    "2024-03-20 04:00:00 -0800",
+                    "2024-03-20 05:00:00 -0800",
+                    "2024-03-20 07:00:00 -0800",
+                    "2024-03-20 09:00:00 -0800",
+                    "2024-03-20 10:00:00 -0800",
+                    "2024-03-20 12:00:00 -0800",
+                    "2024-03-20 13:00:00 -0800",
+                    "2024-03-20 14:00:00 -0800",
+                    "2024-03-20 15:00:00 -0800",
+                    "2024-03-21 05:00:00 -0800",
+                    "2024-03-21 06:00:00 -0800",
+                    "2024-03-21 07:00:00 -0800",
+                    "2024-03-21 08:00:00 -0800",
+                    "2024-03-21 10:00:00 -0800",
+                    "2024-03-21 11:00:00 -0800",
+                    "2024-03-21 12:00:00 -0800",
+                    "2024-03-21 13:00:00 -0800",
+                    "2024-03-21 14:00:00 -0800",
+                    "2024-03-21 15:00:00 -0800",
+                    "2024-03-22 04:00:00 -0800",
+                    "2024-03-22 05:00:00 -0800",
+                    "2024-03-22 06:00:00 -0800",
+                    "2024-03-22 07:00:00 -0800",
+                    "2024-03-22 11:00:00 -0800",
+                    "2024-03-22 13:00:00 -0800",
+                    "2024-03-22 14:00:00 -0800",
+                    "2024-03-23 05:00:00 -0800",
+                    "2024-03-23 06:00:00 -0800",
+                    "2024-03-26 05:00:00 -0800",
+                    "2024-03-26 06:00:00 -0800",
+                    "2024-03-26 07:00:00 -0800",
+                    "2024-03-26 08:00:00 -0800",
+                    "2024-03-26 09:00:00 -0800",
+                    "2024-03-26 10:00:00 -0800",
+                    "2024-03-26 11:00:00 -0800",
+                    "2024-03-26 12:00:00 -0800",
+                    "2024-03-26 13:00:00 -0800",
+                    "2024-03-26 14:00:00 -0800",
+                    "2024-03-26 15:00:00 -0800",
+                    "2024-03-27 04:00:00 -0800",
+                    "2024-03-27 05:00:00 -0800",
+                    "2024-03-27 06:00:00 -0800",
+                    "2024-03-27 07:00:00 -0800",
+                    "2024-03-27 08:00:00 -0800",
+                    "2024-03-27 09:00:00 -0800",
+                    "2024-03-27 10:00:00 -0800",
+                    "2024-03-27 11:00:00 -0800",
+                    "2024-03-27 12:00:00 -0800",
+                    "2024-03-27 13:00:00 -0800",
+                    "2024-03-27 14:00:00 -0800",
+                    "2024-03-27 15:00:00 -0800",
+                    "2024-03-28 05:00:00 -0800",
+                    "2024-03-28 06:00:00 -0800",
+                    "2024-03-28 07:00:00 -0800",
+                    "2024-03-28 08:00:00 -0800",
+                    "2024-03-28 09:00:00 -0800",
+                    "2024-03-29 04:00:00 -0800",
+                    "2024-03-29 05:00:00 -0800",
+                    "2024-03-29 06:00:00 -0800",
+                    "2024-03-29 07:00:00 -0800",
+                    "2024-03-29 08:00:00 -0800",
+                    "2024-03-29 10:00:00 -0800",
+                    "2024-03-29 11:00:00 -0800",
+                    "2024-03-29 12:00:00 -0800",
+                    "2024-03-29 13:00:00 -0800",
+                    "2024-03-29 14:00:00 -0800",
+                    "2024-03-29 15:00:00 -0800",
                   ],
                   providerName: "Amie Gross",
                 },
@@ -578,76 +599,202 @@ if (typeof moment.tz !== "undefined") {
               var availableDays = response.availableDays;
               var calendarEl = $("#calendar")[0];
               var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: "dayGridWeek",
+                contentHeight: "auto",
                 showNonCurrentDates: false,
-                dateClick: function (info) {
-                  var newDate = info.dateStr;
-                  $("#confirm-apt").addClass("disable");
-                  currentDate = newDate;
-                  if (availableDays.includes(currentDate)) {
-                    calendar.gotoDate(newDate);
-                    $(".fc-day").removeClass("fc-day-today");
-                    var $targetDay = $('.fc-day[data-date="' + newDate + '"]');
-                    $targetDay.addClass("fc-day-today");
-
-                    // Update title text of available date
-                    var availableDate = calendar.getDate();
-                    const options = {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                    };
-                    const convertedTime = availableDate.toLocaleDateString(
-                      "en-US",
-                      options
-                    );
-                    $("#day-title").html(firstBold(convertedTime));
-                    $(".fc-toolbar-title").html(
-                      firstBold($(".fc-toolbar-title").text())
-                    );
-                    // Add time tags based on available times
-                    $(".calendar_tag-wrap").empty();
-
-                    for (var i = 0; i < availableTimes.length; i++) {
-                      var time = availableTimes[i];
-                      var iso8601Time = formatTimeToISO8601(time);
-                      var textTime = new Date(iso8601Time);
-                      var formattedTime = textTime.toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      });
-
-                      // Check if the current item contains the firstAvailableDate
-                      if (time.includes(newDate)) {
-                        // Create a <div> element with the class '.calendar_time-tag' and the text of the current item
-                        var timeDiv = $("<div>", {
-                          class: "calendar_time-tag",
-                          text: formattedTime,
-                          "data-date": time,
-                        });
-
-                        // Append the timeDiv inside the '.calendar_tag-wrap' element
-                        $(".calendar_tag-wrap").append(timeDiv);
-                      }
-                    }
-                    // Add click event to time tags
-                    setTimeout(function () {
-                      $(".calendar_time-tag").on("click", function () {
-                        // Remove .active class from all .calendar_time-tag items
-                        $(".calendar_time-tag").removeClass("active");
-                        // Add .active class to the clicked item
-                        $(this).addClass("active");
-                        var selectedTime = $(this).data("date");
-                        setAptLink(selectedTime);
-                      });
-                    }, 0);
-                  }
+                dayHeaderContent: function (arg) {
+                  // SVG icon
+                  const svgIcon = `
+                    <svg width="14" height="12" viewBox="0 0 12 10" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M1.85156 5C1.85156 2.7571 3.67116 0.9375 5.91406 0.9375C8.15696 0.9375 9.97656 2.7571 9.97656 5C9.97656 7.2429 8.15696 9.0625 5.91406 9.0625C3.67116 9.0625 1.85156 7.2429 1.85156 5ZM5.91406 1.5625C4.01634 1.5625 2.47656 3.10228 2.47656 5C2.47656 6.89772 4.01634 8.4375 5.91406 8.4375C7.81179 8.4375 9.35156 6.89772 9.35156 5C9.35156 3.10228 7.81179 1.5625 5.91406 1.5625Z" fill="currentColor"/>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M5.91406 2.1875C6.08665 2.1875 6.22656 2.32741 6.22656 2.5V5H7.78906C7.96165 5 8.10156 5.13991 8.10156 5.3125C8.10156 5.48509 7.96165 5.625 7.78906 5.625H5.91406C5.74147 5.625 5.60156 5.48509 5.60156 5.3125V2.5C5.60156 2.32741 5.74147 2.1875 5.91406 2.1875Z" fill="currentColor"/>
+                    </svg>
+                  `;
+                  return {
+                    html: `
+                            <div class="day-name">${arg.date.toLocaleDateString(
+                              "en-US",
+                              { weekday: "short" }
+                            )}</div>
+                            <div class="day-number">${arg.date.getDate()}</div>
+                            <div class="time-tag-count">${svgIcon} <span class="count">0</span></div>
+                    `,
+                  };
                 },
+                datesSet: function (info) {
+                  updateTodayHighlight();
+                  updateNavigationButtons(info);
+                },
+                // ... other options ...
               });
+
               calendar.render();
 
+              // Add click event to calendar arrows
+              $("#prev").on("click", function () {
+                calendar.prev();
+                handleCalendarNavigation("prev");
+              });
+
+              $("#next").on("click", function () {
+                handleCalendarNavigation("next");
+                calendar.next();
+              });
+
+              function updateTodayHighlight() {
+                $(".fc-day").removeClass("fc-day-today");
+                var $targetDay = $('.fc-day[data-date="' + currentDate + '"]');
+                $targetDay.addClass("fc-day-today");
+              }
+
+              // Function to add the .available class to matching header cells
+              function markAvailableDays() {
+                setTimeout(function () {
+                  response.availableDays.forEach(function (date) {
+                    // Find the header cell with the matching data-date attribute
+                    const headerCell = document.querySelector(
+                      `th[data-date="${date}"]`
+                    );
+                    if (headerCell) {
+                      // Add the .available class to the header cell
+                      headerCell.classList.add("available");
+                    }
+                  });
+                }, 0);
+              }
+
+              function handleCalendarNavigation(direction) {
+                markAvailableDays();
+                updateTimeTagCounts(
+                  response.availableTimes
+                    .map((time) => time.providerAvailableTimes)
+                    .flat()
+                );
+                $("#confirm-apt").addClass("disable");
+                $(".calendar_time-tag").removeClass("active");
+              }
+              // Function to update the state of navigation buttons
+              function updateNavigationButtons(dateInfo) {
+                // Get the first and last date from the current view
+                const viewStart = dateInfo.startStr;
+                const viewEnd = dateInfo.endStr;
+
+                // Assuming availableDays is an array of date strings like ["2024-03-14", "2024-03-15", ...]
+                const firstAvailableDay = availableDays[0];
+                const lastAvailableDay =
+                  availableDays[availableDays.length - 1];
+
+                // Disable the prev button if the first available day is in the current view
+                if (
+                  viewStart <= firstAvailableDay &&
+                  viewEnd > firstAvailableDay
+                ) {
+                  document.querySelector("#prev").classList.add("disabled");
+                  $("#prev").off("click");
+                } else {
+                  // Attach the event handler for the #prev button
+                  $("#prev")
+                    .off("click")
+                    .on("click", function () {
+                      if (!$(this).hasClass("disabled")) {
+                        calendar.prev();
+                        handleCalendarNavigation("prev");
+                      }
+                    });
+                  document.querySelector("#prev").classList.remove("disabled");
+                }
+
+                // Disable the next button if the last available day is in the current view
+                if (
+                  viewStart < lastAvailableDay &&
+                  viewEnd >= lastAvailableDay
+                ) {
+                  document.querySelector("#next").classList.add("disabled");
+                  $("#next").off("click");
+                } else {
+                  document.querySelector("#next").classList.remove("disabled");
+                  $("#next")
+                    .off("click")
+                    .on("click", function () {
+                      if (!$(this).hasClass("disabled")) {
+                        calendar.next();
+                        handleCalendarNavigation("next");
+                      }
+                    });
+                }
+              }
+
+              // Set up the click event on the header cells using event delegation
+              $(document).on("click", ".fc-col-header-cell", function () {
+                var newDate = $(this).data("date");
+                $("#confirm-apt").addClass("disable");
+                currentDate = newDate;
+                if (availableDays.includes(currentDate)) {
+                  calendar.gotoDate(newDate);
+                  $(".fc-day").removeClass("fc-day-today");
+                  var $targetDay = $('.fc-day[data-date="' + newDate + '"]');
+                  $targetDay.addClass("fc-day-today");
+
+                  // Update title text of available date
+                  var availableDate = calendar.getDate();
+                  const options = {
+                    month: "long",
+                    day: "numeric",
+                  };
+                  const convertedTime = availableDate.toLocaleDateString(
+                    "en-US",
+                    options
+                  );
+                  $("#day-title").html(convertedTime);
+                  $(".fc-toolbar-title").html($(".fc-toolbar-title").text());
+                  // Add time tags based on available times
+                  $(".calendar_tag-wrap").empty();
+
+                  for (var i = 0; i < availableTimes.length; i++) {
+                    var time = availableTimes[i];
+                    var iso8601Time = formatTimeToISO8601(time);
+                    var textTime = new Date(iso8601Time);
+                    var formattedTime = textTime.toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    });
+
+                    // Check if the current item contains the firstAvailableDate
+                    if (time.includes(newDate)) {
+                      // Create a <div> element with the class '.calendar_time-tag' and the text of the current item
+                      var timeDiv = $("<div>", {
+                        class: "calendar_time-tag",
+                        text: formattedTime,
+                        "data-date": time,
+                      });
+
+                      // Append the timeDiv inside the '.calendar_tag-wrap' element
+                      $(".calendar_tag-wrap").append(timeDiv);
+                    }
+                  }
+                  // Add click event to time tags
+                  setTimeout(function () {
+                    $(".calendar_time-tag").on("click", function () {
+                      // Remove .active class from all .calendar_time-tag items
+                      $(".calendar_time-tag").removeClass("active");
+                      // Add .active class to the clicked item
+                      $(this).addClass("active");
+                      var selectedTime = $(this).data("date");
+                      setAptLink(selectedTime);
+                    });
+                  }, 0);
+                }
+              });
               // ---------- CALENDAR READY -----------
               // On first load, if provider has availability setup calendar
               if (availableDays.length > 0) {
+                // Call this function to mark available days
+                markAvailableDays();
+                updateTimeTagCounts(
+                  response.availableTimes
+                    .map((time) => time.providerAvailableTimes)
+                    .flat()
+                );
                 // Extract the first available start date from the array
                 var firstAvailableDate = response.availableDays[0];
                 var lastAvailableDate = response.availableDays.slice(-1)[0];
@@ -655,7 +802,7 @@ if (typeof moment.tz !== "undefined") {
                 providerHealthId =
                   response.availableTimes[0].providerHealthieId;
 
-                $("#mobile-book-cta").attr("href", "#calendarSection");
+                $("#get-touch-cta").attr("href", "#calendarSection");
 
                 function setCal(date) {
                   // Update CTA based on whether calendar is displayed
@@ -674,7 +821,6 @@ if (typeof moment.tz !== "undefined") {
                     $targetDay.addClass("fc-day-today");
                     // Update title text of available date
                     const options = {
-                      weekday: "long",
                       month: "long",
                       day: "numeric",
                     };
@@ -682,11 +828,9 @@ if (typeof moment.tz !== "undefined") {
                       "en-US",
                       options
                     );
-                    $("#day-title").html(firstBold(convertedTime));
+                    $("#day-title").html(convertedTime);
 
-                    $(".fc-toolbar-title").html(
-                      firstBold($(".fc-toolbar-title").text())
-                    );
+                    $(".fc-toolbar-title").html($(".fc-toolbar-title").text());
                     $(".fc-day").each(function () {
                       var dataDate = $(this).data("date");
                       if (availableDays.includes(dataDate)) {
@@ -699,7 +843,7 @@ if (typeof moment.tz !== "undefined") {
                 }
                 calendar.gotoDate(firstAvailableDate);
                 currentDate = firstAvailableDate;
-                setCal(firstAvailableDate);
+                setCal(currentDate);
                 // Add time tags based on available times
                 $(".calendar_tag-wrap").empty();
 
@@ -732,37 +876,6 @@ if (typeof moment.tz !== "undefined") {
                     setAptLink(selectedTime);
                   });
                 }, 0);
-                // Add click event to calendar arrows
-                $("#prev").on("click", function () {
-                  handleCalendarNavigation("prev");
-                });
-
-                $("#next").on("click", function () {
-                  handleCalendarNavigation("next");
-                });
-
-                function handleCalendarNavigation(direction) {
-                  $("#confirm-apt").addClass("disable");
-                  $(".calendar_time-tag").removeClass("active");
-
-                  var date1Month = parseInt(
-                    firstAvailableDate.split("-")[1],
-                    10
-                  ); // Extract month from date1 and convert to integer
-                  var date2Month = parseInt(
-                    lastAvailableDate.split("-")[1],
-                    10
-                  ); // Extract month from date2 and convert to integer
-
-                  var isSameMonth = date1Month === date2Month;
-
-                  if (isSameMonth) {
-                  } else {
-                    $(".fc-toolbar-title").empty().html();
-                    setCal(currentDate);
-                    calendar[direction]();
-                  }
-                }
               } else {
                 disableCal();
               }
