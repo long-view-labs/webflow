@@ -101,22 +101,6 @@ window.addEventListener("scroll", function onFirstScroll() {
   window.removeEventListener("scroll", onFirstScroll);
 });
 
-// Load Rudderstack script on first scroll
-window.addEventListener("scroll", function onFirstScroll() {
-  loadScriptOnScroll(
-    "https://cdn.rudderlabs.com/v1.1/rudder-analytics.min.js",
-    document.body, // This can be any element, adjust as needed
-    function () {
-      window.rudderanalytics.load(
-        "2aOoUzHccHpDljomHWiSCOqQAv5",
-        "https://usenourishxwq.dataplane.rudderstack.com"
-      );
-      window.rudderanalytics.page();
-    }
-  );
-  window.removeEventListener("scroll", onFirstScroll);
-});
-
 // Iterate over each .menu_slug element (For the States links)
 $(".menu_slug").each(function () {
   // Get the state text from the current .menu_slug element
