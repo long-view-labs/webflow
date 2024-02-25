@@ -1,7 +1,20 @@
 $(document).ready(function () {
-  $(".sticky-question_answer-wrap.activity").on("click", function () {
-    window.location.href =
-      "https://signup.usenourish.com/?utm_medium=blog&utm_campaign=sticky-question&utm_source=blog&utm_content=&utm_term=activity-level";
+  // Handle click on .sticky-question_answer-wrap
+  $(".sticky-question_answer-wrap").on("click", function () {
+    // Retrieve the URL from the .sticky-link element and navigate to it
+    var url = $(".sticky-link").attr("href");
+    if (url) {
+      window.location.href = url;
+    }
+  });
+
+  // Handle click on #splash-link button
+  $("#splash-link").on("click", function () {
+    // Retrieve the URL from the .splash-link element and navigate to it
+    var url = $(".splash-link").attr("href");
+    if (url) {
+      window.location.href = url;
+    }
   });
 });
 
