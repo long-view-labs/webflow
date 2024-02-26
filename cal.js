@@ -5,7 +5,6 @@ $(document).ready(function () {
   if (typeof reviewSlider !== "undefined") {
     reviewSlider();
   }
-  updateCTA();
 });
 
 var currentInsuranceList = $(".insurance-list.state-current");
@@ -350,7 +349,7 @@ function setAptLink(time) {
   $("#confirm-apt").attr("href", url);
 }
 
-function updateCTA() {
+function updateCTA(availableDays) {
   var windowWidth = $(window).width();
   if (windowWidth >= 768) {
     $("#get-touch-cta").css({
@@ -381,14 +380,18 @@ function updateCTA() {
 
     var finalUrl = baseUrl + utmString;
 
-    $("#get-touch-cta")
-      .attr("href", finalUrl)
-      .text("Book your first appointment →");
-
     $("#get-touch-cta").css({
       opacity: "1",
       "pointer-events": "auto",
     });
+
+    if (availableDays.length > 0) {
+      $("#get-touch-cta")
+        .attr("href", "#calendarSection")
+        .text("Book your first appointment →");
+    } else {
+      $("#get-touch-cta").attr("href", finalUrl);
+    }
   }
 }
 
@@ -531,13 +534,11 @@ if (typeof moment.tz !== "undefined") {
                 providerHealthId =
                   response.availableTimes[0].providerHealthieId;
 
-                $("#get-touch-cta").attr("href", "#calendarSection");
-
                 function setCal(date) {
                   // Update CTA based on whether calendar is displayed
-                  updateCTA();
+                  updateCTA(availableDays);
                   $(window).on("resize", function () {
-                    updateCTA();
+                    updateCTA(availableDays);
                   });
 
                   var dateObj = new Date(date);
