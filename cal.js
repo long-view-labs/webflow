@@ -531,7 +531,7 @@ if (typeof moment.tz !== "undefined") {
                 providerHealthId =
                   response.availableTimes[0].providerHealthieId;
 
-                $("#mobile-book-cta").attr("href", "#calendarSection");
+                $("#get-touch-cta").attr("href", "#calendarSection");
 
                 function setCal(date) {
                   // Update CTA based on whether calendar is displayed

@@ -337,6 +337,7 @@ function setAptLink(time) {
       timezone;
   }
   $("#confirm-apt").attr("href", url);
+  return url;
 }
 
 function updateCTA() {
@@ -762,14 +763,19 @@ if (typeof moment.tz !== "undefined") {
                     // Check if the current item contains the firstAvailableDate
                     if (time.includes(newDate)) {
                       // Create a <div> element with the class '.calendar_time-tag' and the text of the current item
-                      var timeDiv = $("<div>", {
+                      var timeLink = $("<a>", {
                         class: "calendar_time-tag",
                         text: formattedTime,
+                        href: setAptLink(time), // Use the function to generate the link
                         "data-date": time,
+                        click: function (event) {
+                          event.preventDefault(); // Prevent default anchor action
+                          window.location.href = $(this).attr("href"); // Navigate to the link
+                        },
                       });
 
                       // Append the timeDiv inside the '.calendar_tag-wrap' element
-                      $(".calendar_tag-wrap").append(timeDiv);
+                      $(".calendar_tag-wrap").append(timeLink);
                     }
                   }
                   // Add click event to time tags
@@ -858,13 +864,18 @@ if (typeof moment.tz !== "undefined") {
 
                   // Check if the current item contains the firstAvailableDate
                   if (time.includes(firstAvailableDate)) {
-                    var timeDiv = $("<div>", {
+                    var timeLink = $("<a>", {
                       class: "calendar_time-tag",
                       text: formattedTime,
+                      href: setAptLink(time),
                       "data-date": time,
+                      click: function (event) {
+                        event.preventDefault(); // Prevent default anchor action
+                        window.location.href = $(this).attr("href"); // Navigate to the link
+                      },
                     });
 
-                    $(".calendar_tag-wrap").append(timeDiv);
+                    $(".calendar_tag-wrap").append(timeLink);
                   }
                 }
                 // Add click event to time tags
