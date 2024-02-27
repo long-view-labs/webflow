@@ -290,7 +290,7 @@ function setAptLink(time) {
   var UTCTime = convertLocalToUTC(time) + "Z";
 
   var url =
-    "https://signup.usenourish.com/flow/get-started/variant/main_survey_direct_booking_ex1";
+    "https://signup.usenourish.com/?variationName=providerDirectoryVariation";
 
   // Get the current URL's query parameters
   var params = new URLSearchParams(window.location.search);
@@ -301,7 +301,7 @@ function setAptLink(time) {
 
   // Add checks for each variable
   if (utmSourceFromSession) {
-    url += "?utm_source=" + utmSourceFromSession;
+    url += "&utm_source=" + utmSourceFromSession;
   }
 
   if (referralSource) {
@@ -318,34 +318,14 @@ function setAptLink(time) {
       encodeURIComponent(referralName);
   }
 
-  if (fullname) {
-    url +=
-      (url.includes("?") ? "&" : "?") +
-      "external_provided_appointment_details[provider_name]=" +
-      fullname;
-  }
-
-  if (providerHealthId) {
-    url +=
-      (url.includes("?") ? "&" : "?") +
-      "external_provided_appointment_details[provider_healthieId]=" +
-      providerHealthId;
+  if (providerId) {
+    url += (url.includes("?") ? "&" : "?") + "providerId=" + providerId;
   }
 
   if (UTCTime) {
-    url +=
-      (url.includes("?") ? "&" : "?") +
-      "external_provided_appointment_details[appointmentTime]=" +
-      UTCTime;
-    url += "&external_provided_appointment_details[displayString]=" + UTCTime;
+    url += (url.includes("?") ? "&" : "?") + "appointmentTime=" + UTCTime;
   }
 
-  if (timezone) {
-    url +=
-      (url.includes("?") ? "&" : "?") +
-      "external_provided_appointment_details[appointmentTimeZone]=" +
-      timezone;
-  }
   $("#confirm-apt").attr("href", url);
 }
 
@@ -409,6 +389,7 @@ if (typeof moment.tz !== "undefined") {
   var lName = $(".calendar-custom").attr("LName");
   var fullname = firstN + " " + lName;
   var providerHealthId = "";
+  var providerId = "";
   var cmsItemID = $(".provider-grid-template").attr("itemID");
   var newBio =
     $(".provider-grid-template.new.w-condition-invisible").length === 0;
@@ -533,6 +514,7 @@ if (typeof moment.tz !== "undefined") {
 
                 providerHealthId =
                   response.availableTimes[0].providerHealthieId;
+                providerId = response.availableTimes[0].providerId;
 
                 function setCal(date) {
                   // Update CTA based on whether calendar is displayed
