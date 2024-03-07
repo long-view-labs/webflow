@@ -178,7 +178,7 @@ var blogPostRtbText = document.querySelector(".blog-post-rtb").textContent;
 // Check if the text includes 'local'
 if (blogPostRtbText.includes("{{local}}")) {
   // Call the IPInfo API
-  const apiKey = "69d052a0093ef5";
+  const apiKey = "89320a08dbdfa6";
   const apiURL = `https://ipinfo.io?token=${apiKey}`;
   $.ajax({
     url: apiURL,

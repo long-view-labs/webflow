@@ -415,13 +415,17 @@ function updateTimeTagCounts(providerAvailableTimes) {
 // Check to see if moment-timezone library is loaded
 if (typeof moment.tz !== "undefined") {
   var timezone = moment.tz.guess();
+  var timeZoneName = new Intl.DateTimeFormat("en-US", { timeZoneName: "short" })
+    .formatToParts(new Date())
+    .find((part) => part.type === "timeZoneName").value;
+
   var currentDate = new Date();
   //currentDate.setDate(currentDate.getDate() + 2);
   var twoDaysOut = currentDate.toDateString();
   //currentDate.setDate(currentDate.getDate() + 19);
   var nineteenDaysOut = currentDate.toDateString();
 
-  $("#timezone").text(timezone);
+  $("#timezone").text(timeZoneName);
   var firstN = $(".calendar-custom").attr("FirstN");
   var lName = $(".calendar-custom").attr("LName");
   var fullname = firstN + " " + lName;
