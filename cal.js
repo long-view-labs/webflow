@@ -247,8 +247,7 @@ function disableCal() {
   $(".fc-toolbar-title").html(firstBold($(".fc-toolbar-title").text()));
 
   // Update #find-provider-link with UTM parameters
-  const baseLink =
-    "https://join.usenourish.com/flow/get-started/variant/main_survey_direct_booking_ex1";
+  const baseLink = "https://signup.usenourish.com";
   const utmParams = new URLSearchParams(window.location.search);
   let utmString = "";
   for (const [key, value] of Object.entries(utmParams)) {
