@@ -6,6 +6,40 @@ $(document).ready(function () {
     reviewSlider();
   }
   updateCTA();
+
+  // Adapted click event logic for Swiper slides
+  $(".swiper-container").on("click", ".swiper-slide", function () {
+    var newDate = $(this).data("date");
+    $("#confirm-apt").addClass("disable");
+    currentDate = newDate;
+
+    // Clear previous time tags
+    $(".calendar_tag-wrap").empty();
+
+    availableTimes.forEach(function (time) {
+      var iso8601Time = formatTimeToISO8601(time);
+      var textTime = new Date(iso8601Time);
+      var formattedTime = textTime.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      if (time.includes(newDate)) {
+        var timeLink = $("<a>", {
+          class: "calendar_time-tag",
+          text: formattedTime,
+          href: "#", // Adjust as necessary
+          "data-date": time,
+          click: function (event) {
+            event.preventDefault();
+            console.log("Time tag clicked:", $(this).data("date"));
+          },
+        });
+
+        $(".calendar_tag-wrap").append(timeLink);
+      }
+    });
+  });
 });
 
 var currentInsuranceList = $(".insurance-list.state-current");
@@ -130,15 +164,15 @@ var observer = new IntersectionObserver(
 
 function postnomReorder() {
   $(".postnominals-list").each(function () {
-    // Reorder postnominal labels
     var wrapper = $(this);
-    var items = wrapper.find(".w-dyn-item");
+    var items = wrapper.find(".w-dyn-item").get(); // Convert to array for sorting
 
+    // Sort items array
     items.sort(function (a, b) {
       var textA = $(a).find("div.postnominal-templ").text().trim();
       var textB = $(b).find("div.postnominal-templ").text().trim();
 
-      // Priority 1: 'MS', 'MA', 'MPH', 'MEd'
+      // Priority 1: 'MS', 'MA', 'MPH', 'MEd', 'MDA'
       var priority1 = ["MS", "MA", "MPH", "MEd", "MDA"];
       if (priority1.includes(textA)) {
         return -1;
@@ -592,13 +626,23 @@ if (typeof moment.tz !== "undefined") {
             };
             if (response) {
               var availableTimes = [];
+              var availableDays = [];
               if (
                 response.availableTimes &&
                 response.availableTimes.length > 0
               ) {
                 availableTimes =
                   response.availableTimes[0]?.providerAvailableTimes || [];
+                availableDays = response.availableDays;
               }
+
+              // Mobile Calendar Setup
+              const svgIcon = `
+              <svg width="14" height="12" viewBox="0 0 12 10" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.85156 5C1.85156 2.7571 3.67116 0.9375 5.91406 0.9375C8.15696 0.9375 9.97656 2.7571 9.97656 5C9.97656 7.2429 8.15696 9.0625 5.91406 9.0625C3.67116 9.0625 1.85156 7.2429 1.85156 5ZM5.91406 1.5625C4.01634 1.5625 2.47656 3.10228 2.47656 5C2.47656 6.89772 4.01634 8.4375 5.91406 8.4375C7.81179 8.4375 9.35156 6.89772 9.35156 5C9.35156 3.10228 7.81179 1.5625 5.91406 1.5625Z" fill="currentColor"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M5.91406 2.1875C6.08665 2.1875 6.22656 2.32741 6.22656 2.5V5H7.78906C7.96165 5 8.10156 5.13991 8.10156 5.3125C8.10156 5.48509 7.96165 5.625 7.78906 5.625H5.91406C5.74147 5.625 5.60156 5.48509 5.60156 5.3125V2.5C5.60156 2.32741 5.74147 2.1875 5.91406 2.1875Z" fill="currentColor"/>
+              </svg>
+            `;
 
               // ---------- CALENDAR SETUP -----------
               var availableDays = response.availableDays;
@@ -609,12 +653,7 @@ if (typeof moment.tz !== "undefined") {
                 showNonCurrentDates: false,
                 dayHeaderContent: function (arg) {
                   // SVG icon
-                  const svgIcon = `
-                    <svg width="14" height="12" viewBox="0 0 12 10" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                      <path fill-rule="evenodd" clip-rule="evenodd" d="M1.85156 5C1.85156 2.7571 3.67116 0.9375 5.91406 0.9375C8.15696 0.9375 9.97656 2.7571 9.97656 5C9.97656 7.2429 8.15696 9.0625 5.91406 9.0625C3.67116 9.0625 1.85156 7.2429 1.85156 5ZM5.91406 1.5625C4.01634 1.5625 2.47656 3.10228 2.47656 5C2.47656 6.89772 4.01634 8.4375 5.91406 8.4375C7.81179 8.4375 9.35156 6.89772 9.35156 5C9.35156 3.10228 7.81179 1.5625 5.91406 1.5625Z" fill="currentColor"/>
-                      <path fill-rule="evenodd" clip-rule="evenodd" d="M5.91406 2.1875C6.08665 2.1875 6.22656 2.32741 6.22656 2.5V5H7.78906C7.96165 5 8.10156 5.13991 8.10156 5.3125C8.10156 5.48509 7.96165 5.625 7.78906 5.625H5.91406C5.74147 5.625 5.60156 5.48509 5.60156 5.3125V2.5C5.60156 2.32741 5.74147 2.1875 5.91406 2.1875Z" fill="currentColor"/>
-                    </svg>
-                  `;
+
                   return {
                     html: `
                             <div class="day-name">${arg.date.toLocaleDateString(
@@ -684,7 +723,6 @@ if (typeof moment.tz !== "undefined") {
                 const viewStart = dateInfo.startStr;
                 const viewEnd = dateInfo.endStr;
 
-                // Assuming availableDays is an array of date strings like ["2024-03-14", "2024-03-15", ...]
                 const firstAvailableDay = availableDays[0];
                 const lastAvailableDay =
                   availableDays[availableDays.length - 1];

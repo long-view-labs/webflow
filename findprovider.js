@@ -126,7 +126,7 @@ $(".pagination").click(function () {
     scrollAnchor();
     postnomReorder();
     showDetailText();
-  }, 200);
+  }, 500);
 });
 
 function postnomReorder() {
@@ -267,6 +267,29 @@ function updateStyle() {
       elements[i].style.opacity = "1";
     }
   }
+
+  $(".style-block").each(function () {
+    var shouldHide = true; // Start by assuming we should hide the block
+
+    $(this)
+      .find(".w-dyn-item")
+      .each(function () {
+        // If there's an 'a' without 'hide' class or other content, don't hide the block
+        if (
+          $(this).children("a:not(.hide)").length > 0 ||
+          $(this).children(":not(a)").length > 0
+        ) {
+          shouldHide = false;
+          // Exit the loop since we found a visible item
+          return false;
+        }
+      });
+
+    // If the block should be hidden, hide it
+    if (shouldHide) {
+      $(this).hide();
+    }
+  });
 }
 
 // Update insurance list
