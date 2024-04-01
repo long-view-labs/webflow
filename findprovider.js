@@ -272,33 +272,14 @@ function updateStyle() {
     }
   }
 
-  $(document).ready(function () {
+  setTimeout(function () {
     $(".style-block").each(function () {
       // Check if there are no .w-dyn-item elements present
       if ($(this).find(".w-dyn-item").length === 0) {
         $(this).hide(); // Hide the .style-block
-      } else {
-        var shouldHide = true; // Assume we should hide the block
-
-        // Check each .w-dyn-item for the existence of div.provider-list_style
-        $(this)
-          .find(".w-dyn-item")
-          .each(function () {
-            if ($(this).find("div.provider-list_style").length > 0) {
-              shouldHide = false; // Do not hide this .style-block
-              return false; // Exit the .each() loop
-            }
-          });
-
-        // Hide or show the block based on the determination
-        if (shouldHide) {
-          $(this).hide();
-        } else {
-          $(this).show();
-        }
       }
     });
-  });
+  }, 500);
 }
 
 // Update insurance list
