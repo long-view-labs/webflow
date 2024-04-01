@@ -77,6 +77,7 @@ filter.forEach(function (dropdown) {
       showMoreTags();
       postnomReorder();
       updateSpecialty();
+      updateStyle();
       showDetailText();
     }, 500);
   });
@@ -92,6 +93,8 @@ providerSearchInput.addEventListener("input", function (event) {
     showMoreTags();
     postnomReorder();
     updateSpecialty();
+    updateStyle();
+
     showDetailText();
   }, 500);
 });
@@ -126,6 +129,7 @@ $(".pagination").click(function () {
     scrollAnchor();
     postnomReorder();
     showDetailText();
+    updateStyle();
   }, 500);
 });
 
@@ -268,27 +272,32 @@ function updateStyle() {
     }
   }
 
-  $(".style-block").each(function () {
-    var shouldHide = true; // Start by assuming we should hide the block
+  $(document).ready(function () {
+    $(".style-block").each(function () {
+      // Check if there are no .w-dyn-item elements present
+      if ($(this).find(".w-dyn-item").length === 0) {
+        $(this).hide(); // Hide the .style-block
+      } else {
+        var shouldHide = true; // Assume we should hide the block
 
-    $(this)
-      .find(".w-dyn-item")
-      .each(function () {
-        // If there's an 'a' without 'hide' class or other content, don't hide the block
-        if (
-          $(this).children("a:not(.hide)").length > 0 ||
-          $(this).children(":not(a)").length > 0
-        ) {
-          shouldHide = false;
-          // Exit the loop since we found a visible item
-          return false;
+        // Check each .w-dyn-item for the existence of div.provider-list_style
+        $(this)
+          .find(".w-dyn-item")
+          .each(function () {
+            if ($(this).find("div.provider-list_style").length > 0) {
+              shouldHide = false; // Do not hide this .style-block
+              return false; // Exit the .each() loop
+            }
+          });
+
+        // Hide or show the block based on the determination
+        if (shouldHide) {
+          $(this).hide();
+        } else {
+          $(this).show();
         }
-      });
-
-    // If the block should be hidden, hide it
-    if (shouldHide) {
-      $(this).hide();
-    }
+      }
+    });
   });
 }
 
