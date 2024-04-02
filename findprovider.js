@@ -70,7 +70,6 @@ window.onload = function () {
     function () {}
   );
   //}, 2000);
-  initializeSwiper();
 };
 
 $("input[filter-button]").click(function () {
