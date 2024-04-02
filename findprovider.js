@@ -10,21 +10,10 @@ $(document).ready(function () {
         if ($(".provider-list_component").children().length > 9) {
           observer.disconnect();
           updateStyle();
-          showLabelTotals();
-          loadFilter();
-          updatePageArrows();
-          updateTotalCount();
           scrollAnchor();
           postnomReorder();
           showMoreTags();
           showDetailText();
-          updateActiveTag();
-          showInsuranceLogo();
-          $(".w-condition-invisible").remove();
-          $(".filter-list_input-group-parent").on("click", function () {
-            var checkboxInput = $(this).find(".w-checkbox-input");
-            checkboxInput.toggleClass("w--redirected-checked");
-          });
         }
       }
     }
@@ -35,42 +24,28 @@ $(document).ready(function () {
   observer.observe(targetNode, config);
 });
 
-// Load in all Finsweet Libraries for Find Provider Component & initialize Swiper
-window.onload = function () {
-  //setTimeout(function () {
-  loadScript(
-    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsload@1/cmsload.js",
-    function () {
-      window.fsAttributes = window.fsAttributes || [];
-      window.fsAttributes.push([
-        "cmsload",
-        (listInstances) => {
-          scrollAnchor();
-          showMoreTags();
-          showDetailText();
-          updatePageArrows();
-          updateTotalCount();
+$(document).ready(function () {
+  showLabelTotals();
+  loadFilter();
+  setTimeout(function () {
+    $(".w-condition-invisible").remove();
+    updatePageArrows();
+    updateStyle();
+    updateTotalCount();
+    scrollAnchor();
+    postnomReorder();
+    showMoreTags();
+    showDetailText();
+    updateActiveTag();
+    showInsuranceLogo();
 
-          // The callback passes a `listInstances` array with all the `CMSList` instances on the page.
-          const [listInstance] = listInstances;
-        },
-      ]);
-    }
-  );
-  loadScript(
-    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsnest@1/cmsnest.js",
-    function () {}
-  );
-  loadScript(
-    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsfilter@1/cmsfilter.js",
-    function () {}
-  );
-  loadScript(
-    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-mirrorclick@1/mirrorclick.js",
-    function () {}
-  );
-  //}, 2000);
-};
+    $(".filter-list_input-group-parent").on("click", function () {
+      // Find the child .w-checkbox-input element
+      var checkboxInput = $(this).find(".w-checkbox-input");
+      checkboxInput.toggleClass("w--redirected-checked");
+    });
+  }, 2000);
+});
 
 $("input[filter-button]").click(function () {
   var value = $(this).attr("filter-button");
@@ -282,14 +257,12 @@ function updateStyle() {
       elements[i].style.opacity = "1";
     }
   }
-  setTimeout(function () {
-    $(".style-block").each(function () {
-      // Check if there are no .w-dyn-item elements present
-      if ($(this).find(".w-dyn-item").length === 0) {
-        $(this).hide(); // Hide the .style-block
-      }
-    });
-  }, 500);
+  $(".style-block").each(function () {
+    // Check if there are no .w-dyn-item elements present
+    if ($(this).find(".w-dyn-item").length === 0) {
+      $(this).hide(); // Hide the .style-block
+    }
+  });
 }
 
 // Update insurance list
