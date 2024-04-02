@@ -296,7 +296,7 @@ function updateStyle() {
         $(this).hide(); // Hide the .style-block
       }
     });
-  }, 1000);
+  }, 2000);
 }
 
 // Update insurance list
