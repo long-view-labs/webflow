@@ -1,22 +1,40 @@
 $(document).ready(function () {
-  showLabelTotals();
-  loadFilter();
-  setTimeout(function () {
-    $(".w-condition-invisible").remove();
-    updatePageArrows();
-    updateTotalCount();
-    scrollAnchor();
-    postnomReorder();
-    showMoreTags();
-    showDetailText();
-    updateActiveTag();
-    showInsuranceLogo();
-    $(".filter-list_input-group-parent").on("click", function () {
-      // Find the child .w-checkbox-input element
-      var checkboxInput = $(this).find(".w-checkbox-input");
-      checkboxInput.toggleClass("w--redirected-checked");
-    });
-  }, 3000);
+  var targetNode = $(".provider-list_component")[0];
+
+  var config = { childList: true };
+
+  // Callback function to execute when mutations are observed
+  var callback = function (mutationsList, observer) {
+    for (let mutation of mutationsList) {
+      if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+        // Check if there are 10 providers loaded
+        if ($(".provider-list_component").children().length === 10) {
+          observer.disconnect();
+
+          updateStyle();
+          showLabelTotals();
+          loadFilter();
+          updatePageArrows();
+          updateTotalCount();
+          scrollAnchor();
+          postnomReorder();
+          showMoreTags();
+          showDetailText();
+          updateActiveTag();
+          showInsuranceLogo();
+          $(".w-condition-invisible").remove();
+          $(".filter-list_input-group-parent").on("click", function () {
+            var checkboxInput = $(this).find(".w-checkbox-input");
+            checkboxInput.toggleClass("w--redirected-checked");
+          });
+        }
+      }
+    }
+  };
+
+  var observer = new MutationObserver(callback);
+
+  observer.observe(targetNode, config);
 });
 
 // Load in all Finsweet Libraries for Find Provider Component & initialize Swiper
@@ -271,7 +289,6 @@ function updateStyle() {
       elements[i].style.opacity = "1";
     }
   }
-
   setTimeout(function () {
     $(".style-block").each(function () {
       // Check if there are no .w-dyn-item elements present
@@ -279,7 +296,7 @@ function updateStyle() {
         $(this).hide(); // Hide the .style-block
       }
     });
-  }, 500);
+  }, 1000);
 }
 
 // Update insurance list
