@@ -7,50 +7,24 @@ $(document).ready(function () {
   var callback = function (mutationsList, observer) {
     for (let mutation of mutationsList) {
       if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-        // Check if there are 10 providers loaded
-
-        // Check if website URL contains /find-a-provider
-        if (window.location.href.indexOf("/find-a-provider") > -1) {
-          // Check if there are 20 providers loaded
-          if ($(".provider-list_component").children().length === 20) {
-            observer.disconnect();
-            updateStyle();
-            showLabelTotals();
-            loadFilter();
-            updatePageArrows();
-            updateTotalCount();
-            scrollAnchor();
-            postnomReorder();
-            showMoreTags();
-            showDetailText();
-            updateActiveTag();
-            showInsuranceLogo();
-            $(".w-condition-invisible").remove();
-            $(".filter-list_input-group-parent").on("click", function () {
-              var checkboxInput = $(this).find(".w-checkbox-input");
-              checkboxInput.toggleClass("w--redirected-checked");
-            });
-          }
-        } else {
-          if ($(".provider-list_component").children().length === 10) {
-            observer.disconnect();
-            updateStyle();
-            showLabelTotals();
-            loadFilter();
-            updatePageArrows();
-            updateTotalCount();
-            scrollAnchor();
-            postnomReorder();
-            showMoreTags();
-            showDetailText();
-            updateActiveTag();
-            showInsuranceLogo();
-            $(".w-condition-invisible").remove();
-            $(".filter-list_input-group-parent").on("click", function () {
-              var checkboxInput = $(this).find(".w-checkbox-input");
-              checkboxInput.toggleClass("w--redirected-checked");
-            });
-          }
+        if ($(".provider-list_component").children().length > 9) {
+          observer.disconnect();
+          updateStyle();
+          showLabelTotals();
+          loadFilter();
+          updatePageArrows();
+          updateTotalCount();
+          scrollAnchor();
+          postnomReorder();
+          showMoreTags();
+          showDetailText();
+          updateActiveTag();
+          showInsuranceLogo();
+          $(".w-condition-invisible").remove();
+          $(".filter-list_input-group-parent").on("click", function () {
+            var checkboxInput = $(this).find(".w-checkbox-input");
+            checkboxInput.toggleClass("w--redirected-checked");
+          });
         }
       }
     }
@@ -89,10 +63,6 @@ window.onload = function () {
   );
   loadScript(
     "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsfilter@1/cmsfilter.js",
-    function () {}
-  );
-  loadScript(
-    "https://cdn.jsdelivr.net/npm/@finsweet/attributes-scrolldisable@1/scrolldisable.js",
     function () {}
   );
   loadScript(
@@ -239,7 +209,7 @@ function scrollAnchor() {
       {
         scrollTop: $("#top-filter").offset().top,
       },
-      1000
+      500
     );
   });
 }
@@ -320,7 +290,7 @@ function updateStyle() {
         $(this).hide(); // Hide the .style-block
       }
     });
-  }, 2000);
+  }, 500);
 }
 
 // Update insurance list
@@ -485,7 +455,7 @@ function showInsuranceLogo() {
 }
 
 function showDetailText() {
-  if (textValue) {
+  if (typeof textValue !== "undefined") {
     // Update detail text
     $(".provider-list_detail").text(textValue).css("opacity", "1");
   }
