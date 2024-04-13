@@ -44,15 +44,14 @@ $(".success-story_details").each(function () {
   $(this).text(updatedText);
 });
 
-// Update Google Map
+// Update Google Map for multiple placeholders
 // Create a new IntersectionObserver instance
 var observer = new IntersectionObserver(function (entries) {
   // Loop over the entries
   entries.forEach(function (entry) {
     // If the element is visible
     if (entry.isIntersecting) {
-      // Update Google Map
-      var mapPlaceholder = document.getElementById("map-placeholder");
+      // Update Google Map for each visible placeholder
       var iframe = document.createElement("iframe");
 
       iframe.width = "100%";
@@ -66,8 +65,9 @@ var observer = new IntersectionObserver(function (entries) {
         googleAPI +
         "&q=" +
         city +
-        state;
-      mapPlaceholder.appendChild(iframe);
+        "," +
+        state; // Ensure city and state are properly concatenated
+      entry.target.appendChild(iframe);
 
       // Stop observing the target element
       observer.unobserve(entry.target);
@@ -75,8 +75,10 @@ var observer = new IntersectionObserver(function (entries) {
   });
 });
 
-// Start observing an element
-observer.observe(document.querySelector("#map-placeholder"));
+// Start observing all elements with the class 'map-placeholder'
+document.querySelectorAll(".maps-embed-wrap").forEach(function (element) {
+  observer.observe(element);
+});
 
 function initializeSwiper() {
   // Load the Swiper script
