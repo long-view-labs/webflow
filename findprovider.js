@@ -36,9 +36,7 @@ $(document).ready(function () {
     postnomReorder();
     showMoreTags();
     showDetailText();
-    updateActiveTag();
     showInsuranceLogo();
-
     $(".filter-list_input-group-parent").on("click", function () {
       // Find the child .w-checkbox-input element
       var checkboxInput = $(this).find(".w-checkbox-input");
@@ -430,13 +428,6 @@ function showDetailText() {
   if (typeof textValue !== "undefined") {
     // Update detail text
     $(".provider-list_detail").text(textValue).css("opacity", "1");
-  }
-}
-
-function updateActiveTag() {
-  if (typeof tagTextValue !== "undefined" && tagTextValue) {
-    // Update detail text
-    $(".provider-filter_active-tag-text").text(tagTextValue);
   }
 }
 
