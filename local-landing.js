@@ -29,7 +29,7 @@ $(".faq_title, .optional-title").each(function () {
   $(this).text(updatedText);
 });
 
-$(".faq_content-wrapper .condition_rich-text p").each(function () {
+$(".condition_rich-text p").each(function () {
   var text = $(this).html();
   var updatedText = text
     .replace("&lt;City&gt;", city)
