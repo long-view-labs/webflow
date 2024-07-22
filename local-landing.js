@@ -23,13 +23,21 @@ $.ajax({
 });
 
 // Update FAQ with Location info
-$(".faq_title").each(function () {
+$(".faq_title, .optional-title").each(function () {
   var text = $(this).text();
   var updatedText = text.replace("<City>", city).replace("<State>", state);
   $(this).text(updatedText);
 });
 
 $(".faq_content-wrapper .condition_rich-text p").each(function () {
+  var text = $(this).html();
+  var updatedText = text
+    .replace("&lt;City&gt;", city)
+    .replace("&lt;State&gt;", state);
+  $(this).html(updatedText);
+});
+
+$(".state_rich-text p").each(function () {
   var text = $(this).html();
   var updatedText = text
     .replace("&lt;City&gt;", city)
