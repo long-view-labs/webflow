@@ -29,7 +29,7 @@ $(".faq_title, .optional-title").each(function () {
   $(this).text(updatedText);
 });
 
-$(".condition_rich-text p").each(function () {
+$(".faq_content-wrapper .condition_rich-text p, .3col-content .condition_rich-text p").each(function () {
   var text = $(this).html();
   var updatedText = text
     .replace("&lt;City&gt;", city)
@@ -46,7 +46,7 @@ $(".state_rich-text p").each(function () {
 });
 
 // Update Success Stories with Location info
-$(".success-story_details").each(function () {
+$(".success-story_details, .condition-dropdown_description").each(function () {
   var text = $(this).text();
   var updatedText = text.replace("{City}", city).replace("{State}", state);
   $(this).text(updatedText);
