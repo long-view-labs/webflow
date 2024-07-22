@@ -22,21 +22,6 @@ $.ajax({
   },
 });
 
-// Update FAQ with Location info
-$(".faq_title, .optional-title").each(function () {
-  var text = $(this).text();
-  var updatedText = text.replace("<City>", city).replace("<State>", state);
-  $(this).text(updatedText);
-});
-
-$(".faq_content-wrapper .condition_rich-text p, .3col-content .condition_rich-text p").each(function () {
-  var text = $(this).html();
-  var updatedText = text
-    .replace("&lt;City&gt;", city)
-    .replace("&lt;State&gt;", state);
-  $(this).html(updatedText);
-});
-
 $(".state_rich-text p").each(function () {
   var text = $(this).html();
   var updatedText = text
@@ -51,6 +36,30 @@ $(".success-story_details, .condition-dropdown_description").each(function () {
   var updatedText = text.replace("{City}", city).replace("{State}", state);
   $(this).text(updatedText);
 });
+
+  // Function to replace <City> and <State> placeholders
+  function replacePlaceholders(element) {
+    var text = $(element).html();
+    var updatedText = text
+      .replace(/&lt;City&gt;/g, city)
+      .replace(/&lt;State&gt;/g, state)
+      .replace(/<City>/g, city)
+      .replace(/<State>/g, state);
+    $(element).html(updatedText);
+  }
+
+  // Update FAQ titles
+  $(".faq_title, .optional-title").each(function () {
+    var text = $(this).text();
+    var updatedText = text.replace("<City>", city).replace("<State>", state);
+    $(this).text(updatedText);
+  });
+
+  // Update FAQ content and other rich text areas
+  $(".faq_content-wrapper .condition_rich-text, .3col-content .condition_rich-text, .condition_dropdown_description, .condition_rich-text p, .condition_rich-text li, .condition_rich-text ol, p").each(function () {
+    replacePlaceholders(this);
+  });
+
 
 // Update Google Map for multiple placeholders
 // Create a new IntersectionObserver instance
