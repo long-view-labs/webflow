@@ -37,93 +37,6 @@ $(document).ready(function () {
 });
 
 $(document).ready(function () {
-
-$(".related-articles_component").each(function (index) {
-  const swiper = new Swiper($(this).find(".swiper")[0], {
-    slidesPerView: 3,
-    speed: 600,
-    spaceBetween: 64,
-    initialSlide: 0,
-    slideToClickedSlide: true,
-    centeredSlides: false,
-    loop: true,
-    slideActiveClass: "is-active",
-    slideDuplicateActiveClass: "is-active",
-    keyboard: false,
-    disableOnInteraction: false,
-    pagination: {
-      el: ".swiper_pagination-wrapper",
-      bulletElement: "div",
-      bulletClass: "swiper_pagination-bullet",
-      bulletActiveClass: "is-active",
-      clickable: true,
-    },
-    navigation: {
-      nextEl: "#story-right",
-      prevEl: "#story-left",
-    },
-    breakpoints: {
-      0: {
-        slidesPerView: 1,
-      },
-      480: {
-        slidesPerView: 1,
-      },
-      767: {
-        slidesPerView: 1,
-      },
-      992: {
-        /* when window >= 988px - webflow desktop */
-      },
-    },
-  });
-});
-
-$(".condition_stories-component").each(function (index) {
-  const testSwiper = new Swiper($(this).find(".swiper")[0], {
-    slidesPerView: 1,
-    speed: 600,
-    spaceBetween: 24,
-    initialSlide: 0,
-    slideClass: "swiper-slide-home",
-    slideToClickedSlide: true,
-    centeredSlides: false,
-    loop: false,
-    slideActiveClass: "is-active",
-    slideDuplicateActiveClass: "is-active",
-    keyboard: false,
-    disableOnInteraction: false,
-    pagination: {
-      el: ".condition_stories-component .swiper_pagination-wrapper-home",
-      bulletElement: "div",
-      bulletClass: "swiper_pagination-bullet",
-      bulletActiveClass: "is-active",
-      bulletSize: 8,
-      clickable: true,
-    },
-    breakpoints: {
-      0: {
-        /* when window >=0px - webflow mobile landscape/portrait */
-      },
-      480: {
-        /* when window >=0px - webflow mobile landscape/portrait */
-        spaceBetween: 12,
-      },
-      481: {
-        /* when window >= 767px - webflow tablet */ spaceBetween: 24,
-      },
-      767: {
-        /* when window >= 767px - webflow tablet */ spaceBetween: 24,
-      },
-      992: {
-        /* when window >= 988px - webflow desktop */ spaceBetween: 24,
-      },
-    },
-  });
-});
-
-
-  
   if ($(window).width() < 767) {
     var stateAbbreviations = {
       Alabama: "AL",
@@ -379,38 +292,39 @@ function getCookie(name) {
   return null;
 }
 
-function updatePageWithLocationData(locationData) {
-  const userState = locationData.region;
-  const [userLat, userLon] = locationData.loc.split(",").map(Number);
+function updatePageWithLocationData(locationData) {}
+// Get the text content of the .blog-post-rtb element
+var blogPostRtbText = document.querySelector(".blog-post-rtb").textContent;
 
-  const splashComponents = document.querySelectorAll(
-    '[fs-richtext-component="local"]'
-  );
-  const listItems = Array.from(
-    document.querySelectorAll(".local-list .w-dyn-item")
-  );
+const cookieName = "userLocationData"; // A generic name for the cookie
+const cachedData = getCookie(cookieName);
 
-  const sortedItems = listItems.sort((a, b) => {
-    const getCoords = (el) =>
-      el.querySelector(".long-lat").textContent.split(",").map(Number);
-    const distanceA = calculateDistance(userLat, userLon, ...getCoords(a));
-    const distanceB = calculateDistance(userLat, userLon, ...getCoords(b));
-    return distanceA - distanceB;
+if (cachedData && blogPostRtbText.includes("{{local}}")) {
+  var locationData = JSON.parse(cachedData);
+  updatePageWithLocationData(locationData);
+} // Check if the text includes 'local'
+else if (blogPostRtbText.includes("{{local}}")) {
+  // Call the IPInfo API
+  const apiKey = "89320a08dbdfa6";
+  const apiURL = `https://ipinfo.io?token=${apiKey}`;
+  $.ajax({
+    url: apiURL,
+    method: "GET",
+    success: function (response) {
+      setCookie(cookieName, JSON.stringify(response, 7));
+      const locationData = response;
+      updatePageWithLocationData(locationData);
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      console.log("Request failed: ", textStatus, errorThrown);
+    },
   });
+}
 
-  const matchingItems = sortedItems.filter(
-    (item) => item.querySelector(".state-full").textContent.trim() === userState
-  );
+function calculateDistance(lat1, lon1, lat2, lon2) {}
 
-  splashComponents.forEach((component, index) => {
-    console.log(`Processing component ${index + 1}`);
-
-    if (matchingItems.length > 0) {
-      updateLocalContent(component, matchingItems, userState);
-    } else {
-      showDefaultContent(component);
-    }
-  });
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
 }
 
 function updateLocalContent(component, matchingItems, userState) {
@@ -461,3 +375,87 @@ function hideElement(el) {
 function showElement(el) {
   if (el) el.style.display = "block";
 }
+
+$(".related-articles_component").each(function (index) {
+  const swiper = new Swiper($(this).find(".swiper")[0], {
+    slidesPerView: 3,
+    speed: 600,
+    spaceBetween: 64,
+    initialSlide: 0,
+    slideToClickedSlide: true,
+    centeredSlides: false,
+    loop: true,
+    slideActiveClass: "is-active",
+    slideDuplicateActiveClass: "is-active",
+    keyboard: false,
+    disableOnInteraction: false,
+    pagination: {
+      el: ".swiper_pagination-wrapper",
+      bulletElement: "div",
+      bulletClass: "swiper_pagination-bullet",
+      bulletActiveClass: "is-active",
+      clickable: true,
+    },
+    navigation: {
+      nextEl: "#story-right",
+      prevEl: "#story-left",
+    },
+    breakpoints: {
+      0: {
+        slidesPerView: 1,
+      },
+      480: {
+        slidesPerView: 1,
+      },
+      767: {
+        slidesPerView: 1,
+      },
+      992: {
+        /* when window >= 988px - webflow desktop */
+      },
+    },
+  });
+});
+
+$(".condition_stories-component").each(function (index) {
+  const testSwiper = new Swiper($(this).find(".swiper")[0], {
+    slidesPerView: 1,
+    speed: 600,
+    spaceBetween: 24,
+    initialSlide: 0,
+    slideClass: "swiper-slide-home",
+    slideToClickedSlide: true,
+    centeredSlides: false,
+    loop: false,
+    slideActiveClass: "is-active",
+    slideDuplicateActiveClass: "is-active",
+    keyboard: false,
+    disableOnInteraction: false,
+    pagination: {
+      el: ".condition_stories-component .swiper_pagination-wrapper-home",
+      bulletElement: "div",
+      bulletClass: "swiper_pagination-bullet",
+      bulletActiveClass: "is-active",
+      bulletSize: 8,
+      clickable: true,
+    },
+    breakpoints: {
+      0: {
+        /* when window >=0px - webflow mobile landscape/portrait */
+      },
+      480: {
+        /* when window >=0px - webflow mobile landscape/portrait */
+        spaceBetween: 12,
+      },
+      481: {
+        /* when window >= 767px - webflow tablet */ spaceBetween: 24,
+      },
+      767: {
+        /* when window >= 767px - webflow tablet */ spaceBetween: 24,
+      },
+      992: {
+        /* when window >= 988px - webflow desktop */ spaceBetween: 24,
+      },
+    },
+  });
+});
