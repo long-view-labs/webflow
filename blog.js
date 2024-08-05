@@ -292,7 +292,119 @@ function getCookie(name) {
   return null;
 }
 
-function updatePageWithLocationData(locationData) {}
+function updatePageWithLocationData(locationData) {
+  // Assume 'userState' is the state obtained from the ipinfo API
+  const userState = locationData.region; // Replace with actual API response field if different
+  const [userLat, userLon] = locationData.loc.split(",").map(Number);
+
+  // Get all instances of the component where {splash} is added
+  const splashComponents = document.querySelectorAll(
+    '[fs-richtext-component="local"]'
+  );
+  // Get all the items in the .local-list within the current component
+  const listItems = document.querySelectorAll(".local-list .w-dyn-item");
+
+  // Sort listItems based on distance to user's location
+  // Sort listItems based on distance to user's location
+  const sortedItems = Array.from(listItems).sort((a, b) => {
+    const aLocationDiv = a.querySelector(".long-lat");
+    const bLocationDiv = b.querySelector(".long-lat");
+
+    if (!aLocationDiv || !bLocationDiv) {
+      console.error("One of the list items does not contain location data.");
+      return 0;
+    }
+
+    const aCoords = aLocationDiv.textContent.split(",").map(Number);
+    const bCoords = bLocationDiv.textContent.split(",").map(Number);
+
+    const distanceA = calculateDistance(userLat, userLon, ...aCoords);
+    const distanceB = calculateDistance(userLat, userLon, ...bCoords);
+
+    return distanceA - distanceB;
+  });
+
+  // Iterate over each splash component
+  splashComponents.forEach((component) => {
+    // Inside this loop, apply your logic to each componen
+    // Filter the items that match the user's state within the current component
+    const matchingItems = Array.from(sortedItems).filter((item) => {
+      const stateFull = item.querySelector(".state-full").textContent.trim();
+      return stateFull === userState;
+    });
+
+    // If there are matching items, insert them into the .local-splash-* divs
+    if (matchingItems.length > 0) {
+      // Replace {State} with the user's state in .splash-title.local
+      component.querySelectorAll(".splash-title.local").forEach((el) => {
+        el.textContent = el.textContent.replace("{State}", userState);
+      });
+
+      matchingItems.slice(0, 3).forEach((item, index) => {
+        // Clone the link to be inserted
+        const linkToInsert = item.querySelector(".city-state").cloneNode(true);
+
+        // Select the target div based on the index
+        const targetDiv = component.querySelector(`.local-splash-${index + 1}`);
+
+        // Insert the cloned link into the target div
+        if (targetDiv) {
+          targetDiv.innerHTML = ""; // Clear existing content
+          targetDiv.appendChild(linkToInsert);
+        }
+      });
+
+      // Hide the remaining .local-splash-* divs and .line-separator.vertical elements
+      for (let i = matchingItems.length; i < 3; i++) {
+        component.querySelector(`.local-splash-${i + 1}`).style.display =
+          "none";
+        // Hide the .line-separator.vertical that follows the .local-splash-* div
+        let nextSeparator = component.querySelector(
+          `.local-splash-${i + 1}`
+        ).nextElementSibling;
+        if (
+          nextSeparator &&
+          nextSeparator.classList.contains("line-separator")
+        ) {
+          nextSeparator.style.display = "none";
+        }
+      }
+
+      // Additionally, if there is only one match, hide the first .line-separator.vertical
+      if (matchingItems.length === 1) {
+        let firstSeparator =
+          component.querySelector(".local-splash-1").nextElementSibling;
+        if (
+          firstSeparator &&
+          firstSeparator.classList.contains("line-seperator")
+        ) {
+          firstSeparator.style.display = "none";
+        }
+      }
+      // If there are only two matches, hide the second .line-separator.vertical
+      if (matchingItems.length === 2) {
+        let secondSeparator =
+          component.querySelector(".local-splash-2").nextElementSibling;
+        if (
+          secondSeparator &&
+          secondSeparator.classList.contains("line-seperator")
+        ) {
+          secondSeparator.style.display = "none";
+        }
+      }
+    } else {
+      // Hide .blog-content_bottom-splash and .splash-title.local
+      component.querySelector(".blog-content_bottom-splash").style.display =
+        "none";
+      component
+        .querySelectorAll(".splash-title.local")
+        .forEach((el) => (el.style.display = "none"));
+
+      // Show .splash-title.default
+      component.querySelector(".splash-title.default").style.display = "block";
+    }
+  });
+}
 // Get the text content of the .blog-post-rtb element
 var blogPostRtbText = document.querySelector(".blog-post-rtb").textContent;
 
@@ -321,7 +433,21 @@ else if (blogPostRtbText.includes("{{local}}")) {
   });
 }
 
-function calculateDistance(lat1, lon1, lat2, lon2) {}
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  // Haversine formula to calculate distance
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance in km
+  return distance;
+}
 
 function deg2rad(deg) {
   return deg * (Math.PI / 180);
