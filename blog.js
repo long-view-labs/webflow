@@ -417,7 +417,7 @@ if (cachedData && blogPostRtbText.includes("{{local}}")) {
 } // Check if the text includes 'local'
 else if (blogPostRtbText.includes("{{local}}")) {
   // Call the IPInfo API
-  const apiKey = "69d052a0093ef5";
+  const apiKey = "22652a4d0b5237";
   const apiURL = `https://ipinfo.io?token=${apiKey}`;
   $.ajax({
     url: apiURL,
