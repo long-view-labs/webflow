@@ -119,7 +119,6 @@ $(document).ready(function () {
     }
   });
 
-  mealPlanStickyTitle();
 });
 
 $(document).ready(function () {
@@ -195,23 +194,6 @@ $(document).ready(function () {
   );
   $("[data-share-mail").attr("target", "_blank");
 });
-
-function mealPlanStickyTitle() {
-  // Check if the current URL contains 'meal-plan'
-  if (window.location.href.includes("meal-plan")) {
-    // Replace #sticky-title with #sticky-title-origin
-    $("#sticky-title").text($("#sticky-title-origin").text());
-
-    // Replace #sticky-option-1 with #origin-option-1
-    $("#sticky-option-1").text($("#origin-option-1").text());
-
-    // Replace #sticky-option-2 with #origin-option-2
-    $("#sticky-option-2").text($("#origin-option-2").text());
-
-    // Replace #sticky-option-3 with #origin-option-3
-    $("#sticky-option-3").text($("#origin-option-3").text());
-  }
-}
 
 function replaceBlogSplash() {
   // Get the text value of the element with ID 'blog-category'
