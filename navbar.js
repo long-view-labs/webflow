@@ -49,7 +49,7 @@ function revealDropdown(currentLink, currentContent) {
   let linkTextOffset; // center of the link
 
   // Check if window's width is less than or equal to your breakpoint
-  if (window.innerWidth <= 1245) {
+  if (window.innerWidth <= 1260) {
     // change 1222 to your desired breakpoint
     linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
     linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
@@ -85,7 +85,7 @@ function switchDropdown(currentLink, previousContent, currentContent) {
   let linkTextOffset;
 
   // Check if window's width is less than or equal to your breakpoint
-  if (window.innerWidth <= 1245) {
+  if (window.innerWidth <= 1260) {
     // change 1222 to your desired breakpoint
     linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
     linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
@@ -197,7 +197,7 @@ let showDropdown = gsap.timeline({
     let currentContent = content.eq(currentLink.index());
 
     // Check if window's width is less than or equal to your breakpoint
-    if (window.innerWidth <= 1245) {
+    if (window.innerWidth <= 1260) {
       // change 1222 to your desired breakpoint
       linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
       linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
