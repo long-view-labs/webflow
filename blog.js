@@ -118,7 +118,6 @@ $(document).ready(function () {
       window.location.href = url;
     }
   });
-
 });
 
 $(document).ready(function () {
@@ -401,6 +400,7 @@ else if (blogPostRtbText.includes("{{local}}")) {
   // Call the IPInfo API
   const apiKey = "89320a08dbdfa6";
   const apiURL = `https://ipinfo.io?token=${apiKey}`;
+  /*
   $.ajax({
     url: apiURL,
     method: "GET",
@@ -413,6 +413,7 @@ else if (blogPostRtbText.includes("{{local}}")) {
       console.log("Request failed: ", textStatus, errorThrown);
     },
   });
+  */
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
