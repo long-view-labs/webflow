@@ -370,7 +370,4 @@ function animateMenu(clickClass, animateClass) {
   });
 }
 
-animateMenu(".nav_sublink-item.conditions", ".nav_mobile-conditions");
-animateMenu(".nav_sublink-item.locations", ".nav_mobile-locations");
-animateMenu(".nav_sublink-item.insurance", ".nav_mobile-insurance");
 animateMenu(".nav_link-2.resources", ".nav_mobile-resources");
