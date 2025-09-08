@@ -370,8 +370,23 @@ $(document).ready(function () {
       var formattedValue = formatDOBInput(value);
       $input.val(formattedValue);
 
-      // Maintain cursor position after formatting
-      var newCursorPos = Math.min(cursorPosition, formattedValue.length);
+      // Smart cursor positioning for new input
+      var digitsOnly = value.replace(/\D/g, "");
+      var newCursorPos;
+
+      if (digitsOnly.length <= 2) {
+        // For month: position after the digits
+        newCursorPos = digitsOnly.length;
+      } else if (digitsOnly.length <= 4) {
+        // For day: position after the day digits (accounting for slash)
+        newCursorPos = digitsOnly.length + 1;
+      } else {
+        // For year: position after the year digits (accounting for slashes)
+        newCursorPos = digitsOnly.length + 2;
+      }
+
+      // Ensure cursor doesn't go beyond the formatted string
+      newCursorPos = Math.min(newCursorPos, formattedValue.length);
       $input[0].setSelectionRange(newCursorPos, newCursorPos);
 
       updateCTAUrl();
