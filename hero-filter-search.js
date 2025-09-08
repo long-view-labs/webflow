@@ -315,8 +315,27 @@ $(document).ready(function () {
 
     // Handle backspace/delete operations
     if (e.type === "keydown") {
-      if (e.key === "Backspace" || e.key === "Delete") {
-        // Allow backspace to work naturally, then format
+      if (e.key === "Backspace") {
+        // Check if cursor is right after a slash
+        if (cursorPosition > 0 && value[cursorPosition - 1] === "/") {
+          // Move cursor back one more position to delete the digit before the slash
+          setTimeout(function () {
+            var newValue =
+              value.substring(0, cursorPosition - 2) +
+              value.substring(cursorPosition);
+            var formattedValue = formatDOBInput(newValue);
+            $input.val(formattedValue);
+
+            // Position cursor after the slash that gets re-added
+            var newCursorPos = Math.max(0, cursorPosition - 2);
+            $input[0].setSelectionRange(newCursorPos, newCursorPos);
+
+            updateCTAUrl();
+          }, 0);
+          e.preventDefault();
+          return;
+        }
+        // Allow normal backspace for other cases
         setTimeout(function () {
           var newValue = $input.val();
           var formattedValue = formatDOBInput(newValue);
@@ -328,7 +347,21 @@ $(document).ready(function () {
 
           updateCTAUrl();
         }, 0);
-        return; // Don't prevent default for backspace
+        return;
+      } else if (e.key === "Delete") {
+        // Handle delete key similarly
+        setTimeout(function () {
+          var newValue = $input.val();
+          var formattedValue = formatDOBInput(newValue);
+          $input.val(formattedValue);
+
+          // Restore cursor position after formatting
+          var newCursorPos = Math.min(cursorPosition, formattedValue.length);
+          $input[0].setSelectionRange(newCursorPos, newCursorPos);
+
+          updateCTAUrl();
+        }, 0);
+        return;
       }
     }
 
