@@ -307,7 +307,47 @@ $(document).ready(function () {
     updateCTAUrl();
   });
 
-  // Enhanced DOB field handling with backspace support
+  // Function to detect mobile devices
+  function isMobileDevice() {
+    return (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) ||
+      window.innerWidth <= 768 ||
+      "ontouchstart" in window
+    );
+  }
+
+  // Initialize mobile-friendly DOB field
+  function initializeMobileDOB() {
+    var $dobInput = $("#dob");
+    if ($dobInput.length === 0) return;
+
+    if (isMobileDevice()) {
+      // Set mobile-friendly attributes
+      $dobInput.attr({
+        inputmode: "numeric",
+        pattern: "[0-9]*",
+        autocomplete: "bday",
+        placeholder: "MM/DD/YYYY",
+      });
+
+      // Add mobile-specific styling
+      $dobInput.css({
+        "font-size": "16px", // Prevents zoom on iOS
+        "min-height": "44px", // Minimum touch target size
+        padding: "12px 16px", // Better touch area
+      });
+
+      // Add mobile-friendly class for additional styling
+      $dobInput.addClass("mobile-dob-input");
+    }
+  }
+
+  // Initialize mobile DOB on page load
+  initializeMobileDOB();
+
+  // Enhanced DOB field handling with mobile support
   $("#dob").on("input keydown", function (e) {
     var $input = $(this);
     var value = $input.val();
@@ -316,7 +356,23 @@ $(document).ready(function () {
     // Handle backspace/delete operations
     if (e.type === "keydown") {
       if (e.key === "Backspace") {
-        // Check if cursor is right after a slash
+        // On mobile, use simpler backspace handling
+        if (isMobileDevice()) {
+          setTimeout(function () {
+            var newValue = $input.val();
+            var formattedValue = formatDOBInput(newValue);
+            $input.val(formattedValue);
+
+            // On mobile, place cursor at end for easier editing
+            var newCursorPos = formattedValue.length;
+            $input[0].setSelectionRange(newCursorPos, newCursorPos);
+
+            updateCTAUrl();
+          }, 0);
+          return;
+        }
+
+        // Desktop: Check if cursor is right after a slash
         if (cursorPosition > 0 && value[cursorPosition - 1] === "/") {
           // Move cursor back one more position to delete the digit before the slash
           setTimeout(function () {
@@ -370,24 +426,31 @@ $(document).ready(function () {
       var formattedValue = formatDOBInput(value);
       $input.val(formattedValue);
 
-      // Smart cursor positioning for new input
-      var digitsOnly = value.replace(/\D/g, "");
-      var newCursorPos;
-
-      if (digitsOnly.length <= 2) {
-        // For month: position after the digits
-        newCursorPos = digitsOnly.length;
-      } else if (digitsOnly.length <= 4) {
-        // For day: position after the day digits (accounting for slash)
-        newCursorPos = digitsOnly.length + 1;
+      // Different cursor positioning for mobile vs desktop
+      if (isMobileDevice()) {
+        // On mobile, place cursor at the end for easier input
+        var newCursorPos = formattedValue.length;
+        $input[0].setSelectionRange(newCursorPos, newCursorPos);
       } else {
-        // For year: position after the year digits (accounting for slashes)
-        newCursorPos = digitsOnly.length + 2;
-      }
+        // Desktop: Smart cursor positioning for new input
+        var digitsOnly = value.replace(/\D/g, "");
+        var newCursorPos;
 
-      // Ensure cursor doesn't go beyond the formatted string
-      newCursorPos = Math.min(newCursorPos, formattedValue.length);
-      $input[0].setSelectionRange(newCursorPos, newCursorPos);
+        if (digitsOnly.length <= 2) {
+          // For month: position after the digits
+          newCursorPos = digitsOnly.length;
+        } else if (digitsOnly.length <= 4) {
+          // For day: position after the day digits (accounting for slash)
+          newCursorPos = digitsOnly.length + 1;
+        } else {
+          // For year: position after the year digits (accounting for slashes)
+          newCursorPos = digitsOnly.length + 2;
+        }
+
+        // Ensure cursor doesn't go beyond the formatted string
+        newCursorPos = Math.min(newCursorPos, formattedValue.length);
+        $input[0].setSelectionRange(newCursorPos, newCursorPos);
+      }
 
       updateCTAUrl();
     }
