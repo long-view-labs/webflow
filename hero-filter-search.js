@@ -358,6 +358,7 @@ $(document).ready(function () {
       if (e.key === "Backspace") {
         // On mobile, use simpler backspace handling
         if (isMobileDevice()) {
+          // Don't prevent default, let native backspace work
           setTimeout(function () {
             var newValue = $input.val();
             var formattedValue = formatDOBInput(newValue);
@@ -368,8 +369,8 @@ $(document).ready(function () {
             $input[0].setSelectionRange(newCursorPos, newCursorPos);
 
             updateCTAUrl();
-          }, 0);
-          return;
+          }, 10); // Slightly longer delay to let native backspace work first
+          return; // Don't prevent default behavior
         }
 
         // Desktop: Check if cursor is right after a slash
@@ -424,13 +425,19 @@ $(document).ready(function () {
     // Handle regular input
     if (e.type === "input") {
       var formattedValue = formatDOBInput(value);
-      $input.val(formattedValue);
+
+      // Only update if the formatted value is different to avoid cursor jumping
+      if (formattedValue !== value) {
+        $input.val(formattedValue);
+      }
 
       // Different cursor positioning for mobile vs desktop
       if (isMobileDevice()) {
-        // On mobile, place cursor at the end for easier input
-        var newCursorPos = formattedValue.length;
-        $input[0].setSelectionRange(newCursorPos, newCursorPos);
+        // On mobile, only set cursor position if we actually changed the value
+        if (formattedValue !== value) {
+          var newCursorPos = formattedValue.length;
+          $input[0].setSelectionRange(newCursorPos, newCursorPos);
+        }
       } else {
         // Desktop: Smart cursor positioning for new input
         var digitsOnly = value.replace(/\D/g, "");
