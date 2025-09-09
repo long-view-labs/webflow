@@ -363,7 +363,7 @@ $(document).ready(function () {
           var currentValue = $input.val();
           var cursorPos = $input[0].selectionStart;
 
-          // If cursor is at the end or after a slash, remove last character
+          // Remove the last character (digit or slash)
           var newValue;
           if (cursorPos >= currentValue.length) {
             // Remove last character
@@ -373,6 +373,20 @@ $(document).ready(function () {
             newValue =
               currentValue.slice(0, cursorPos - 1) +
               currentValue.slice(cursorPos);
+          }
+
+          // If we removed a slash, also remove the digit before it to actually "go back"
+          if (
+            currentValue.length > 0 &&
+            currentValue[currentValue.length - 1] === "/"
+          ) {
+            // We're trying to delete a slash, so remove more content
+            var digitsOnly = newValue.replace(/\D/g, "");
+            if (digitsOnly.length >= 2) {
+              // Remove the last digit to actually go back past the slash
+              digitsOnly = digitsOnly.slice(0, -1);
+              newValue = digitsOnly;
+            }
           }
 
           // Format the new value
