@@ -348,7 +348,7 @@ $(document).ready(function () {
   initializeMobileDOB();
 
   // Enhanced DOB field handling with mobile support
-  $("#dob").on("input keydown", function (e) {
+  $("#dob").on("input keydown keyup", function (e) {
     var $input = $(this);
     var value = $input.val();
     var cursorPosition = $input[0].selectionStart;
@@ -356,21 +356,35 @@ $(document).ready(function () {
     // Handle backspace/delete operations
     if (e.type === "keydown") {
       if (e.key === "Backspace") {
-        // On mobile, use simpler backspace handling
+        // On mobile, handle backspace more aggressively
         if (isMobileDevice()) {
-          // Don't prevent default, let native backspace work
-          setTimeout(function () {
-            var newValue = $input.val();
-            var formattedValue = formatDOBInput(newValue);
-            $input.val(formattedValue);
+          e.preventDefault(); // Prevent default to handle manually
 
-            // On mobile, place cursor at end for easier editing
-            var newCursorPos = formattedValue.length;
-            $input[0].setSelectionRange(newCursorPos, newCursorPos);
+          var currentValue = $input.val();
+          var cursorPos = $input[0].selectionStart;
 
-            updateCTAUrl();
-          }, 10); // Slightly longer delay to let native backspace work first
-          return; // Don't prevent default behavior
+          // If cursor is at the end or after a slash, remove last character
+          var newValue;
+          if (cursorPos >= currentValue.length) {
+            // Remove last character
+            newValue = currentValue.slice(0, -1);
+          } else {
+            // Remove character before cursor
+            newValue =
+              currentValue.slice(0, cursorPos - 1) +
+              currentValue.slice(cursorPos);
+          }
+
+          // Format the new value
+          var formattedValue = formatDOBInput(newValue);
+          $input.val(formattedValue);
+
+          // Set cursor at the end for mobile
+          var newCursorPos = formattedValue.length;
+          $input[0].setSelectionRange(newCursorPos, newCursorPos);
+
+          updateCTAUrl();
+          return;
         }
 
         // Desktop: Check if cursor is right after a slash
@@ -424,6 +438,15 @@ $(document).ready(function () {
 
     // Handle regular input
     if (e.type === "input") {
+      // On mobile, detect if this was a deletion (shorter value)
+      var wasDeleted = false;
+      if (isMobileDevice()) {
+        var prevLength = $input.data("prevLength") || 0;
+        var currentLength = value.replace(/\D/g, "").length; // Count only digits
+        wasDeleted = currentLength < prevLength;
+        $input.data("prevLength", currentLength);
+      }
+
       var formattedValue = formatDOBInput(value);
 
       // Only update if the formatted value is different to avoid cursor jumping
@@ -433,8 +456,8 @@ $(document).ready(function () {
 
       // Different cursor positioning for mobile vs desktop
       if (isMobileDevice()) {
-        // On mobile, only set cursor position if we actually changed the value
-        if (formattedValue !== value) {
+        // On mobile, handle cursor positioning based on action
+        if (formattedValue !== value || wasDeleted) {
           var newCursorPos = formattedValue.length;
           $input[0].setSelectionRange(newCursorPos, newCursorPos);
         }
