@@ -257,7 +257,7 @@
     const btn = document.createElement("button");
     btn.type = "submit";
     btn.textContent = "Apply";
-    btn.classList.add("btn", "w-button");
+    btn.classList.add("btn", "w-button", "larger");
     form.appendChild(btn);
 
     // resume rule: either file OR text
