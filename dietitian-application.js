@@ -371,6 +371,37 @@
       const el = document.createElement("input");
       el.type = "file";
       el.name = field.name;
+      // Add file type validation for resume field
+      if (field.name === "resume") {
+        el.accept = ".pdf,.doc,.docx,.txt,.rtf";
+        el.addEventListener("change", function () {
+          const file = this.files[0];
+          if (file) {
+            const allowedTypes = [
+              "application/pdf",
+              "application/msword",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              "text/plain",
+              "application/rtf",
+            ];
+
+            const maxSize = 10 * 1024 * 1024; // 10MB
+
+            if (!allowedTypes.includes(file.type)) {
+              showValidationError(
+                this,
+                "Please upload a PDF, Word document, or text file (.pdf, .doc, .docx, .txt, .rtf)"
+              );
+              this.value = ""; // Clear the invalid file
+            } else if (file.size > maxSize) {
+              showValidationError(this, "File size must be less than 10MB");
+              this.value = ""; // Clear the oversized file
+            } else {
+              clearValidationError(this);
+            }
+          }
+        });
+      }
       return addWF(el);
     }
     if (field.type === "multi_value_single_select") {
@@ -589,12 +620,25 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
+      // Prevent double submission
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn && submitBtn.disabled) return;
+
+      // Disable submit button and show loading state
+      let originalText = "";
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        originalText = submitBtn.textContent;
+        submitBtn.textContent = "Submitting...";
+      }
+
       // Check tagpicker validation first
       const bad = [...form.querySelectorAll(".tagpicker")].find(
         (tp) => tp.dataset.required === "1" && tp.getSelectedCount?.() === 0
       );
       if (bad) {
         bad.checkValidity?.();
+        resetSubmitButton();
         return;
       }
 
@@ -645,6 +689,7 @@
 
       // Stop submission if there are validation errors
       if (hasValidationErrors) {
+        resetSubmitButton();
         return;
       }
 
@@ -705,10 +750,19 @@
         } else {
           console.error(text);
           alert("Submit error. Please try again.");
+          resetSubmitButton();
         }
       } catch (err) {
         console.error(err);
         alert("Network error. Please try again.");
+        resetSubmitButton();
+      }
+
+      function resetSubmitButton() {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText || "Apply";
+        }
       }
     });
 
