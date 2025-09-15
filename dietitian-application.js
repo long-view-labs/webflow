@@ -23,6 +23,79 @@
     return t.value;
   };
 
+  // Validation functions
+  function validateUSPhone(phone) {
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, "");
+
+    // Accept any 10-digit number
+    if (digits.length === 10) {
+      return true;
+    }
+    return false;
+  }
+
+  function formatPhoneNumber(value) {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, "");
+
+    // Only format 10-digit US numbers
+    if (digits.length <= 3) {
+      return digits;
+    } else if (digits.length <= 6) {
+      return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    } else {
+      // Limit to 10 digits and format as XXX-XXX-XXXX
+      const limitedDigits = digits.slice(0, 10);
+      return `${limitedDigits.slice(0, 3)}-${limitedDigits.slice(
+        3,
+        6
+      )}-${limitedDigits.slice(6)}`;
+    }
+  }
+
+  function validateEmail(email) {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  }
+
+  /**
+   * Formats a phone number to +15555555555 -- E.164 format https://www.twilio.com/docs/glossary/what-e164
+   */
+  function formatPhoneNumberForRudderstack(phoneNumber) {
+    if (!phoneNumber) return undefined;
+    return `+1${phoneNumber.replace(/\D/g, "")}`;
+  }
+
+  function showValidationError(input, message) {
+    // Remove existing error
+    const existingError = input.parentNode.querySelector(".validation-error");
+    if (existingError) {
+      existingError.remove();
+    }
+
+    // Add error message
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "validation-error";
+    errorDiv.style.color = "#e74c3c";
+    errorDiv.style.fontSize = "14px";
+    errorDiv.style.marginTop = "5px";
+    errorDiv.style.fontStyle = "italic";
+    errorDiv.textContent = message;
+
+    input.parentNode.appendChild(errorDiv);
+    input.style.borderColor = "#e74c3c";
+  }
+
+  function clearValidationError(input) {
+    const existingError = input.parentNode.querySelector(".validation-error");
+    if (existingError) {
+      existingError.remove();
+    }
+    input.style.borderColor = "";
+  }
+
   async function getSchema() {
     const c = sessionStorage.getItem(CACHE_KEY);
     if (c) {
@@ -175,15 +248,120 @@
   }
 
   // ---------- FIELD FACTORY ----------
-  function control(field, required) {
+  function control(field, required, label) {
     if (field.type === "input_text") {
+      // Check if this is a state field and convert to dropdown
+      if (label && label.toLowerCase().includes("what state you are located")) {
+        const el = document.createElement("select");
+        el.name = field.name;
+        if (required) el.required = true;
+
+        // Add default "Select" option
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = "Select";
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        el.appendChild(defaultOption);
+
+        // Add US states
+        const states = [
+          "Alabama",
+          "Alaska",
+          "Arizona",
+          "Arkansas",
+          "California",
+          "Colorado",
+          "Connecticut",
+          "Delaware",
+          "Florida",
+          "Georgia",
+          "Hawaii",
+          "Idaho",
+          "Illinois",
+          "Indiana",
+          "Iowa",
+          "Kansas",
+          "Kentucky",
+          "Louisiana",
+          "Maine",
+          "Maryland",
+          "Massachusetts",
+          "Michigan",
+          "Minnesota",
+          "Mississippi",
+          "Missouri",
+          "Montana",
+          "Nebraska",
+          "Nevada",
+          "New Hampshire",
+          "New Jersey",
+          "New Mexico",
+          "New York",
+          "North Carolina",
+          "North Dakota",
+          "Ohio",
+          "Oklahoma",
+          "Oregon",
+          "Pennsylvania",
+          "Rhode Island",
+          "South Carolina",
+          "South Dakota",
+          "Tennessee",
+          "Texas",
+          "Utah",
+          "Vermont",
+          "Virginia",
+          "Washington",
+          "West Virginia",
+          "Wisconsin",
+          "Wyoming",
+          "District of Columbia",
+        ];
+
+        states.forEach((state) => {
+          const option = document.createElement("option");
+          option.value = state;
+          option.textContent = state;
+          el.appendChild(option);
+        });
+
+        return addWF(el);
+      }
+
+      // Regular text input for non-state fields
       const el = document.createElement("input");
       el.type = "text";
       el.name = field.name;
       if (required) el.required = true;
+
+      // Add validation for Registered Dietitian ID Number
+      if (
+        label &&
+        label.toLowerCase().includes("registered dietitian id number")
+      ) {
+        el.pattern = "[0-9]{5,8}";
+        el.title = "Please enter a 5 to 8 digit number";
+        el.addEventListener("input", function () {
+          const value = this.value.replace(/\D/g, ""); // Remove non-digits
+          this.value = value;
+
+          // Validate length
+          if (value.length > 0 && (value.length < 5 || value.length > 8)) {
+            this.setCustomValidity("Please enter a 5 to 8 digit number");
+          } else {
+            this.setCustomValidity("");
+          }
+        });
+      }
+
       return addWF(el);
     }
     if (field.type === "textarea") {
+      // Skip resume_text field - we only want file upload for resume
+      if (field.name === "resume_text") {
+        return null;
+      }
       const el = document.createElement("textarea");
       el.name = field.name;
       if (required) el.required = true;
@@ -199,6 +377,16 @@
       const el = document.createElement("select");
       el.name = field.name;
       if (required) el.required = true;
+
+      // Add default "Select" option
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "Select";
+      defaultOption.disabled = true;
+      defaultOption.selected = true;
+      el.appendChild(defaultOption);
+
+      // Add actual field values
       (field.values || []).forEach((v) => {
         const o = document.createElement("option");
         o.value = v.value;
@@ -239,16 +427,31 @@
           lab.textContent = q.label + (q.required ? " *" : "");
           block.appendChild(lab);
         }
+        (q.fields || []).forEach((f) => {
+          const el = control(f, q.required, q.label);
+          if (el) {
+            block.appendChild(el);
+          }
+        });
         if (q.description) {
           const help = document.createElement("div");
           help.className = "gh-help";
           help.innerHTML = q.description;
           block.appendChild(help);
         }
-        (q.fields || []).forEach((f) => {
-          const el = control(f, q.required);
-          if (el) block.appendChild(el);
-        });
+
+        // Add subtext for state field (more specific detection) - after all fields
+        if (
+          q.label &&
+          q.label.toLowerCase().includes("what state you are located")
+        ) {
+          const subtext = document.createElement("div");
+          subtext.className = "gh-help";
+          subtext.textContent =
+            "We can only work with Dietitians based in the US currently.";
+          block.appendChild(subtext);
+        }
+
         form.appendChild(block);
       }
     );
@@ -260,19 +463,133 @@
     btn.classList.add("btn", "w-button", "larger");
     form.appendChild(btn);
 
-    // resume rule: either file OR text
+    // resume rule: file upload only
     const f = form.querySelector('input[name="resume"]');
-    const t = form.querySelector('textarea[name="resume_text"]');
+    if (f) f.required = true;
 
-    function sync() {
-      const hasFile = f?.files?.length > 0;
-      if (t) t.required = !hasFile;
+    // Add real-time validation and formatting for phone and email
+    const phoneInput = form.querySelector('input[name="phone"]');
+    if (phoneInput) {
+      // Set placeholder
+      phoneInput.placeholder = "555-123-4567";
+
+      phoneInput.addEventListener("input", function () {
+        const cursorPosition = this.selectionStart;
+        const oldValue = this.value;
+        const formattedValue = formatPhoneNumber(this.value);
+
+        // Only update if value actually changed to avoid cursor jumping
+        if (formattedValue !== oldValue) {
+          this.value = formattedValue;
+
+          // Adjust cursor position after formatting
+          let newCursorPosition = cursorPosition;
+
+          // If we added characters (dashes), move cursor forward
+          if (formattedValue.length > oldValue.length) {
+            newCursorPosition =
+              cursorPosition + (formattedValue.length - oldValue.length);
+          }
+          // If we're at a dash position, move cursor past it
+          if (formattedValue[newCursorPosition] === "-") {
+            newCursorPosition++;
+          }
+
+          this.setSelectionRange(newCursorPosition, newCursorPosition);
+        }
+
+        // Only clear errors while typing, don't show new errors
+        if (!this.value.trim() || validateUSPhone(this.value)) {
+          clearValidationError(this);
+        }
+      });
+
+      phoneInput.addEventListener("keydown", function (e) {
+        // Handle backspace to remove dashes properly
+        if (e.key === "Backspace") {
+          const cursorPosition = this.selectionStart;
+          const value = this.value;
+
+          // If cursor is right after a dash, move it back to delete the digit before the dash
+          if (cursorPosition > 0 && value[cursorPosition - 1] === "-") {
+            setTimeout(() => {
+              const newValue = formatPhoneNumber(this.value);
+              this.value = newValue;
+              // Position cursor appropriately
+              const newCursorPos = Math.max(0, cursorPosition - 1);
+              this.setSelectionRange(newCursorPos, newCursorPos);
+            }, 0);
+          }
+        }
+      });
+
+      phoneInput.addEventListener("blur", function () {
+        if (this.value.trim()) {
+          if (!validateUSPhone(this.value)) {
+            showValidationError(
+              this,
+              "Please enter a valid US phone number (e.g., 555-123-4567)"
+            );
+          } else {
+            clearValidationError(this);
+          }
+        } else {
+          clearValidationError(this);
+        }
+      });
     }
-    f?.addEventListener("change", sync);
-    sync();
+
+    const emailInput = form.querySelector('input[name="email"]');
+    if (emailInput) {
+      emailInput.addEventListener("blur", function () {
+        if (this.value.trim()) {
+          if (!validateEmail(this.value)) {
+            showValidationError(this, "Please enter a valid email address");
+          } else {
+            clearValidationError(this);
+          }
+        } else {
+          clearValidationError(this);
+        }
+      });
+
+      emailInput.addEventListener("input", function () {
+        // Clear error on input to give immediate feedback when they start typing correctly
+        if (this.value.trim() && validateEmail(this.value)) {
+          clearValidationError(this);
+        }
+      });
+    }
+
+    // Add real-time validation for RD ID
+    const rdIdInputs = form.querySelectorAll('input[pattern="[0-9]{5,8}"]');
+    rdIdInputs.forEach((rdIdInput) => {
+      rdIdInput.addEventListener("blur", function () {
+        if (this.value.trim()) {
+          const digits = this.value.replace(/\D/g, "");
+          if (digits.length < 5 || digits.length > 8) {
+            showValidationError(this, "Please enter a 5 to 8 digit number");
+          } else {
+            clearValidationError(this);
+          }
+        } else {
+          clearValidationError(this);
+        }
+      });
+
+      rdIdInput.addEventListener("input", function () {
+        // Clear error if valid or empty
+        const digits = this.value.replace(/\D/g, "");
+        if (!this.value.trim() || (digits.length >= 5 && digits.length <= 8)) {
+          clearValidationError(this);
+        }
+      });
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      // Check tagpicker validation first
       const bad = [...form.querySelectorAll(".tagpicker")].find(
         (tp) => tp.dataset.required === "1" && tp.getSelectedCount?.() === 0
       );
@@ -281,20 +598,110 @@
         return;
       }
 
+      // Validate phone and email
+      let hasValidationErrors = false;
+
+      // Phone validation
+      const phoneInput = form.querySelector('input[name="phone"]');
+      if (phoneInput && phoneInput.value.trim()) {
+        if (!validateUSPhone(phoneInput.value)) {
+          showValidationError(
+            phoneInput,
+            "Please enter a valid US phone number (e.g., 555-123-4567)"
+          );
+          hasValidationErrors = true;
+        } else {
+          clearValidationError(phoneInput);
+        }
+      }
+
+      // Email validation
+      const emailInput = form.querySelector('input[name="email"]');
+      if (emailInput && emailInput.value.trim()) {
+        if (!validateEmail(emailInput.value)) {
+          showValidationError(emailInput, "Please enter a valid email address");
+          hasValidationErrors = true;
+        } else {
+          clearValidationError(emailInput);
+        }
+      }
+
+      // RD ID validation
+      const rdIdInputs = form.querySelectorAll('input[pattern="[0-9]{5,8}"]');
+      rdIdInputs.forEach((rdIdInput) => {
+        if (rdIdInput.value.trim()) {
+          const digits = rdIdInput.value.replace(/\D/g, "");
+          if (digits.length < 5 || digits.length > 8) {
+            showValidationError(
+              rdIdInput,
+              "Please enter a 5 to 8 digit number"
+            );
+            hasValidationErrors = true;
+          } else {
+            clearValidationError(rdIdInput);
+          }
+        }
+      });
+
+      // Stop submission if there are validation errors
+      if (hasValidationErrors) {
+        return;
+      }
+
       const fd = new FormData(form);
       try {
+        // First submission
         const resp = await fetch(`${PROXY}/apply${location.search || ""}`, {
           method: "POST",
           body: fd,
         });
         const text = await resp.text();
         if (resp.ok) {
-          form.replaceWith(
-            Object.assign(document.createElement("div"), {
-              textContent: "Application submitted. Thank you!",
-            })
-          );
-          // optional: console.log(JSON.parse(text));
+          // Application submitted successfully - track event then redirect
+          console.log("Application submitted successfully:", JSON.parse(text));
+
+          const submittedEmail =
+            form.querySelector('input[name="email"]')?.value?.trim() || "";
+          const submittedPhone =
+            form.querySelector('input[name="phone"]')?.value?.trim() || "";
+          const e164Phone = formatPhoneNumberForRudderstack(submittedPhone);
+
+          if (
+            window.rudderanalytics &&
+            typeof window.rudderanalytics.track === "function"
+          ) {
+            try {
+              if (typeof window.rudderanalytics.identify === "function") {
+                // Send identify with traits before the tracking event (no userId)
+                window.rudderanalytics.identify(undefined, {
+                  email: submittedEmail || undefined,
+                  phone: e164Phone,
+                });
+              }
+              window.rudderanalytics.track(
+                "Dietitian Submit Clicked",
+                { email: submittedEmail || undefined, phone: e164Phone },
+                {},
+                () => {
+                  window.location.href = "/dietitian-application/thank-you";
+                }
+              );
+              // Fallback redirect in case callback doesn't fire promptly
+              setTimeout(() => {
+                if (location.pathname !== "/dietitian-application/thank-you") {
+                  window.location.href = "/dietitian-application/thank-you";
+                }
+              }, 800);
+            } catch (e) {
+              console.error("RudderStack tracking error:", e);
+              window.location.href = "/dietitian-application/thank-you";
+            }
+          } else {
+            console.error(
+              "RudderStack not available for tracking: Dietitian Submit Clicked"
+            );
+            window.location.href = "/dietitian-application/thank-you";
+          }
         } else {
           console.error(text);
           alert("Submit error. Please try again.");
@@ -310,8 +717,36 @@
     mount.appendChild(form);
   }
 
+  // ---------- UTM CAPTURE ----------
+  function captureUTMParams() {
+    const utmParams = {};
+    const utmKeys = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_content",
+      "utm_creative",
+      "utm_term",
+      "utm_page",
+    ];
+
+    utmKeys.forEach((key) => {
+      const value = new URLSearchParams(location.search).get(key);
+      if (value) utmParams[key] = value;
+    });
+
+    if (Object.keys(utmParams).length > 0) {
+      console.log("UTM Parameters captured:", utmParams);
+    }
+
+    return utmParams;
+  }
+
   // ---------- INIT ----------
   const schema = await getSchema(); // if this throws, check console/network for the GET
   renderHeader(schema);
   buildForm(schema);
+
+  // Capture UTM params for debugging
+  captureUTMParams();
 })();
