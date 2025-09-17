@@ -194,7 +194,31 @@ $(document).ready(function () {
       }
     }
 
-    // UTM parameters are handled by global.js
+    // Append UTM parameters from global.js (stored in sessionStorage)
+    try {
+      var utmKeys = [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_term",
+        "gclid",
+        "fbclid",
+        "msclkid",
+        "ttclid",
+        "im_ref",
+      ];
+
+      for (var i = 0; i < utmKeys.length; i++) {
+        var key = utmKeys[i];
+        var value = sessionStorage.getItem(key);
+        if (value && value.trim()) {
+          params.append(key, value.trim());
+        }
+      }
+    } catch (e) {
+      // ignore sessionStorage access errors
+    }
 
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
