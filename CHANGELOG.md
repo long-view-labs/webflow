@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.598.6] - 2025-09-17
+
+No release notes provided.
+
+
 ## [2.598.5] - 2025-09-17
 
 No release notes provided.
