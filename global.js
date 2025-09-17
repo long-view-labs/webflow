@@ -132,7 +132,19 @@ $(".menu_slug").each(function () {
   const SESSION_KEY = "persistedUTMs";
   const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
   const TARGET_HOST = "signup.usenourish.com";
-  const COOKIE_DOMAIN = ".usenourish.com";
+
+  // Dynamic cookie domain based on current hostname
+  const getCookieDomain = () => {
+    const hostname = window.location.hostname;
+    if (hostname.includes("usenourish.com")) {
+      return ".usenourish.com";
+    } else if (hostname.includes("webflow.io")) {
+      return hostname; // Use exact hostname for webflow.io domains
+    } else {
+      return hostname; // Use exact hostname for other domains
+    }
+  };
+  const COOKIE_DOMAIN = getCookieDomain();
 
   // All supported UTM and tracking parameters
   const SUPPORTED_PARAMS = new Set([
@@ -291,6 +303,7 @@ $(".menu_slug").each(function () {
    */
   function setUtmCookies(params) {
     console.log("setUtmCookies - called with params:", params);
+    console.log("setUtmCookies - current hostname:", window.location.hostname);
     console.log("setUtmCookies - COOKIE_DOMAIN:", COOKIE_DOMAIN);
 
     for (const [key, value] of Object.entries(params)) {

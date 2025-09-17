@@ -1,7 +1,6 @@
 $(document).ready(function () {
   // Global variables to store API data
   var payersData = [];
-  var specialtiesData = [];
 
   // Function to get query parameter by name
   function getQueryParam(name) {
@@ -37,48 +36,10 @@ $(document).ready(function () {
       });
   }
 
-  // Function to fetch specialties data
-  function fetchSpecialtiesData() {
-    return fetch("https://app.usenourish.com/api/specialties/all", {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      // Try without explicit CORS mode first
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(
-            "Failed to fetch specialties data: " + response.status
-          );
-        }
-        return response.json();
-      })
-      .then((data) => {
-        specialtiesData = data;
-        return data;
-      })
-      .catch((error) => {
-        console.error("Error fetching specialties data:", error);
-        // Fallback to empty array - form will still work without IDs
-        specialtiesData = [];
-        return [];
-      });
-  }
-
   // Function to find payer ID by name
   function findPayerId(payerName) {
     var payer = payersData.find((item) => item.payerName === payerName);
     return payer ? payer.id : null;
-  }
-
-  // Function to find specialty ID by display name
-  function findSpecialtyId(displayName) {
-    var specialty = specialtiesData.find(
-      (item) => item.patientDisplayName === displayName
-    );
-    return specialty ? specialty.id : null;
   }
 
   // Function to format DOB input with forward slashes and backspace support
@@ -184,15 +145,6 @@ $(document).ready(function () {
       params.append("landingPageVariation", "Provider_Search");
     }
 
-    // Get selected specialty
-    var selectedSpecialty = $("#concern-text").text();
-    if (selectedSpecialty && selectedSpecialty !== "Primary concern") {
-      var specialtyId = findSpecialtyId(selectedSpecialty);
-      if (specialtyId) {
-        params.append("prioritySpecialtyId", specialtyId);
-      }
-    }
-
     // Get selected insurance (use raw value, not truncated label)
     var selectedInsuranceRaw =
       (typeof insurance !== "undefined" && insurance) ||
@@ -253,7 +205,7 @@ $(document).ready(function () {
   updateCTAUrl();
 
   // Load API data on page load
-  Promise.all([fetchPayersData(), fetchSpecialtiesData()])
+  fetchPayersData()
     .then(() => {
       // Initial URL update
       updateCTAUrl();
@@ -478,9 +430,6 @@ $(document).ready(function () {
   // Call the function for the 'Insurance' query parameter
   clickMatchingRadioButton("insurance", "Insurance");
 
-  // Call the function for the 'concern' query parameter
-  clickMatchingRadioButton("concern", "Primacy concern");
-
   // Debug: Check if insurance radio buttons exist
   console.log(
     "Insurance radio buttons found:",
@@ -507,7 +456,7 @@ $(document).ready(function () {
     document.activeElement.dispatchEvent(event);
   });
 
-  var state, insurance, specialties, thisDropdown;
+  var state, insurance, thisDropdown;
 
   $(".filter-list_label").on("click", function () {
     $(this).siblings(".radio-hide").trigger("click");
@@ -716,45 +665,6 @@ $(document).ready(function () {
     }
   );
 
-  // Listen for click events on radio buttons with data-name="Primacy concern"
-  $('input[type="radio"][data-name="Primacy concern"]').on(
-    "click",
-    function () {
-      var selected = $(this).val(); // Get the value of the clicked radio button
-      var $concernFilter = $("#specialty_filter");
-      var maxWidth = $concernFilter.width();
-
-      // Update the text of #concern-text with the selected concern
-      var newText = truncateText(selected, maxWidth);
-      $("#concern-text").text(newText);
-
-      // Update text color to #191918 when text is changed from default
-      if (newText !== "Primary concern") {
-        $("#concern-text").css("color", "#191918");
-      }
-
-      // Update CTA URL after concern selection
-      updateCTAUrl();
-    }
-  );
-
-  // Also handle keyboard-triggered selection (Space/Enter on input fires change)
-  $('input[type="radio"][data-name="Primacy concern"]').on(
-    "change",
-    function () {
-      var selected = $(this).val();
-      var $concernFilter = $("#specialty_filter");
-      var maxWidth = $concernFilter.width();
-
-      var newText = truncateText(selected, maxWidth);
-      $("#concern-text").text(newText);
-      if (newText !== "Primary concern") {
-        $("#concern-text").css("color", "#191918");
-      }
-      updateCTAUrl();
-    }
-  );
-
   function updateInsurancePlaceholder() {
     if (typeof insFilter !== "undefined" && insFilter !== null) {
       var $insuranceFilter = $("#insurance_filter");
@@ -771,20 +681,6 @@ $(document).ready(function () {
     }
   }
   updateInsurancePlaceholder();
-
-  function updateConcernPlaceholder() {
-    if (typeof concernFilter !== "undefined" && concernFilter !== null) {
-      var $concernFilter = $("#specialty_filter");
-      var maxWidth = $concernFilter.width();
-
-      // Update the text of #concern-text with the selected concern
-      $("#concern-text").text(truncateText(concernFilter, maxWidth));
-    } else {
-      // Set default text for concern
-      $("#concern-text").text("Primary concern");
-    }
-  }
-  updateConcernPlaceholder();
 
   // Keyboard accessibility for dropdowns (insurance and primary concern)
   function setupDropdownA11y(toggleSelector) {
@@ -945,166 +841,6 @@ $(document).ready(function () {
   );
   setupDropdownA11y(".provider-filter_dopdown.specialty .w-dropdown-toggle");
   setupDropdownA11y("#w-dropdown-toggle-0");
-
-  $(".filter-list_input-group").on("click", function (e) {
-    var city = "";
-    var state = "";
-    var postalCode = "";
-
-    for (var i = 0; i < place.address_components.length; i++) {
-      var component = place.address_components[i];
-      var types = component.types;
-
-      if (types.indexOf("locality") !== -1) {
-        city = component.long_name;
-      }
-      if (types.indexOf("administrative_area_level_1") !== -1) {
-        state = component.short_name;
-      }
-      if (types.indexOf("postal_code") !== -1) {
-        postalCode = component.long_name;
-      }
-    }
-
-    // Format the result as "City, State ZIP"
-    var formattedAddress = "";
-    if (city && state && postalCode) {
-      formattedAddress = city + ", " + state + " " + postalCode;
-    } else {
-      formattedAddress = place.formatted_address;
-    }
-
-    // Update the input with the formatted address
-    input.value = formattedAddress;
-
-    console.log("Selected zip code place:", formattedAddress);
-    console.log("Zip code place details:", {
-      city: city,
-      state: state,
-      postalCode: postalCode,
-      formattedAddress: place.formatted_address,
-    });
-
-    // Update CTA URL after zip code selection
-    updateCTAUrl();
-  });
-
-  // Prevent clicks on Google Places dropdown from propagating to elements below
-  document.addEventListener(
-    "click",
-    function (e) {
-      // Check if the click is on a Google Places autocomplete element
-      if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
-        e.stopPropagation();
-        e.preventDefault();
-      }
-    },
-    true
-  );
-
-  // Monitor input to switch between city and zip autocomplete
-  input.addEventListener("input", function () {
-    var value = this.value;
-
-    // If input starts with numbers, use zip autocomplete
-    if (/^\d/.test(value)) {
-      if (activeAutocomplete !== zipAutocomplete) {
-        console.log("Switching to zip code autocomplete");
-        activeAutocomplete = zipAutocomplete;
-      }
-    } else {
-      // If input starts with letters, use city autocomplete
-      if (activeAutocomplete !== autocomplete) {
-        console.log("Switching to city autocomplete");
-        activeAutocomplete = autocomplete;
-      }
-    }
-  });
-
-  // Prevent form submission on Enter key
-  input.addEventListener("keydown", function (e) {
-    if (e.keyCode === 13) {
-      e.preventDefault();
-    }
-  });
-
-  // Prevent clicks on Google Places dropdown from propagating to elements below
-  document.addEventListener(
-    "click",
-    function (e) {
-      // Check if the click is on a Google Places autocomplete element
-      if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
-        e.stopPropagation();
-        e.preventDefault();
-        return false;
-      }
-    },
-    true
-  );
-
-  // Also prevent clicks on the input itself from opening dropdowns below
-  input.addEventListener("click", function (e) {
-    e.stopPropagation();
-  });
-
-  // Ensure Google Places dropdown appears above other elements and prevent clicks below
-  var style = document.createElement("style");
-  style.textContent = `
-          .pac-container {
-            z-index: 9999 !important;
-            position: fixed !important;
-            pointer-events: auto !important;
-          }
-          .pac-item {
-            cursor: pointer;
-            pointer-events: auto !important;
-          }
-          .pac-item:hover {
-            background-color: #f0f0f0 !important;
-          }
-          /* Prevent clicks on elements below when Google Places dropdown is visible */
-          .pac-container:not(:empty) ~ * {
-            pointer-events: none !important;
-          }
-          /* Alternative: add overlay when Google Places is active */
-          .google-places-active {
-            pointer-events: none !important;
-          }
-        `;
-  document.head.appendChild(style);
-
-  // Add overlay when Google Places dropdown is visible
-  var overlay = document.createElement("div");
-  overlay.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: transparent;
-          z-index: 9998;
-          display: none;
-        `;
-  overlay.id = "google-places-overlay";
-  document.body.appendChild(overlay);
-
-  // Show overlay when input is focused and hide when dropdown disappears
-  input.addEventListener("focus", function () {
-    overlay.style.display = "block";
-  });
-
-  input.addEventListener("blur", function () {
-    setTimeout(function () {
-      overlay.style.display = "none";
-    }, 200);
-  });
-
-  // Also hide overlay when clicking on Google Places elements
-  document.addEventListener("click", function (e) {
-    if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
-      overlay.style.display = "none";
-    }
-  });
 
   $(".filter-list_input-group").on("click", function (e) {
     // Allow the default click behavior to occur
