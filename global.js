@@ -121,38 +121,56 @@ $(".menu_slug").each(function () {
 // ============================================================================
 
 /**
- * Advanced UTM parameter tracking with session persistence
+ * Comprehensive UTM parameter tracking system
  * - Tracks UTM parameters across page navigation within 30-minute sessions
+ * - Sets cookies for backward compatibility
  * - Automatically injects UTM parameters into outbound signup links
  * - Clears old UTMs when coming from external referrers
- * - Supports additional tracking parameters (gclid, fbclid, msclkid, ttclid, im_ref)
+ * - Supports all tracking parameters (utm_*, gclid, fbclid, msclkid, ttclid, im_ref)
  */
 (function () {
-  const KEY = "persistedUTMs";
+  const SESSION_KEY = "persistedUTMs";
   const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
   const TARGET_HOST = "signup.usenourish.com";
+  const COOKIE_DOMAIN = ".usenourish.com";
 
-  // Allow all utm_* keys plus common click IDs and im_ref
-  const EXTRAS = new Set(["gclid", "fbclid", "msclkid", "ttclid", "im_ref"]);
+  // All supported UTM and tracking parameters
+  const SUPPORTED_PARAMS = new Set([
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "gclid",
+    "fbclid",
+    "msclkid",
+    "ttclid",
+    "im_ref",
+  ]);
 
   const now = Date.now();
   const url = new URL(window.location.href);
-  const currentParams = pickAllowed(url.searchParams);
+  const currentParams = extractUtmParams(url.searchParams);
   const stored = readStored();
 
-  // Heuristic: brand-new entry without UTMs from an external referrer → clear old UTMs
-  const externalEntry =
-    document.referrer && !sameHost(document.referrer, location.href);
+  console.log("UTM tracking - URL:", window.location.href);
+  console.log("UTM tracking - currentParams:", currentParams);
 
-  if (Object.keys(currentParams).length) {
-    // Fresh UTMs present → start/refresh session
+  // Handle UTM parameter detection and storage
+  if (Object.keys(currentParams).length > 0) {
+    // Fresh UTMs present → start/refresh session and set cookies
     saveStored({ params: currentParams, startedAt: now, lastTouch: now });
+    setUtmCookies(currentParams);
   } else if (stored) {
     // No UTMs in URL; check expiration or external entry
+    const externalEntry =
+      document.referrer && !sameHost(document.referrer, location.href);
     const expired =
       now - (stored.lastTouch || stored.startedAt) > SESSION_TTL_MS;
+
     if (expired || externalEntry) {
       clearStored();
+      clearUtmCookies();
     } else {
       // Refresh lastTouch inside the same session
       stored.lastTouch = now;
@@ -170,23 +188,33 @@ $(".menu_slug").each(function () {
   // ---------- Helper Functions ----------
 
   /**
-   * Extract allowed UTM and tracking parameters from URL
+   * Extract UTM and tracking parameters from URL search params
    * @param {URLSearchParams} searchParams - URL search parameters
    * @returns {Object} - Object containing allowed parameters
    */
-  function pickAllowed(searchParams) {
-    const out = {};
-    for (const [rawK, v] of searchParams.entries()) {
-      if (v == null || v === "") continue;
-      const lowerK = String(rawK).toLowerCase();
-      const normK = lowerK.startsWith("utm-")
-        ? lowerK.replace("utm-", "utm_")
-        : lowerK;
-      if (normK.startsWith("utm_") || EXTRAS.has(normK)) {
-        out[normK] = v;
+  function extractUtmParams(searchParams) {
+    const params = {};
+    for (const [key, value] of searchParams.entries()) {
+      if (!value || value === "") continue;
+
+      const normalizedKey = normalizeParamKey(key);
+      if (SUPPORTED_PARAMS.has(normalizedKey)) {
+        params[normalizedKey] = value;
       }
     }
-    return out;
+    return params;
+  }
+
+  /**
+   * Normalize parameter key (handle utm- vs utm_ variations)
+   * @param {string} key - Original parameter key
+   * @returns {string} - Normalized parameter key
+   */
+  function normalizeParamKey(key) {
+    const lowerKey = key.toLowerCase();
+    return lowerKey.startsWith("utm-")
+      ? lowerKey.replace("utm-", "utm_")
+      : lowerKey;
   }
 
   /**
@@ -209,7 +237,7 @@ $(".menu_slug").each(function () {
    */
   function readStored() {
     try {
-      return JSON.parse(sessionStorage.getItem(KEY));
+      return JSON.parse(sessionStorage.getItem(SESSION_KEY));
     } catch {
       return null;
     }
@@ -220,14 +248,34 @@ $(".menu_slug").each(function () {
    * @param {Object} obj - UTM data to store
    */
   function saveStored(obj) {
-    sessionStorage.setItem(KEY, JSON.stringify(obj));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(obj));
   }
 
   /**
    * Clear stored UTM data from sessionStorage
    */
   function clearStored() {
-    sessionStorage.removeItem(KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+
+  /**
+   * Set UTM parameters as cookies
+   * @param {Object} params - UTM parameters to set as cookies
+   */
+  function setUtmCookies(params) {
+    for (const [key, value] of Object.entries(params)) {
+      document.cookie = `${key}=${value}; path=/; domain=${COOKIE_DOMAIN}`;
+      console.log("Set cookie:", `${key}=${value}`);
+    }
+  }
+
+  /**
+   * Clear UTM cookies
+   */
+  function clearUtmCookies() {
+    for (const param of SUPPORTED_PARAMS) {
+      document.cookie = `${param}=; path=/; domain=${COOKIE_DOMAIN}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    }
   }
 
   /**
@@ -279,67 +327,6 @@ $(".menu_slug").each(function () {
     mo.observe(document.body, { childList: true, subtree: true });
   }
 })();
-
-// Legacy UTM cookie tracking (kept for backward compatibility)
-const utmParameters = [
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_content",
-  "utm_term",
-  "gclid",
-  "fbclid",
-  "msclkid",
-  "ttclid",
-  "im_ref",
-];
-
-/**
- * Check if URL contains any UTM parameters (legacy function)
- * @param {Array} utmParameters - Array of UTM parameter names
- * @param {URLSearchParams} URLSearchParams_wb - URL search params object
- * @returns {boolean} - True if any UTM parameters exist
- */
-function hasUtms(utmParameters, URLSearchParams_wb) {
-  for (const utm_element of utmParameters) {
-    if (URLSearchParams_wb.has(utm_element)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Load UTM parameters from current URL (legacy function)
- * @returns {URLSearchParams} - URL search params object
- */
-function loadUtms() {
-  var queryString = window.location.search;
-  return new URLSearchParams(queryString);
-}
-
-/**
- * Set UTM parameters as cookies (legacy function)
- * @param {Array} utmParameters - Array of UTM parameter names
- * @param {URLSearchParams} URLSearchParams_wb - URL search params object
- */
-function setUtmCookies(utmParameters, URLSearchParams_wb) {
-  for (const utm_element of utmParameters) {
-    if (URLSearchParams_wb.has(utm_element)) {
-      var value = URLSearchParams_wb.get(utm_element);
-      document.cookie =
-        utm_element + "=" + value + "; path=/; domain=.usenourish.com";
-    } else {
-      document.cookie = utm_element + "=" + "; path=/; domain=.usenourish.com";
-    }
-  }
-}
-
-// Initialize legacy UTM cookie tracking
-var URLSearchParams_wb = loadUtms();
-if (hasUtms(utmParameters, URLSearchParams_wb) == true) {
-  setUtmCookies(utmParameters, URLSearchParams_wb);
-}
 
 // ============================================================================
 // SEO AND DOM UTILITIES
