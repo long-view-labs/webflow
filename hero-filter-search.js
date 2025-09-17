@@ -156,35 +156,7 @@ $(document).ready(function () {
 
   // (Removed inline DOB error UI by request)
 
-  // Function to extract city, state, and zip from formatted address
-  function extractCityStateZip(formattedAddress) {
-    if (!formattedAddress) return { city: null, state: null, zip: null };
-
-    var parts = formattedAddress.split(", ");
-    if (parts.length >= 2) {
-      var city = parts[0].trim();
-      var stateZip = parts[1].trim();
-
-      // Check if the second part contains a zip code (5 digits)
-      var zipMatch = stateZip.match(/([A-Z]{2})\s+(\d{5})/);
-      if (zipMatch) {
-        // Format: "City, State ZIP"
-        return {
-          city: city,
-          state: zipMatch[1],
-          zip: zipMatch[2],
-        };
-      } else {
-        // Format: "City, State" (no zip)
-        return {
-          city: city,
-          state: stateZip,
-          zip: null,
-        };
-      }
-    }
-    return { city: null, state: null, zip: null };
-  }
+  // extractCityStateZip function removed - no longer needed since city-state-zip field doesn't exist
 
   // Function to determine if user is in control group
   function isControlGroup() {
@@ -247,22 +219,7 @@ $(document).ready(function () {
       }
     }
 
-    // Get location from Google autocomplete (only for Provider Search)
-    if (formName !== "Insurance Check") {
-      var locationValue = $("#city-state-zip").val();
-      if (locationValue) {
-        var locationData = extractCityStateZip(locationValue);
-        if (locationData.city) {
-          params.append("addressCity", locationData.city);
-        }
-        if (locationData.state) {
-          params.append("addressState", locationData.state);
-        }
-        if (locationData.zip) {
-          params.append("addressZipCode", locationData.zip);
-        }
-      }
-    }
+    // Location functionality removed - city-state-zip field no longer exists
 
     // Get Insurance Check form fields (only for Insurance Check form)
     if (formName === "Insurance Check") {
@@ -285,79 +242,14 @@ $(document).ready(function () {
       }
     }
 
-    // Merge UTM params from sessionStorage (only if present)
-    try {
-      var utmKeys = [
-        "utm_source",
-        "utm_medium",
-        "utm_campaign",
-        "utm_content",
-        "utm_creative",
-        "utm_term",
-        "utm_page",
-        "utm_lp",
-        "gclid",
-        "fbclid",
-        "msclkid",
-        "ttclid",
-      ];
-      for (var i = 0; i < utmKeys.length; i++) {
-        var key = utmKeys[i];
-        var value = (sessionStorage.getItem(key) || "").trim();
-        if (value) params.set(key, value);
-      }
-
-      // Also merge from global persistedUTMs payload if present
-      var persistedRaw = sessionStorage.getItem("persistedUTMs");
-      if (persistedRaw) {
-        try {
-          var persisted = JSON.parse(persistedRaw) || {};
-          var persistedParams = persisted.params || {};
-          for (var k in persistedParams) {
-            if (
-              Object.prototype.hasOwnProperty.call(persistedParams, k) &&
-              persistedParams[k] &&
-              !params.has(k)
-            ) {
-              params.set(k, String(persistedParams[k]));
-            }
-          }
-        } catch (_) {}
-      }
-    } catch (e) {
-      // ignore sessionStorage access errors
-    }
+    // UTM parameters are handled by global.js
 
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
     $("#home-filter-cta").attr("href", finalUrl);
   }
 
-  // Capture UTM params from the current URL into sessionStorage (only non-empty)
-  function captureUTMParamsToSession() {
-    try {
-      var search = new URLSearchParams(location.search || "");
-      var utmKeys = [
-        "utm_source",
-        "utm_medium",
-        "utm_campaign",
-        "utm_content",
-        "utm_creative",
-        "utm_term",
-        "utm_page",
-      ];
-      for (var i = 0; i < utmKeys.length; i++) {
-        var key = utmKeys[i];
-        var v = (search.get(key) || "").trim();
-        if (v) sessionStorage.setItem(key, v);
-      }
-    } catch (e) {
-      // ignore storage errors (e.g., privacy mode)
-    }
-  }
-
-  // Capture UTM params ASAP and perform an initial URL update
-  captureUTMParamsToSession();
+  // UTM parameter capture is handled by global.js
   updateCTAUrl();
 
   // Load API data on page load
@@ -1054,213 +946,110 @@ $(document).ready(function () {
   setupDropdownA11y(".provider-filter_dopdown.specialty .w-dropdown-toggle");
   setupDropdownA11y("#w-dropdown-toggle-0");
 
-  // Google Places Autocomplete functionality for city/state/zip input
-  function initializeGooglePlacesAutocomplete() {
-    // Check if Google Places API is loaded
-    if (typeof google === "undefined" || !google.maps || !google.maps.places) {
-      console.log("Google Places API not loaded. Retrying in 1 second...");
-      setTimeout(initializeGooglePlacesAutocomplete, 1000);
-      return;
+  $(".filter-list_input-group").on("click", function (e) {
+    var city = "";
+    var state = "";
+    var postalCode = "";
+
+    for (var i = 0; i < place.address_components.length; i++) {
+      var component = place.address_components[i];
+      var types = component.types;
+
+      if (types.indexOf("locality") !== -1) {
+        city = component.long_name;
+      }
+      if (types.indexOf("administrative_area_level_1") !== -1) {
+        state = component.short_name;
+      }
+      if (types.indexOf("postal_code") !== -1) {
+        postalCode = component.long_name;
+      }
     }
 
-    var input = document.getElementById("city-state-zip");
-    if (!input) {
-      console.log("Input element not found");
-      return;
+    // Format the result as "City, State ZIP"
+    var formattedAddress = "";
+    if (city && state && postalCode) {
+      formattedAddress = city + ", " + state + " " + postalCode;
+    } else {
+      formattedAddress = place.formatted_address;
     }
 
-    try {
-      // Use the legacy Autocomplete API (still works and is more reliable)
-      console.log("Using legacy Autocomplete API (deprecated but functional)");
+    // Update the input with the formatted address
+    input.value = formattedAddress;
 
-      // Configure autocomplete options for cities
-      var options = {
-        types: ["(cities)"], // Only show cities
-        componentRestrictions: { country: "us" }, // Restrict to US
-        fields: ["address_components", "formatted_address", "geometry", "name"],
-      };
+    console.log("Selected zip code place:", formattedAddress);
+    console.log("Zip code place details:", {
+      city: city,
+      state: state,
+      postalCode: postalCode,
+      formattedAddress: place.formatted_address,
+    });
 
-      // Initialize Google Places Autocomplete for cities
-      var autocomplete = new google.maps.places.Autocomplete(input, options);
+    // Update CTA URL after zip code selection
+    updateCTAUrl();
+  });
 
-      // Create a separate autocomplete for zip codes
-      var zipAutocomplete = new google.maps.places.Autocomplete(input, {
-        types: ["postal_code"],
-        componentRestrictions: { country: "us" },
-        fields: ["address_components", "formatted_address", "geometry", "name"],
-      });
-
-      // Track which autocomplete is active
-      var activeAutocomplete = autocomplete;
-
-      // Handle place selection for cities
-      autocomplete.addListener("place_changed", function () {
-        var place = autocomplete.getPlace();
-
-        if (!place.geometry) {
-          console.log("No details available for input: '" + place.name + "'");
-          return;
-        }
-
-        // Extract city and state from the place
-        var city = "";
-        var state = "";
-
-        for (var i = 0; i < place.address_components.length; i++) {
-          var component = place.address_components[i];
-          var types = component.types;
-
-          if (types.indexOf("locality") !== -1) {
-            city = component.long_name;
-          }
-          if (types.indexOf("administrative_area_level_1") !== -1) {
-            state = component.short_name;
-          }
-        }
-
-        // Format the result as "City, State"
-        var formattedAddress = "";
-        if (city && state) {
-          formattedAddress = city + ", " + state;
-        } else {
-          formattedAddress = place.formatted_address;
-        }
-
-        // Update the input with the formatted address
-        input.value = formattedAddress;
-
-        console.log("Selected place:", formattedAddress);
-        console.log("Place details:", {
-          city: city,
-          state: state,
-          formattedAddress: place.formatted_address,
-        });
-
-        // Update CTA URL after location selection
-        updateCTAUrl();
-      });
-
-      // Handle place selection for zip codes
-      zipAutocomplete.addListener("place_changed", function () {
-        var place = zipAutocomplete.getPlace();
-
-        if (!place.geometry) {
-          console.log(
-            "No details available for zip code input: '" + place.name + "'"
-          );
-          return;
-        }
-
-        // Extract city, state, and postal code from the place
-        var city = "";
-        var state = "";
-        var postalCode = "";
-
-        for (var i = 0; i < place.address_components.length; i++) {
-          var component = place.address_components[i];
-          var types = component.types;
-
-          if (types.indexOf("locality") !== -1) {
-            city = component.long_name;
-          }
-          if (types.indexOf("administrative_area_level_1") !== -1) {
-            state = component.short_name;
-          }
-          if (types.indexOf("postal_code") !== -1) {
-            postalCode = component.long_name;
-          }
-        }
-
-        // Format the result as "City, State ZIP"
-        var formattedAddress = "";
-        if (city && state && postalCode) {
-          formattedAddress = city + ", " + state + " " + postalCode;
-        } else {
-          formattedAddress = place.formatted_address;
-        }
-
-        // Update the input with the formatted address
-        input.value = formattedAddress;
-
-        console.log("Selected zip code place:", formattedAddress);
-        console.log("Zip code place details:", {
-          city: city,
-          state: state,
-          postalCode: postalCode,
-          formattedAddress: place.formatted_address,
-        });
-
-        // Update CTA URL after zip code selection
-        updateCTAUrl();
-      });
-
-      // Prevent clicks on Google Places dropdown from propagating to elements below
-      document.addEventListener(
-        "click",
-        function (e) {
-          // Check if the click is on a Google Places autocomplete element
-          if (
-            e.target.closest(".pac-container") ||
-            e.target.closest(".pac-item")
-          ) {
-            e.stopPropagation();
-            e.preventDefault();
-          }
-        },
-        true
-      );
-
-      // Monitor input to switch between city and zip autocomplete
-      input.addEventListener("input", function () {
-        var value = this.value;
-
-        // If input starts with numbers, use zip autocomplete
-        if (/^\d/.test(value)) {
-          if (activeAutocomplete !== zipAutocomplete) {
-            console.log("Switching to zip code autocomplete");
-            activeAutocomplete = zipAutocomplete;
-          }
-        } else {
-          // If input starts with letters, use city autocomplete
-          if (activeAutocomplete !== autocomplete) {
-            console.log("Switching to city autocomplete");
-            activeAutocomplete = autocomplete;
-          }
-        }
-      });
-
-      // Prevent form submission on Enter key
-      input.addEventListener("keydown", function (e) {
-        if (e.keyCode === 13) {
-          e.preventDefault();
-        }
-      });
-
-      // Prevent clicks on Google Places dropdown from propagating to elements below
-      document.addEventListener(
-        "click",
-        function (e) {
-          // Check if the click is on a Google Places autocomplete element
-          if (
-            e.target.closest(".pac-container") ||
-            e.target.closest(".pac-item")
-          ) {
-            e.stopPropagation();
-            e.preventDefault();
-            return false;
-          }
-        },
-        true
-      );
-
-      // Also prevent clicks on the input itself from opening dropdowns below
-      input.addEventListener("click", function (e) {
+  // Prevent clicks on Google Places dropdown from propagating to elements below
+  document.addEventListener(
+    "click",
+    function (e) {
+      // Check if the click is on a Google Places autocomplete element
+      if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
         e.stopPropagation();
-      });
+        e.preventDefault();
+      }
+    },
+    true
+  );
 
-      // Ensure Google Places dropdown appears above other elements and prevent clicks below
-      var style = document.createElement("style");
-      style.textContent = `
+  // Monitor input to switch between city and zip autocomplete
+  input.addEventListener("input", function () {
+    var value = this.value;
+
+    // If input starts with numbers, use zip autocomplete
+    if (/^\d/.test(value)) {
+      if (activeAutocomplete !== zipAutocomplete) {
+        console.log("Switching to zip code autocomplete");
+        activeAutocomplete = zipAutocomplete;
+      }
+    } else {
+      // If input starts with letters, use city autocomplete
+      if (activeAutocomplete !== autocomplete) {
+        console.log("Switching to city autocomplete");
+        activeAutocomplete = autocomplete;
+      }
+    }
+  });
+
+  // Prevent form submission on Enter key
+  input.addEventListener("keydown", function (e) {
+    if (e.keyCode === 13) {
+      e.preventDefault();
+    }
+  });
+
+  // Prevent clicks on Google Places dropdown from propagating to elements below
+  document.addEventListener(
+    "click",
+    function (e) {
+      // Check if the click is on a Google Places autocomplete element
+      if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+      }
+    },
+    true
+  );
+
+  // Also prevent clicks on the input itself from opening dropdowns below
+  input.addEventListener("click", function (e) {
+    e.stopPropagation();
+  });
+
+  // Ensure Google Places dropdown appears above other elements and prevent clicks below
+  var style = document.createElement("style");
+  style.textContent = `
           .pac-container {
             z-index: 9999 !important;
             position: fixed !important;
@@ -1282,11 +1071,11 @@ $(document).ready(function () {
             pointer-events: none !important;
           }
         `;
-      document.head.appendChild(style);
+  document.head.appendChild(style);
 
-      // Add overlay when Google Places dropdown is visible
-      var overlay = document.createElement("div");
-      overlay.style.cssText = `
+  // Add overlay when Google Places dropdown is visible
+  var overlay = document.createElement("div");
+  overlay.style.cssText = `
           position: fixed;
           top: 0;
           left: 0;
@@ -1296,234 +1085,26 @@ $(document).ready(function () {
           z-index: 9998;
           display: none;
         `;
-      overlay.id = "google-places-overlay";
-      document.body.appendChild(overlay);
+  overlay.id = "google-places-overlay";
+  document.body.appendChild(overlay);
 
-      // Show overlay when input is focused and hide when dropdown disappears
-      input.addEventListener("focus", function () {
-        overlay.style.display = "block";
-      });
+  // Show overlay when input is focused and hide when dropdown disappears
+  input.addEventListener("focus", function () {
+    overlay.style.display = "block";
+  });
 
-      input.addEventListener("blur", function () {
-        setTimeout(function () {
-          overlay.style.display = "none";
-        }, 200);
-      });
+  input.addEventListener("blur", function () {
+    setTimeout(function () {
+      overlay.style.display = "none";
+    }, 200);
+  });
 
-      // Also hide overlay when clicking on Google Places elements
-      document.addEventListener("click", function (e) {
-        if (
-          e.target.closest(".pac-container") ||
-          e.target.closest(".pac-item")
-        ) {
-          overlay.style.display = "none";
-        }
-      });
-
-      console.log("Google Places Autocomplete initialized (legacy)");
-    } catch (error) {
-      console.log("Error initializing Google Places Autocomplete:", error);
-      // Fallback: allow normal text input
-      console.log("Falling back to normal text input");
+  // Also hide overlay when clicking on Google Places elements
+  document.addEventListener("click", function (e) {
+    if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
+      overlay.style.display = "none";
     }
-  }
-
-  // Initialize Google Places Autocomplete when document is ready
-  initializeGooglePlacesAutocomplete();
-
-  // Fallback autocomplete for when Google Places API is not available
-  function initializeFallbackAutocomplete() {
-    var input = document.getElementById("city-state-zip");
-    if (!input) return;
-
-    // Simple fallback data
-    var fallbackData = [
-      "New York, NY",
-      "Los Angeles, CA",
-      "Chicago, IL",
-      "Houston, TX",
-      "Phoenix, AZ",
-      "Philadelphia, PA",
-      "San Antonio, TX",
-      "San Diego, CA",
-      "Dallas, TX",
-      "San Jose, CA",
-      "Austin, TX",
-      "Jacksonville, FL",
-      "Fort Worth, TX",
-      "Columbus, OH",
-      "Charlotte, NC",
-      "San Francisco, CA",
-      "Indianapolis, IN",
-      "Seattle, WA",
-      "Denver, CO",
-      "Washington, DC",
-      "Boston, MA",
-      "El Paso, TX",
-      "Nashville, TN",
-      "Detroit, MI",
-      "Oklahoma City, OK",
-      "Portland, OR",
-      "Las Vegas, NV",
-      "Memphis, TN",
-      "Louisville, KY",
-      "Baltimore, MD",
-      "Milwaukee, WI",
-      "Albuquerque, NM",
-      "Tucson, AZ",
-      "Fresno, CA",
-      "Sacramento, CA",
-      "Mesa, AZ",
-      "Kansas City, MO",
-      "Atlanta, GA",
-      "Long Beach, CA",
-      "Colorado Springs, CO",
-      "Raleigh, NC",
-      "Miami, FL",
-      "Virginia Beach, VA",
-      "Omaha, NE",
-      "Oakland, CA",
-      "Minneapolis, MN",
-      "Tulsa, OK",
-      "Arlington, TX",
-      "Tampa, FL",
-      "New Orleans, LA",
-      "Wichita, KS",
-      "Cleveland, OH",
-      "Bakersfield, CA",
-      "Aurora, CO",
-      "Anaheim, CA",
-      "Honolulu, HI",
-      "Santa Ana, CA",
-      "Corpus Christi, TX",
-      "Riverside, CA",
-      "Lexington, KY",
-      "Stockton, CA",
-      "Henderson, NV",
-      "Saint Paul, MN",
-      "St. Louis, MO",
-      "Fort Wayne, IN",
-      "Jersey City, NJ",
-      "Chandler, AZ",
-      "Madison, WI",
-      "Lubbock, TX",
-      "Scottsdale, AZ",
-      "Reno, NV",
-      "Buffalo, NY",
-      "Gilbert, AZ",
-      "Glendale, AZ",
-      "North Las Vegas, NV",
-      "Winston-Salem, NC",
-      "Chesapeake, VA",
-      "Norfolk, VA",
-      "Fremont, CA",
-      "Garland, TX",
-      "Irving, TX",
-      "Hialeah, FL",
-      "Spokane, WA",
-      "Baton Rouge, LA",
-      "Tacoma, WA",
-      "Richmond, VA",
-      "Yonkers, NY",
-      "Des Moines, IA",
-      "Rochester, NY",
-      "Modesto, CA",
-      "Durham, NC",
-      "Little Rock, AR",
-      "Newark, NJ",
-      "Greensboro, NC",
-      "Fort Lauderdale, FL",
-      "Fayetteville, NC",
-      "Cincinnati, OH",
-      "Santa Rosa, CA",
-      "Orlando, FL",
-      "Irvine, CA",
-      "San Bernardino, CA",
-      "Laredo, TX",
-      "Lancaster, CA",
-      "Chula Vista, CA",
-      "Reno, NV",
-      "Arlington, VA",
-      "Akron, OH",
-      "Tucson, AZ",
-      "Wichita, KS",
-      "Aurora, IL",
-    ];
-
-    // Create fallback dropdown
-    var $fallbackDropdown = $(
-      '<div class="fallback-dropdown" style="position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-family: inherit;"></div>'
-    );
-    $("body").append($fallbackDropdown);
-
-    // Handle input events for fallback
-    $(input).on("input", function () {
-      var query = $(this).val().toLowerCase();
-
-      if (query.length < 2) {
-        $fallbackDropdown.hide();
-        return;
-      }
-
-      // Filter data based on query
-      var filteredData = fallbackData
-        .filter(function (item) {
-          return item.toLowerCase().includes(query);
-        })
-        .slice(0, 10);
-
-      if (filteredData.length > 0) {
-        // Position dropdown below input
-        var $input = $(this);
-        var inputOffset = $input.offset();
-        var inputHeight = $input.outerHeight();
-
-        $fallbackDropdown.css({
-          top: inputOffset.top + inputHeight + "px",
-          left: inputOffset.left + "px",
-          width: $input.outerWidth() + "px",
-        });
-
-        // Populate dropdown
-        $fallbackDropdown.empty();
-        filteredData.forEach(function (item) {
-          var $item = $(
-            '<div class="fallback-item" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background-color 0.2s;">' +
-              item +
-              "</div>"
-          );
-          $item.on("click", function () {
-            $input.val(item);
-            $fallbackDropdown.hide();
-          });
-          $fallbackDropdown.append($item);
-        });
-
-        $fallbackDropdown.show();
-      } else {
-        $fallbackDropdown.hide();
-      }
-    });
-
-    // Hide dropdown when clicking outside
-    $(document).on("click", function (e) {
-      if (!$(e.target).closest("#city-state-zip, .fallback-dropdown").length) {
-        $fallbackDropdown.hide();
-      }
-    });
-
-    console.log("Fallback autocomplete initialized");
-  }
-
-  // Initialize fallback after a delay to see if Google Places loads
-  setTimeout(function () {
-    if (typeof google === "undefined" || !google.maps || !google.maps.places) {
-      console.log(
-        "Google Places API not available, using fallback autocomplete"
-      );
-      initializeFallbackAutocomplete();
-    }
-  }, 2000);
+  });
 
   $(".filter-list_input-group").on("click", function (e) {
     // Allow the default click behavior to occur
