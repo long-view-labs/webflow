@@ -1,0 +1,33 @@
+{
+  "name": "nourish-long-view-labs",
+  "version": "1.0.0",
+  "description": "Webflow JavaScript files for Nourish Long View Labs",
+  "main": "index.js",
+  "scripts": {
+    "release": "node release.js",
+    "release:patch": "node release.js patch",
+    "release:minor": "node release.js minor",
+    "release:major": "node release.js major",
+    "release:prerelease": "node release.js prerelease",
+    "version": "node release.js version",
+    "changelog": "node release.js changelog"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/long-view-labs/webflow.git"
+  },
+  "keywords": [
+    "webflow",
+    "javascript",
+    "nourish",
+    "dietitian",
+    "healthcare"
+  ],
+  "author": "Long View Labs",
+  "license": "MIT",
+  "devDependencies": {
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.6",
+    "semver": "^7.5.4"
+  }
+}
