@@ -160,9 +160,32 @@ $(document).ready(function () {
       ];
 
       console.log("Hero CTA - checking for UTM parameters in sessionStorage");
+
+      // Read from global.js persistedUTMs object
+      var persistedUTMs = null;
+      try {
+        var stored = sessionStorage.getItem("persistedUTMs");
+        if (stored) {
+          persistedUTMs = JSON.parse(stored);
+          console.log("Hero CTA - persistedUTMs object:", persistedUTMs);
+        }
+      } catch (e) {
+        console.log("Hero CTA - no persistedUTMs found or parse error");
+      }
+
       for (var i = 0; i < utmKeys.length; i++) {
         var key = utmKeys[i];
-        var value = sessionStorage.getItem(key);
+        var value = null;
+
+        // Try to get from persistedUTMs first
+        if (
+          persistedUTMs &&
+          persistedUTMs.params &&
+          persistedUTMs.params[key]
+        ) {
+          value = persistedUTMs.params[key];
+        }
+
         console.log(`Hero CTA - ${key}:`, value);
         if (value && value.trim()) {
           params.append(key, value.trim());
