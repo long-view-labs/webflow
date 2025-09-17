@@ -285,6 +285,26 @@ $(document).ready(function () {
       }
     }
 
+    // Merge UTM params from sessionStorage (only if present)
+    try {
+      var utmKeys = [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_creative",
+        "utm_term",
+        "utm_page",
+      ];
+      for (var i = 0; i < utmKeys.length; i++) {
+        var key = utmKeys[i];
+        var value = (sessionStorage.getItem(key) || "").trim();
+        if (value) params.set(key, value);
+      }
+    } catch (e) {
+      // ignore sessionStorage access errors
+    }
+
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
     $("#home-filter-cta").attr("href", finalUrl);
