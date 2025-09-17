@@ -168,11 +168,6 @@ $(".menu_slug").each(function () {
   const currentParams = extractUtmParams(url.searchParams);
   const stored = readStored();
 
-  console.log("UTM tracking - URL:", window.location.href);
-  console.log("UTM tracking - URL search params:", url.searchParams.toString());
-  console.log("UTM tracking - currentParams:", currentParams);
-  console.log("UTM tracking - SUPPORTED_PARAMS:", Array.from(SUPPORTED_PARAMS));
-
   // Handle UTM parameter detection and storage
   if (Object.keys(currentParams).length > 0) {
     // Fresh UTMs present → start/refresh session and set cookies
@@ -211,39 +206,19 @@ $(".menu_slug").each(function () {
    */
   function extractUtmParams(searchParams) {
     const params = {};
-    console.log(
-      "extractUtmParams - processing search params:",
-      searchParams.toString()
-    );
 
     for (const [key, value] of searchParams.entries()) {
-      console.log(
-        `extractUtmParams - checking key: "${key}", value: "${value}"`
-      );
-
       if (!value || value === "") {
-        console.log(
-          `extractUtmParams - skipping empty value for key: "${key}"`
-        );
         continue;
       }
 
       const normalizedKey = normalizeParamKey(key);
-      console.log(`extractUtmParams - normalized key: "${normalizedKey}"`);
 
       if (SUPPORTED_PARAMS.has(normalizedKey)) {
-        console.log(
-          `extractUtmParams - adding param: ${normalizedKey} = ${value}`
-        );
         params[normalizedKey] = value;
-      } else {
-        console.log(
-          `extractUtmParams - key "${normalizedKey}" not in SUPPORTED_PARAMS`
-        );
       }
     }
 
-    console.log("extractUtmParams - final params:", params);
     return params;
   }
 
@@ -305,14 +280,9 @@ $(".menu_slug").each(function () {
    * @param {Object} params - UTM parameters to set as cookies
    */
   function setUtmCookies(params) {
-    console.log("setUtmCookies - called with params:", params);
-    console.log("setUtmCookies - current hostname:", window.location.hostname);
-    console.log("setUtmCookies - COOKIE_DOMAIN:", COOKIE_DOMAIN);
-
     for (const [key, value] of Object.entries(params)) {
       const cookieString = `${key}=${value}; path=/; domain=${COOKIE_DOMAIN}`;
       document.cookie = cookieString;
-      console.log("Set cookie:", cookieString);
     }
   }
 
