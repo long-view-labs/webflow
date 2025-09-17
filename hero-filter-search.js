@@ -1,45 +1,10 @@
 $(document).ready(function () {
   // Global variables to store API data
-  var payersData = [];
 
   // Function to get query parameter by name
   function getQueryParam(name) {
     var urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
-  }
-
-  // Function to fetch payers data
-  function fetchPayersData() {
-    return fetch("https://app.usenourish.com/api/payers?source=homepage", {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      // Try without explicit CORS mode first
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch payers data: " + response.status);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        payersData = data;
-        return data;
-      })
-      .catch((error) => {
-        console.error("Error fetching payers data:", error);
-        // Fallback to empty array - form will still work without IDs
-        payersData = [];
-        return [];
-      });
-  }
-
-  // Function to find payer ID by name
-  function findPayerId(payerName) {
-    var payer = payersData.find((item) => item.payerName === payerName);
-    return payer ? payer.id : null;
   }
 
   // Function to format DOB input with forward slashes and backspace support
@@ -127,13 +92,11 @@ $(document).ready(function () {
 
   // Function to update the CTA URL with new format
   function updateCTAUrl() {
-    console.log("=== updateCTAUrl called ===");
     var baseUrl = "https://signup.usenourish.com/";
     var params = new URLSearchParams();
 
     // Get the form name to determine which variant to use
     var formName = $("form[data-name]").attr("data-name");
-    console.log("Form name detected:", formName);
 
     // Determine landing page variation
     if (isControlGroup()) {
@@ -211,22 +174,15 @@ $(document).ready(function () {
         "im_ref",
       ];
 
-      console.log("Hero CTA - checking for UTM parameters in sessionStorage");
-      console.log("Hero CTA - using UTM keys:", utmKeys);
-
       // Read from global.js persistedUTMs object
       var persistedUTMs = null;
       try {
         var stored = sessionStorage.getItem("persistedUTMs");
-        console.log("Hero CTA - raw sessionStorage persistedUTMs:", stored);
         if (stored) {
           persistedUTMs = JSON.parse(stored);
-          console.log("Hero CTA - parsed persistedUTMs object:", persistedUTMs);
-        } else {
-          console.log("Hero CTA - no persistedUTMs in sessionStorage");
         }
       } catch (e) {
-        console.log("Hero CTA - no persistedUTMs found or parse error:", e);
+        // ignore sessionStorage access errors
       }
 
       for (var i = 0; i < utmKeys.length; i++) {
@@ -242,48 +198,27 @@ $(document).ready(function () {
           value = persistedUTMs.params[key];
         }
 
-        console.log(`Hero CTA - ${key}:`, value);
         if (value && value.trim()) {
           params.append(key, value.trim());
-          console.log(`Hero CTA - added ${key}=${value.trim()}`);
         }
       }
     } catch (e) {
-      console.error("Hero CTA - sessionStorage access error:", e);
+      // ignore sessionStorage access errors
     }
 
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
-    console.log("Hero CTA - final URL:", finalUrl);
-    console.log(
-      "Hero CTA - setting href on element:",
-      $("#home-filter-cta").length
-    );
     $("#home-filter-cta").attr("href", finalUrl);
-    console.log(
-      "Hero CTA - href after setting:",
-      $("#home-filter-cta").attr("href")
-    );
   }
 
   // UTM parameter capture is handled by global.js
   // Delay initial call to ensure global.js has processed UTMs
   setTimeout(function () {
-    console.log("Hero CTA - delayed initial updateCTAUrl call");
     updateCTAUrl();
   }, 100);
 
-  // Load API data on page load
-  fetchPayersData()
-    .then(() => {
-      // Initial URL update
-      updateCTAUrl();
-    })
-    .catch((error) => {
-      console.error("Error loading API data:", error);
-      // Still update URL even if APIs fail
-      updateCTAUrl();
-    });
+  // Initial URL update
+  updateCTAUrl();
 
   // Add event listeners for Insurance Check form fields
   $("#first-name, #last-name").on("input", function () {
@@ -489,7 +424,6 @@ $(document).ready(function () {
     if (paramValue) {
       $('input[type="radio"][data-name="' + dataName + '"]').each(function () {
         if ($(this).val() === paramValue) {
-          console.log(paramValue);
           $(this).click();
         }
       });
@@ -498,14 +432,6 @@ $(document).ready(function () {
 
   // Call the function for the 'Insurance' query parameter
   clickMatchingRadioButton("insurance", "Insurance");
-
-  // Debug: Check if insurance radio buttons exist
-  console.log(
-    "Insurance radio buttons found:",
-    $('input[type="radio"][data-name="Insurance"]').length
-  );
-  console.log("Insurance text element found:", $("#insurance-text").length);
-  console.log("Insurance text element content:", $("#insurance-text").text());
 
   $(".w-button, .w-radio, .provider-filter_close-box").on("click", function () {
     // Trigger a custom event "w-close"
@@ -557,7 +483,6 @@ $(document).ready(function () {
   // Listen for click events on radio buttons with data-name="Insurance"
   $('input[type="radio"][data-name="Insurance"]').on("click", function () {
     var selected = $(this).val(); // Get the value of the clicked radio button
-    console.log("Insurance selected:", selected); // Debug log
     insurance = selected;
     var $insuranceFilter = $("#insurance_filter");
     var maxWidth = $insuranceFilter.width();
@@ -565,9 +490,6 @@ $(document).ready(function () {
     // Update the text of #insurance-text with the selected insurance
     var $insuranceText = $("#insurance-text");
     var newText = truncateText(insurance, maxWidth);
-    console.log("Insurance text element found:", $insuranceText.length);
-    console.log("Current text:", $insuranceText.text());
-    console.log("New text to set:", newText);
 
     // Try multiple approaches to update the text
     $insuranceText.text(newText);
@@ -622,10 +544,7 @@ $(document).ready(function () {
           insuranceTextElement.style.color = "#191918";
         }
       }
-      console.log("Text after delayed update:", $insuranceText.text());
     }, 100);
-
-    console.log("Text after update:", $insuranceText.text());
 
     updateCTAUrl();
   });
@@ -636,7 +555,6 @@ $(document).ready(function () {
     function () {
       var $radio = $(this).find('input[type="radio"]');
       var selected = $radio.val();
-      console.log("Insurance label clicked, selected:", selected); // Debug log
       insurance = selected;
       var $insuranceFilter = $("#insurance_filter");
       var maxWidth = $insuranceFilter.width();
@@ -660,7 +578,6 @@ $(document).ready(function () {
           insuranceTextElement.style.color = "#191918";
         }
       }
-      console.log("Text after update:", $insuranceText.text());
 
       updateCTAUrl();
     }
@@ -669,7 +586,6 @@ $(document).ready(function () {
   // Listen for change events on insurance radio buttons
   $('input[type="radio"][data-name="Insurance"]').on("change", function () {
     var selected = $(this).val();
-    console.log("Insurance radio changed, selected:", selected); // Debug log
     insurance = selected;
     var $insuranceFilter = $("#insurance_filter");
     var maxWidth = $insuranceFilter.width();
@@ -677,9 +593,6 @@ $(document).ready(function () {
     // Update the text of #insurance-text with the selected insurance
     var $insuranceText = $("#insurance-text");
     var newText = truncateText(insurance, maxWidth);
-    console.log("Insurance text element found:", $insuranceText.length);
-    console.log("Current text:", $insuranceText.text());
-    console.log("New text to set:", newText);
     $insuranceText.text(newText);
     // Match color behavior
     if (newText !== "Insurance carrier") {
@@ -693,7 +606,6 @@ $(document).ready(function () {
         insuranceTextElement.style.color = "#191918";
       }
     }
-    console.log("Text after update:", $insuranceText.text());
 
     updateCTAUrl();
   });
@@ -704,7 +616,6 @@ $(document).ready(function () {
     function () {
       var $radio = $(this).find('input[type="radio"]');
       var selected = $radio.val();
-      console.log("Insurance filter label clicked, selected:", selected); // Debug log
       insurance = selected;
       var $insuranceFilter = $("#insurance_filter");
       var maxWidth = $insuranceFilter.width();
@@ -728,7 +639,6 @@ $(document).ready(function () {
           insuranceTextElement.style.color = "#191918";
         }
       }
-      console.log("Text after update:", $insuranceText.text());
 
       updateCTAUrl();
     }
