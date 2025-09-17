@@ -295,11 +295,34 @@ $(document).ready(function () {
         "utm_creative",
         "utm_term",
         "utm_page",
+        "utm_lp",
+        "gclid",
+        "fbclid",
+        "msclkid",
+        "ttclid",
       ];
       for (var i = 0; i < utmKeys.length; i++) {
         var key = utmKeys[i];
         var value = (sessionStorage.getItem(key) || "").trim();
         if (value) params.set(key, value);
+      }
+
+      // Also merge from global persistedUTMs payload if present
+      var persistedRaw = sessionStorage.getItem("persistedUTMs");
+      if (persistedRaw) {
+        try {
+          var persisted = JSON.parse(persistedRaw) || {};
+          var persistedParams = persisted.params || {};
+          for (var k in persistedParams) {
+            if (
+              Object.prototype.hasOwnProperty.call(persistedParams, k) &&
+              persistedParams[k] &&
+              !params.has(k)
+            ) {
+              params.set(k, String(persistedParams[k]));
+            }
+          }
+        } catch (_) {}
       }
     } catch (e) {
       // ignore sessionStorage access errors
@@ -309,6 +332,33 @@ $(document).ready(function () {
     var finalUrl = baseUrl + "?" + params.toString();
     $("#home-filter-cta").attr("href", finalUrl);
   }
+
+  // Capture UTM params from the current URL into sessionStorage (only non-empty)
+  function captureUTMParamsToSession() {
+    try {
+      var search = new URLSearchParams(location.search || "");
+      var utmKeys = [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_creative",
+        "utm_term",
+        "utm_page",
+      ];
+      for (var i = 0; i < utmKeys.length; i++) {
+        var key = utmKeys[i];
+        var v = (search.get(key) || "").trim();
+        if (v) sessionStorage.setItem(key, v);
+      }
+    } catch (e) {
+      // ignore storage errors (e.g., privacy mode)
+    }
+  }
+
+  // Capture UTM params ASAP and perform an initial URL update
+  captureUTMParamsToSession();
+  updateCTAUrl();
 
   // Load API data on page load
   Promise.all([fetchPayersData(), fetchSpecialtiesData()])
