@@ -1,10 +1,45 @@
 $(document).ready(function () {
   // Global variables to store API data
+  var payersData = [];
 
   // Function to get query parameter by name
   function getQueryParam(name) {
     var urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
+  }
+
+  // Function to fetch payers data
+  function fetchPayersData() {
+    return fetch("https://app.usenourish.com/api/payers?source=homepage", {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      // Try without explicit CORS mode first
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch payers data: " + response.status);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        payersData = data;
+        return data;
+      })
+      .catch((error) => {
+        console.error("Error fetching payers data:", error);
+        // Fallback to empty array - form will still work without IDs
+        payersData = [];
+        return [];
+      });
+  }
+
+  // Function to find payer ID by name
+  function findPayerId(payerName) {
+    var payer = payersData.find((item) => item.payerName === payerName);
+    return payer ? payer.id : null;
   }
 
   // Function to format DOB input with forward slashes and backspace support
@@ -117,8 +152,23 @@ $(document).ready(function () {
       null;
 
     if (selectedInsuranceRaw) {
-      // Just pass the insurance name as a parameter
-      params.append("insurance", selectedInsuranceRaw.trim());
+      var normalizedInsurance = String(selectedInsuranceRaw)
+        .replace(/\u2019/g, "'")
+        .trim();
+      var normalizedLower = normalizedInsurance.toLowerCase();
+
+      if (normalizedLower === "i'm paying for myself") {
+        params.append("nourishPayerId", -1);
+      } else if (normalizedLower === "other") {
+        params.append("nourishPayerId", -2);
+      } else if (normalizedLower === "i'll choose my insurance later") {
+        // Do not send nourishPayerId for this choice
+      } else {
+        var payerId = findPayerId(normalizedInsurance);
+        if (payerId) {
+          params.append("nourishPayerId", payerId);
+        }
+      }
     }
 
     // Location functionality removed - city-state-zip field no longer exists
@@ -144,69 +194,27 @@ $(document).ready(function () {
       }
     }
 
-    // Append UTM parameters from global.js (stored in sessionStorage)
-    try {
-      var utmKeys = [
-        "utm_source",
-        "utm_medium",
-        "utm_campaign",
-        "utm_content",
-        "utm_term",
-        "gclid",
-        "fbclid",
-        "msclkid",
-        "ttclid",
-        "im_ref",
-      ];
-
-      console.log("Hero CTA - checking for UTM parameters in sessionStorage");
-
-      // Read from global.js persistedUTMs object
-      var persistedUTMs = null;
-      try {
-        var stored = sessionStorage.getItem("persistedUTMs");
-        if (stored) {
-          persistedUTMs = JSON.parse(stored);
-          console.log("Hero CTA - persistedUTMs object:", persistedUTMs);
-        }
-      } catch (e) {
-        console.log("Hero CTA - no persistedUTMs found or parse error");
-      }
-
-      for (var i = 0; i < utmKeys.length; i++) {
-        var key = utmKeys[i];
-        var value = null;
-
-        // Try to get from persistedUTMs first
-        if (
-          persistedUTMs &&
-          persistedUTMs.params &&
-          persistedUTMs.params[key]
-        ) {
-          value = persistedUTMs.params[key];
-        }
-
-        console.log(`Hero CTA - ${key}:`, value);
-        if (value && value.trim()) {
-          params.append(key, value.trim());
-          console.log(`Hero CTA - added ${key}=${value.trim()}`);
-        }
-      }
-    } catch (e) {
-      console.error("Hero CTA - sessionStorage access error:", e);
-    }
+    // UTM parameters are handled by global.js
 
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
-    console.log("Hero CTA - final URL:", finalUrl);
     $("#home-filter-cta").attr("href", finalUrl);
   }
 
   // UTM parameter capture is handled by global.js
   updateCTAUrl();
 
-  // Initial URL update
-  updateCTAUrl();
+  // Load API data on page load
+  fetchPayersData()
+    .then(() => {
+      // Initial URL update
+      updateCTAUrl();
+    })
+    .catch((error) => {
+      console.error("Error loading API data:", error);
+      // Still update URL even if APIs fail
+      updateCTAUrl();
+    });
 
   // Add event listeners for Insurance Check form fields
   $("#first-name, #last-name").on("input", function () {
@@ -833,6 +841,166 @@ $(document).ready(function () {
   );
   setupDropdownA11y(".provider-filter_dopdown.specialty .w-dropdown-toggle");
   setupDropdownA11y("#w-dropdown-toggle-0");
+
+  $(".filter-list_input-group").on("click", function (e) {
+    var city = "";
+    var state = "";
+    var postalCode = "";
+
+    for (var i = 0; i < place.address_components.length; i++) {
+      var component = place.address_components[i];
+      var types = component.types;
+
+      if (types.indexOf("locality") !== -1) {
+        city = component.long_name;
+      }
+      if (types.indexOf("administrative_area_level_1") !== -1) {
+        state = component.short_name;
+      }
+      if (types.indexOf("postal_code") !== -1) {
+        postalCode = component.long_name;
+      }
+    }
+
+    // Format the result as "City, State ZIP"
+    var formattedAddress = "";
+    if (city && state && postalCode) {
+      formattedAddress = city + ", " + state + " " + postalCode;
+    } else {
+      formattedAddress = place.formatted_address;
+    }
+
+    // Update the input with the formatted address
+    input.value = formattedAddress;
+
+    console.log("Selected zip code place:", formattedAddress);
+    console.log("Zip code place details:", {
+      city: city,
+      state: state,
+      postalCode: postalCode,
+      formattedAddress: place.formatted_address,
+    });
+
+    // Update CTA URL after zip code selection
+    updateCTAUrl();
+  });
+
+  // Prevent clicks on Google Places dropdown from propagating to elements below
+  document.addEventListener(
+    "click",
+    function (e) {
+      // Check if the click is on a Google Places autocomplete element
+      if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    },
+    true
+  );
+
+  // Monitor input to switch between city and zip autocomplete
+  input.addEventListener("input", function () {
+    var value = this.value;
+
+    // If input starts with numbers, use zip autocomplete
+    if (/^\d/.test(value)) {
+      if (activeAutocomplete !== zipAutocomplete) {
+        console.log("Switching to zip code autocomplete");
+        activeAutocomplete = zipAutocomplete;
+      }
+    } else {
+      // If input starts with letters, use city autocomplete
+      if (activeAutocomplete !== autocomplete) {
+        console.log("Switching to city autocomplete");
+        activeAutocomplete = autocomplete;
+      }
+    }
+  });
+
+  // Prevent form submission on Enter key
+  input.addEventListener("keydown", function (e) {
+    if (e.keyCode === 13) {
+      e.preventDefault();
+    }
+  });
+
+  // Prevent clicks on Google Places dropdown from propagating to elements below
+  document.addEventListener(
+    "click",
+    function (e) {
+      // Check if the click is on a Google Places autocomplete element
+      if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+      }
+    },
+    true
+  );
+
+  // Also prevent clicks on the input itself from opening dropdowns below
+  input.addEventListener("click", function (e) {
+    e.stopPropagation();
+  });
+
+  // Ensure Google Places dropdown appears above other elements and prevent clicks below
+  var style = document.createElement("style");
+  style.textContent = `
+          .pac-container {
+            z-index: 9999 !important;
+            position: fixed !important;
+            pointer-events: auto !important;
+          }
+          .pac-item {
+            cursor: pointer;
+            pointer-events: auto !important;
+          }
+          .pac-item:hover {
+            background-color: #f0f0f0 !important;
+          }
+          /* Prevent clicks on elements below when Google Places dropdown is visible */
+          .pac-container:not(:empty) ~ * {
+            pointer-events: none !important;
+          }
+          /* Alternative: add overlay when Google Places is active */
+          .google-places-active {
+            pointer-events: none !important;
+          }
+        `;
+  document.head.appendChild(style);
+
+  // Add overlay when Google Places dropdown is visible
+  var overlay = document.createElement("div");
+  overlay.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%
+          background: transparent;
+          z-index: 9998;
+          display: none;
+        `;
+  overlay.id = "google-places-overlay";
+  document.body.appendChild(overlay);
+
+  // Show overlay when input is focused and hide when dropdown disappears
+  input.addEventListener("focus", function () {
+    overlay.style.display = "block";
+  });
+
+  input.addEventListener("blur", function () {
+    setTimeout(function () {
+      overlay.style.display = "none";
+    }, 200);
+  });
+
+  // Also hide overlay when clicking on Google Places elements
+  document.addEventListener("click", function (e) {
+    if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
+      overlay.style.display = "none";
+    }
+  });
 
   $(".filter-list_input-group").on("click", function (e) {
     // Allow the default click behavior to occur
