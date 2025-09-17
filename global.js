@@ -160,6 +160,9 @@ $(".menu_slug").each(function () {
     "im_ref",
   ]);
 
+  // Expose supported parameters for other scripts to use
+  window.NOURISH_UTM_PARAMS = Array.from(SUPPORTED_PARAMS);
+
   const now = Date.now();
   const url = new URL(window.location.href);
   const currentParams = extractUtmParams(url.searchParams);

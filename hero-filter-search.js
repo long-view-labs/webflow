@@ -127,6 +127,7 @@ $(document).ready(function () {
 
   // Function to update the CTA URL with new format
   function updateCTAUrl() {
+    console.log("=== updateCTAUrl called ===");
     var baseUrl = "https://signup.usenourish.com/";
     var params = new URLSearchParams();
 
@@ -194,15 +195,83 @@ $(document).ready(function () {
       }
     }
 
-    // UTM parameters are handled by global.js
+    // Append UTM parameters from global.js (stored in sessionStorage)
+    try {
+      // Get UTM keys dynamically from global.js to avoid duplication
+      var utmKeys = window.NOURISH_UTM_PARAMS || [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_term",
+        "gclid",
+        "fbclid",
+        "msclkid",
+        "ttclid",
+        "im_ref",
+      ];
+
+      console.log("Hero CTA - checking for UTM parameters in sessionStorage");
+      console.log("Hero CTA - using UTM keys:", utmKeys);
+
+      // Read from global.js persistedUTMs object
+      var persistedUTMs = null;
+      try {
+        var stored = sessionStorage.getItem("persistedUTMs");
+        console.log("Hero CTA - raw sessionStorage persistedUTMs:", stored);
+        if (stored) {
+          persistedUTMs = JSON.parse(stored);
+          console.log("Hero CTA - parsed persistedUTMs object:", persistedUTMs);
+        } else {
+          console.log("Hero CTA - no persistedUTMs in sessionStorage");
+        }
+      } catch (e) {
+        console.log("Hero CTA - no persistedUTMs found or parse error:", e);
+      }
+
+      for (var i = 0; i < utmKeys.length; i++) {
+        var key = utmKeys[i];
+        var value = null;
+
+        // Try to get from persistedUTMs first
+        if (
+          persistedUTMs &&
+          persistedUTMs.params &&
+          persistedUTMs.params[key]
+        ) {
+          value = persistedUTMs.params[key];
+        }
+
+        console.log(`Hero CTA - ${key}:`, value);
+        if (value && value.trim()) {
+          params.append(key, value.trim());
+          console.log(`Hero CTA - added ${key}=${value.trim()}`);
+        }
+      }
+    } catch (e) {
+      console.error("Hero CTA - sessionStorage access error:", e);
+    }
 
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
+    console.log("Hero CTA - final URL:", finalUrl);
+    console.log(
+      "Hero CTA - setting href on element:",
+      $("#home-filter-cta").length
+    );
     $("#home-filter-cta").attr("href", finalUrl);
+    console.log(
+      "Hero CTA - href after setting:",
+      $("#home-filter-cta").attr("href")
+    );
   }
 
   // UTM parameter capture is handled by global.js
-  updateCTAUrl();
+  // Delay initial call to ensure global.js has processed UTMs
+  setTimeout(function () {
+    console.log("Hero CTA - delayed initial updateCTAUrl call");
+    updateCTAUrl();
+  }, 100);
 
   // Load API data on page load
   fetchPayersData()
@@ -843,166 +912,6 @@ $(document).ready(function () {
   setupDropdownA11y("#w-dropdown-toggle-0");
 
   $(".filter-list_input-group").on("click", function (e) {
-    var city = "";
-    var state = "";
-    var postalCode = "";
-
-    for (var i = 0; i < place.address_components.length; i++) {
-      var component = place.address_components[i];
-      var types = component.types;
-
-      if (types.indexOf("locality") !== -1) {
-        city = component.long_name;
-      }
-      if (types.indexOf("administrative_area_level_1") !== -1) {
-        state = component.short_name;
-      }
-      if (types.indexOf("postal_code") !== -1) {
-        postalCode = component.long_name;
-      }
-    }
-
-    // Format the result as "City, State ZIP"
-    var formattedAddress = "";
-    if (city && state && postalCode) {
-      formattedAddress = city + ", " + state + " " + postalCode;
-    } else {
-      formattedAddress = place.formatted_address;
-    }
-
-    // Update the input with the formatted address
-    input.value = formattedAddress;
-
-    console.log("Selected zip code place:", formattedAddress);
-    console.log("Zip code place details:", {
-      city: city,
-      state: state,
-      postalCode: postalCode,
-      formattedAddress: place.formatted_address,
-    });
-
-    // Update CTA URL after zip code selection
-    updateCTAUrl();
-  });
-
-  // Prevent clicks on Google Places dropdown from propagating to elements below
-  document.addEventListener(
-    "click",
-    function (e) {
-      // Check if the click is on a Google Places autocomplete element
-      if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
-        e.stopPropagation();
-        e.preventDefault();
-      }
-    },
-    true
-  );
-
-  // Monitor input to switch between city and zip autocomplete
-  input.addEventListener("input", function () {
-    var value = this.value;
-
-    // If input starts with numbers, use zip autocomplete
-    if (/^\d/.test(value)) {
-      if (activeAutocomplete !== zipAutocomplete) {
-        console.log("Switching to zip code autocomplete");
-        activeAutocomplete = zipAutocomplete;
-      }
-    } else {
-      // If input starts with letters, use city autocomplete
-      if (activeAutocomplete !== autocomplete) {
-        console.log("Switching to city autocomplete");
-        activeAutocomplete = autocomplete;
-      }
-    }
-  });
-
-  // Prevent form submission on Enter key
-  input.addEventListener("keydown", function (e) {
-    if (e.keyCode === 13) {
-      e.preventDefault();
-    }
-  });
-
-  // Prevent clicks on Google Places dropdown from propagating to elements below
-  document.addEventListener(
-    "click",
-    function (e) {
-      // Check if the click is on a Google Places autocomplete element
-      if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
-        e.stopPropagation();
-        e.preventDefault();
-        return false;
-      }
-    },
-    true
-  );
-
-  // Also prevent clicks on the input itself from opening dropdowns below
-  input.addEventListener("click", function (e) {
-    e.stopPropagation();
-  });
-
-  // Ensure Google Places dropdown appears above other elements and prevent clicks below
-  var style = document.createElement("style");
-  style.textContent = `
-          .pac-container {
-            z-index: 9999 !important;
-            position: fixed !important;
-            pointer-events: auto !important;
-          }
-          .pac-item {
-            cursor: pointer;
-            pointer-events: auto !important;
-          }
-          .pac-item:hover {
-            background-color: #f0f0f0 !important;
-          }
-          /* Prevent clicks on elements below when Google Places dropdown is visible */
-          .pac-container:not(:empty) ~ * {
-            pointer-events: none !important;
-          }
-          /* Alternative: add overlay when Google Places is active */
-          .google-places-active {
-            pointer-events: none !important;
-          }
-        `;
-  document.head.appendChild(style);
-
-  // Add overlay when Google Places dropdown is visible
-  var overlay = document.createElement("div");
-  overlay.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%
-          background: transparent;
-          z-index: 9998;
-          display: none;
-        `;
-  overlay.id = "google-places-overlay";
-  document.body.appendChild(overlay);
-
-  // Show overlay when input is focused and hide when dropdown disappears
-  input.addEventListener("focus", function () {
-    overlay.style.display = "block";
-  });
-
-  input.addEventListener("blur", function () {
-    setTimeout(function () {
-      overlay.style.display = "none";
-    }, 200);
-  });
-
-  // Also hide overlay when clicking on Google Places elements
-  document.addEventListener("click", function (e) {
-    if (e.target.closest(".pac-container") || e.target.closest(".pac-item")) {
-      overlay.style.display = "none";
-    }
-  });
-
-  $(".filter-list_input-group").on("click", function (e) {
     // Allow the default click behavior to occur
     e.preventDefault();
 
@@ -1167,46 +1076,5 @@ $(document).ready(function () {
         $("#state_filter").attr("aria-expanded", "false");
       }
     }
-  });
-});
-
-$(document).ready(function () {
-  $("#field").on("input", function () {
-    var searchText = $(this).val().toLowerCase().trim();
-
-    // First, hide all items
-    $(".filter-list_input-group, .filter-list_item-wrap").hide();
-
-    if (searchText === "") {
-      // If search is empty, show everything
-      $(".filter-list_input-group, .filter-list_item-wrap").show();
-      return;
-    }
-
-    $(".filter-list_label").each(function () {
-      var $label = $(this);
-      var labelText = $label.text().toLowerCase();
-
-      if (labelText.includes(searchText)) {
-        var $inputGroup = $label.closest(".filter-list_input-group");
-        var $itemWrap = $inputGroup.closest(".filter-list_item-wrap");
-
-        $inputGroup.show();
-
-        if ($itemWrap.length) {
-          $itemWrap.show();
-          // Show the parent label within this item wrap
-          $itemWrap.children(".filter-list_input-group.parent").show();
-        }
-      }
-    });
-
-    // Hide empty .filter-list_item-wrap
-    $(".filter-list_item-wrap").each(function () {
-      var $itemWrap = $(this);
-      if ($itemWrap.find(".filter-list_input-group:visible").length === 0) {
-        $itemWrap.hide();
-      }
-    });
   });
 });
