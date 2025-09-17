@@ -139,7 +139,8 @@ $(".menu_slug").each(function () {
     if (hostname.includes("usenourish.com")) {
       return ".usenourish.com";
     } else if (hostname.includes("webflow.io")) {
-      return hostname; // Use exact hostname for webflow.io domains
+      // For webflow.io domains, set cookies for the target domain
+      return ".usenourish.com";
     } else {
       return hostname; // Use exact hostname for other domains
     }
