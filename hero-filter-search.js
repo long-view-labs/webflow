@@ -603,9 +603,6 @@ $(document).ready(function () {
       // Update the text of #insurance-text with the selected insurance
       var $insuranceText = $("#insurance-text");
       var newText = truncateText(insurance, maxWidth);
-      console.log("Insurance text element found:", $insuranceText.length);
-      console.log("Current text:", $insuranceText.text());
-      console.log("New text to set:", newText);
       $insuranceText.text(newText);
       // Match color behavior of mouse selection
       if (newText !== "Insurance carrier") {
@@ -664,9 +661,6 @@ $(document).ready(function () {
       // Update the text of #insurance-text with the selected insurance
       var $insuranceText = $("#insurance-text");
       var newText = truncateText(insurance, maxWidth);
-      console.log("Insurance text element found:", $insuranceText.length);
-      console.log("Current text:", $insuranceText.text());
-      console.log("New text to set:", newText);
       $insuranceText.text(newText);
       // Match color behavior
       if (newText !== "Insurance carrier") {
