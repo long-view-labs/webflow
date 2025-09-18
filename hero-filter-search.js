@@ -1,10 +1,43 @@
 $(document).ready(function () {
   // Global variables to store API data
+  var payersData = [];
 
   // Function to get query parameter by name
   function getQueryParam(name) {
     var urlParams = new URLSearchParams(window.location.search);
     return urlParams.get(name);
+  }
+
+  // Function to fetch payers data
+  function fetchPayersData() {
+    return fetch("https://app.usenourish.com/api/payers?source=homepage", {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch payers data: " + response.status);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        payersData = data;
+        return data;
+      })
+      .catch((error) => {
+        // Fallback to empty array - form will still work without IDs
+        payersData = [];
+        return [];
+      });
+  }
+
+  // Function to find payer ID by name
+  function findPayerId(payerName) {
+    var payer = payersData.find((item) => item.payerName === payerName);
+    return payer ? payer.id : null;
   }
 
   // Function to format DOB input with forward slashes and backspace support
@@ -217,8 +250,16 @@ $(document).ready(function () {
     updateCTAUrl();
   }, 100);
 
-  // Initial URL update
-  updateCTAUrl();
+  // Load API data on page load
+  fetchPayersData()
+    .then(() => {
+      // Initial URL update
+      updateCTAUrl();
+    })
+    .catch((error) => {
+      // Still update URL even if APIs fail
+      updateCTAUrl();
+    });
 
   // Add event listeners for Insurance Check form fields
   $("#first-name, #last-name").on("input", function () {
