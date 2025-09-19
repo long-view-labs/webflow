@@ -166,7 +166,7 @@ $(document).ready(function () {
 
     // Get Insurance Check form fields (only for Insurance Check form)
     if (formName === "Insurance Check") {
-      // Set InsuranceSearchInput to true for insurance check form (name/dob/payer)
+      // Set InsuranceSearchInput to true for insurance check form CTA
       window.InsuranceSearchInput = true;
 
       var firstName = $("#first-name").val();
@@ -187,7 +187,7 @@ $(document).ready(function () {
         }
       }
     } else {
-      // Set InsuranceSearchInput to false for all other CTAs
+      // Set InsuranceSearchInput to false for main search CTA (not insurance check form)
       window.InsuranceSearchInput = false;
     }
 
@@ -244,18 +244,21 @@ $(document).ready(function () {
 
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
+    $("#home-filter-cta").attr("href", finalUrl);
 
-    // Update all signup.usenourish.com links on the page
-    $('a[href*="signup.usenourish.com"]').each(function () {
-      var $link = $(this);
-      var currentHref = $link.attr("href");
-      var url = new URL(currentHref);
+    // Update all OTHER signup.usenourish.com links on the page with InsuranceSearchInput = false
+    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(
+      function () {
+        var $link = $(this);
+        var currentHref = $link.attr("href");
+        var url = new URL(currentHref);
 
-      // Add InsuranceSearchInput parameter to existing URL
-      url.searchParams.set("InsuranceSearchInput", window.InsuranceSearchInput);
+        // Add InsuranceSearchInput = false for all other CTAs
+        url.searchParams.set("InsuranceSearchInput", "false");
 
-      $link.attr("href", url.toString());
-    });
+        $link.attr("href", url.toString());
+      }
+    );
   }
 
   // UTM parameter capture is handled by global.js
