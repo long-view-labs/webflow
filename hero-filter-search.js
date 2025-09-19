@@ -2,6 +2,9 @@ $(document).ready(function () {
   // Global variables to store API data
   var payersData = [];
 
+  // Variable to track if click came from insurance search form (name/dob/payer)
+  window.InsuranceSearchInput = false;
+
   // Function to get query parameter by name
   function getQueryParam(name) {
     var urlParams = new URLSearchParams(window.location.search);
@@ -172,6 +175,9 @@ $(document).ready(function () {
 
     // Get Insurance Check form fields (only for Insurance Check form)
     if (formName === "Insurance Check") {
+      // Set InsuranceSearchInput to true for insurance check form (name/dob/payer)
+      window.InsuranceSearchInput = true;
+
       var firstName = $("#first-name").val();
       if (firstName) {
         params.append("firstName", firstName);
@@ -189,6 +195,9 @@ $(document).ready(function () {
           params.append("patientBirthday", convertedDOB);
         }
       }
+    } else {
+      // Set InsuranceSearchInput to false for all other CTAs
+      window.InsuranceSearchInput = false;
     }
 
     // Append UTM parameters from global.js (stored in sessionStorage)
