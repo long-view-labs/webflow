@@ -348,6 +348,18 @@ $(document).ready(function () {
     console.log("Final URL being set:", finalUrl);
     console.log("All params:", Array.from(params.entries()));
     $("#home-filter-cta").attr("href", finalUrl);
+
+    // Update all OTHER signup.usenourish.com links on the page with InsuranceSearchInput = false
+    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(function () {
+      var $link = $(this);
+      var currentHref = $link.attr("href");
+      var url = new URL(currentHref);
+
+      // Add InsuranceSearchInput = false for all other CTAs
+      url.searchParams.set("InsuranceSearchInput", "false");
+
+      $link.attr("href", url.toString());
+    });
   }
 
   // UTM parameter capture is handled by global.js
