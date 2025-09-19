@@ -244,8 +244,18 @@ $(document).ready(function () {
 
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
-    $("#home-filter-cta").attr("href", finalUrl);
-    $("#footer-splash-cta").attr("href", finalUrl);
+
+    // Update all signup.usenourish.com links on the page
+    $('a[href*="signup.usenourish.com"]').each(function () {
+      var $link = $(this);
+      var currentHref = $link.attr("href");
+      var url = new URL(currentHref);
+
+      // Add InsuranceSearchInput parameter to existing URL
+      url.searchParams.set("InsuranceSearchInput", window.InsuranceSearchInput);
+
+      $link.attr("href", url.toString());
+    });
   }
 
   // UTM parameter capture is handled by global.js
