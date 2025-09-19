@@ -162,6 +162,21 @@ $(document).ready(function () {
       $('input[type="radio"][data-name="Insurance"]:checked').val() ||
       null;
 
+    // DEBUG: Comprehensive logging
+    console.log("=== INSURANCE DEBUG ===");
+    console.log("insurance variable:", insurance);
+    console.log("typeof insurance:", typeof insurance);
+    console.log(
+      "checked radio value:",
+      $('input[type="radio"][data-name="Insurance"]:checked').val()
+    );
+    console.log("selectedInsuranceRaw:", selectedInsuranceRaw);
+    console.log("payersData length:", payersData.length);
+    console.log(
+      "first few payers:",
+      payersData.slice(0, 3).map((p) => p.payerName)
+    );
+
     if (selectedInsuranceRaw) {
       var normalizedInsurance = String(selectedInsuranceRaw)
         .replace(/\u2019/g, "'")
@@ -175,9 +190,14 @@ $(document).ready(function () {
       } else if (normalizedLower === "i'll choose my insurance later") {
         // Do not send nourishPayerId for this choice
       } else {
+        console.log("Looking for payer ID for:", normalizedInsurance);
         var payerId = findPayerId(normalizedInsurance);
+        console.log("Found payer ID:", payerId);
         if (payerId) {
           params.append("nourishPayerId", payerId);
+          console.log("Added nourishPayerId to params:", payerId);
+        } else {
+          console.log("No payer ID found for:", normalizedInsurance);
         }
       }
     }
@@ -264,21 +284,9 @@ $(document).ready(function () {
 
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
+    console.log("Final URL being set:", finalUrl);
+    console.log("All params:", Array.from(params.entries()));
     $("#home-filter-cta").attr("href", finalUrl);
-
-    // Update all OTHER signup.usenourish.com links on the page with InsuranceSearchInput = false
-    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(
-      function () {
-        var $link = $(this);
-        var currentHref = $link.attr("href");
-        var url = new URL(currentHref);
-
-        // Add InsuranceSearchInput = false for all other CTAs
-        url.searchParams.set("InsuranceSearchInput", "false");
-
-        $link.attr("href", url.toString());
-      }
-    );
   }
 
   // UTM parameter capture is handled by global.js
