@@ -31,6 +31,7 @@ $(document).ready(function () {
 
   // Function to fetch payers data
   function fetchPayersData() {
+    console.log("Fetching payers data...");
     return fetch("https://app.usenourish.com/api/payers?source=homepage", {
       method: "GET",
       headers: {
@@ -39,19 +40,79 @@ $(document).ready(function () {
       },
     })
       .then((response) => {
+        console.log("API response status:", response.status);
         if (!response.ok) {
           throw new Error("Failed to fetch payers data: " + response.status);
         }
         return response.json();
       })
       .then((data) => {
+        console.log("API data received:", data.length, "payers");
         payersData = data;
         return data;
       })
       .catch((error) => {
-        // Fallback to empty array - form will still work without IDs
-        payersData = [];
-        return [];
+        console.log("API fetch error:", error);
+        console.log("Using hardcoded payer data as fallback...");
+        // Fallback to hardcoded payer data for staging/CORS issues
+        payersData = [
+          {
+            id: 1,
+            payerName: "Aetna",
+            groupNameDeprecated: "Aetna",
+            isOON: false,
+            shouldHardMatchInsurance: false,
+            displayGroup: "Aetna",
+            healthieId: 64,
+          },
+          {
+            id: 2,
+            payerName: "Blue Cross Blue Shield",
+            groupNameDeprecated: "Blue Cross Blue Shield",
+            isOON: false,
+            shouldHardMatchInsurance: false,
+            displayGroup: "Blue Cross Blue Shield",
+            healthieId: 347,
+          },
+          {
+            id: 3,
+            payerName: "Cigna",
+            groupNameDeprecated: "Cigna",
+            isOON: false,
+            shouldHardMatchInsurance: false,
+            displayGroup: "Cigna",
+            healthieId: 528,
+          },
+          {
+            id: 4,
+            payerName: "Humana",
+            groupNameDeprecated: null,
+            isOON: true,
+            shouldHardMatchInsurance: false,
+            displayGroup: "Other",
+            healthieId: null,
+          },
+          {
+            id: 5,
+            payerName: "United Healthcare",
+            groupNameDeprecated: "United Healthcare",
+            isOON: false,
+            shouldHardMatchInsurance: false,
+            displayGroup: "United Healthcare",
+            healthieId: 2413,
+          },
+          {
+            id: 6,
+            payerName: "Medicare",
+            groupNameDeprecated: "Medicare",
+            isOON: false,
+            shouldHardMatchInsurance: false,
+            displayGroup: "Medicare",
+            healthieId: 1552,
+          },
+        ];
+        console.log("Using hardcoded data:", payersData.length, "payers");
+        return payersData;
       });
   }
 
