@@ -119,68 +119,170 @@ $(document).ready(function () {
           { id: 147, payerName: "UHC Medicare" },
           { id: 148, payerName: "United Medical Resources (UMR)" },
           { id: 149, payerName: "Wellmed" },
-          { id: 150, payerName: "Anthem Blue Cross and Blue Shield Colorado HMO" },
-          { id: 151, payerName: "Anthem Blue Cross and Blue Shield Colorado PPO" },
-          { id: 152, payerName: "Anthem Blue Cross and Blue Shield Connecticut HMO" },
-          { id: 153, payerName: "Anthem Blue Cross and Blue Shield Connecticut PPO" },
-          { id: 154, payerName: "Anthem Blue Cross and Blue Shield Indiana HMO" },
-          { id: 155, payerName: "Anthem Blue Cross and Blue Shield Indiana PPO" },
-          { id: 156, payerName: "Anthem Blue Cross and Blue Shield Kentucky HMO" },
-          { id: 157, payerName: "Anthem Blue Cross and Blue Shield Kentucky PPO" },
+          {
+            id: 150,
+            payerName: "Anthem Blue Cross and Blue Shield Colorado HMO",
+          },
+          {
+            id: 151,
+            payerName: "Anthem Blue Cross and Blue Shield Colorado PPO",
+          },
+          {
+            id: 152,
+            payerName: "Anthem Blue Cross and Blue Shield Connecticut HMO",
+          },
+          {
+            id: 153,
+            payerName: "Anthem Blue Cross and Blue Shield Connecticut PPO",
+          },
+          {
+            id: 154,
+            payerName: "Anthem Blue Cross and Blue Shield Indiana HMO",
+          },
+          {
+            id: 155,
+            payerName: "Anthem Blue Cross and Blue Shield Indiana PPO",
+          },
+          {
+            id: 156,
+            payerName: "Anthem Blue Cross and Blue Shield Kentucky HMO",
+          },
+          {
+            id: 157,
+            payerName: "Anthem Blue Cross and Blue Shield Kentucky PPO",
+          },
           { id: 158, payerName: "Anthem Blue Cross and Blue Shield Maine HMO" },
           { id: 159, payerName: "Anthem Blue Cross and Blue Shield Maine PPO" },
-          { id: 160, payerName: "Anthem Blue Cross and Blue Shield Missouri HMO" },
-          { id: 161, payerName: "Anthem Blue Cross and Blue Shield Missouri PPO" },
-          { id: 162, payerName: "Anthem Blue Cross and Blue Shield Nevada HMO" },
-          { id: 163, payerName: "Anthem Blue Cross and Blue Shield Nevada PPO" },
-          { id: 164, payerName: "Anthem Blue Cross and Blue Shield New Hampshire HMO" },
-          { id: 165, payerName: "Anthem Blue Cross and Blue Shield New Hampshire PPO" },
-          { id: 166, payerName: "Anthem Blue Cross and Blue Shield of Georgia HMO" },
-          { id: 167, payerName: "Anthem Blue Cross and Blue Shield of Georgia PPO" },
+          {
+            id: 160,
+            payerName: "Anthem Blue Cross and Blue Shield Missouri HMO",
+          },
+          {
+            id: 161,
+            payerName: "Anthem Blue Cross and Blue Shield Missouri PPO",
+          },
+          {
+            id: 162,
+            payerName: "Anthem Blue Cross and Blue Shield Nevada HMO",
+          },
+          {
+            id: 163,
+            payerName: "Anthem Blue Cross and Blue Shield Nevada PPO",
+          },
+          {
+            id: 164,
+            payerName: "Anthem Blue Cross and Blue Shield New Hampshire HMO",
+          },
+          {
+            id: 165,
+            payerName: "Anthem Blue Cross and Blue Shield New Hampshire PPO",
+          },
+          {
+            id: 166,
+            payerName: "Anthem Blue Cross and Blue Shield of Georgia HMO",
+          },
+          {
+            id: 167,
+            payerName: "Anthem Blue Cross and Blue Shield of Georgia PPO",
+          },
           { id: 168, payerName: "Anthem Blue Cross and Blue Shield Ohio HMO" },
           { id: 169, payerName: "Anthem Blue Cross and Blue Shield Ohio PPO" },
-          { id: 170, payerName: "Anthem Blue Cross and Blue Shield Virginia HMO" },
-          { id: 171, payerName: "Anthem Blue Cross and Blue Shield Virginia PPO" },
-          { id: 172, payerName: "Anthem Blue Cross and Blue Shield Wisconsin HMO" },
-          { id: 173, payerName: "Anthem Blue Cross and Blue Shield Wisconsin PPO" },
-          { id: 174, payerName: "Anthem Blue Cross Blue Shield of New York (Empire) HMO" },
-          { id: 175, payerName: "Anthem Blue Cross Blue Shield of New York (Empire) PPO" },
+          {
+            id: 170,
+            payerName: "Anthem Blue Cross and Blue Shield Virginia HMO",
+          },
+          {
+            id: 171,
+            payerName: "Anthem Blue Cross and Blue Shield Virginia PPO",
+          },
+          {
+            id: 172,
+            payerName: "Anthem Blue Cross and Blue Shield Wisconsin HMO",
+          },
+          {
+            id: 173,
+            payerName: "Anthem Blue Cross and Blue Shield Wisconsin PPO",
+          },
+          {
+            id: 174,
+            payerName: "Anthem Blue Cross Blue Shield of New York (Empire) HMO",
+          },
+          {
+            id: 175,
+            payerName: "Anthem Blue Cross Blue Shield of New York (Empire) PPO",
+          },
           { id: 176, payerName: "Anthem Blue Cross of California HMO" },
           { id: 177, payerName: "Anthem Blue Cross of California PPO" },
           { id: 178, payerName: "Arkansas Blue Cross and Blue Shield HMO" },
           { id: 179, payerName: "Arkansas Blue Cross and Blue Shield PPO" },
           { id: 180, payerName: "Blue Cross & Blue Shield of Mississippi HMO" },
           { id: 181, payerName: "Blue Cross & Blue Shield of Mississippi PPO" },
-          { id: 182, payerName: "Blue Cross & Blue Shield of Rhode Island HMO" },
-          { id: 183, payerName: "Blue Cross & Blue Shield of Rhode Island PPO" },
+          {
+            id: 182,
+            payerName: "Blue Cross & Blue Shield of Rhode Island HMO",
+          },
+          {
+            id: 183,
+            payerName: "Blue Cross & Blue Shield of Rhode Island PPO",
+          },
           { id: 184, payerName: "Blue Cross and Blue Shield of Alabama HMO" },
           { id: 185, payerName: "Blue Cross and Blue Shield of Alabama PPO" },
           { id: 186, payerName: "Blue Cross and Blue Shield of Hawaii HMO" },
           { id: 187, payerName: "Blue Cross and Blue Shield of Hawaii PPO" },
           { id: 188, payerName: "Blue Cross and Blue Shield of Illinois HMO" },
           { id: 189, payerName: "Blue Cross and Blue Shield of Illinois PPO" },
-          { id: 190, payerName: "Blue Cross and Blue Shield of Kansas City HMO" },
-          { id: 191, payerName: "Blue Cross and Blue Shield of Kansas City PPO" },
+          {
+            id: 190,
+            payerName: "Blue Cross and Blue Shield of Kansas City HMO",
+          },
+          {
+            id: 191,
+            payerName: "Blue Cross and Blue Shield of Kansas City PPO",
+          },
           { id: 192, payerName: "Blue Cross and Blue Shield of Kansas HMO" },
           { id: 193, payerName: "Blue Cross and Blue Shield of Kansas PPO" },
           { id: 194, payerName: "Blue Cross and Blue Shield of Louisiana HMO" },
           { id: 195, payerName: "Blue Cross and Blue Shield of Louisiana PPO" },
-          { id: 196, payerName: "Blue Cross and Blue Shield of Massachusetts HMO" },
-          { id: 197, payerName: "Blue Cross and Blue Shield of Massachusetts PPO" },
+          {
+            id: 196,
+            payerName: "Blue Cross and Blue Shield of Massachusetts HMO",
+          },
+          {
+            id: 197,
+            payerName: "Blue Cross and Blue Shield of Massachusetts PPO",
+          },
           { id: 198, payerName: "Blue Cross and Blue Shield of Minnesota HMO" },
           { id: 199, payerName: "Blue Cross and Blue Shield of Minnesota PPO" },
           { id: 200, payerName: "Blue Cross and Blue Shield of Montana HMO" },
           { id: 201, payerName: "Blue Cross and Blue Shield of Montana PPO" },
           { id: 202, payerName: "Blue Cross and Blue Shield of Nebraska HMO" },
           { id: 203, payerName: "Blue Cross and Blue Shield of Nebraska PPO" },
-          { id: 204, payerName: "Blue Cross and Blue Shield of New Mexico HMO" },
-          { id: 205, payerName: "Blue Cross and Blue Shield of New Mexico PPO" },
-          { id: 206, payerName: "Blue Cross and Blue Shield of North Carolina HMO" },
-          { id: 207, payerName: "Blue Cross and Blue Shield of North Carolina PPO" },
+          {
+            id: 204,
+            payerName: "Blue Cross and Blue Shield of New Mexico HMO",
+          },
+          {
+            id: 205,
+            payerName: "Blue Cross and Blue Shield of New Mexico PPO",
+          },
+          {
+            id: 206,
+            payerName: "Blue Cross and Blue Shield of North Carolina HMO",
+          },
+          {
+            id: 207,
+            payerName: "Blue Cross and Blue Shield of North Carolina PPO",
+          },
           { id: 208, payerName: "Blue Cross and Blue Shield of Oklahoma HMO" },
           { id: 209, payerName: "Blue Cross and Blue Shield of Oklahoma PPO" },
-          { id: 210, payerName: "Blue Cross and Blue Shield of South Carolina HMO" },
-          { id: 211, payerName: "Blue Cross and Blue Shield of South Carolina POC" },
+          {
+            id: 210,
+            payerName: "Blue Cross and Blue Shield of South Carolina HMO",
+          },
+          {
+            id: 211,
+            payerName: "Blue Cross and Blue Shield of South Carolina POC",
+          },
           { id: 212, payerName: "Blue Cross and Blue Shield of Texas HMO" },
           { id: 213, payerName: "Blue Cross and Blue Shield of Texas PPO" },
           { id: 214, payerName: "Blue Cross and Blue Shield of Vermont HMO" },
@@ -213,22 +315,66 @@ $(document).ready(function () {
           { id: 241, payerName: "Excellus BlueCross BlueShield PPO" },
           { id: 242, payerName: "Florida Blue HMO" },
           { id: 243, payerName: "Florida Blue PPO" },
-          { id: 244, payerName: "Highmark Blue Cross Blue Shield Delaware HMO" },
-          { id: 245, payerName: "Highmark Blue Cross Blue Shield Delaware PPO" },
-          { id: 246, payerName: "Highmark Blue Cross Blue Shield of Pennsylvania HMO" },
-          { id: 247, payerName: "Highmark Blue Cross Blue Shield of Pennsylvania PPO" },
-          { id: 248, payerName: "Highmark Blue Cross Blue Shield of Western New York HMO" },
-          { id: 249, payerName: "Highmark Blue Cross Blue Shield of Western New York PPO" },
-          { id: 250, payerName: "Highmark Blue Cross Blue Shield West Virginia HMO" },
-          { id: 251, payerName: "Highmark Blue Cross Blue Shield West Virginia PPO" },
-          { id: 252, payerName: "Highmark Blue Shield of Northeastern New York HMO" },
-          { id: 253, payerName: "Highmark Blue Shield of Northeastern New York PPO" },
-          { id: 254, payerName: "Horizon Blue Cross and Blue Shield of New Jersey HMO" },
-          { id: 255, payerName: "Horizon Blue Cross and Blue Shield of New Jersey PPO" },
+          {
+            id: 244,
+            payerName: "Highmark Blue Cross Blue Shield Delaware HMO",
+          },
+          {
+            id: 245,
+            payerName: "Highmark Blue Cross Blue Shield Delaware PPO",
+          },
+          {
+            id: 246,
+            payerName: "Highmark Blue Cross Blue Shield of Pennsylvania HMO",
+          },
+          {
+            id: 247,
+            payerName: "Highmark Blue Cross Blue Shield of Pennsylvania PPO",
+          },
+          {
+            id: 248,
+            payerName:
+              "Highmark Blue Cross Blue Shield of Western New York HMO",
+          },
+          {
+            id: 249,
+            payerName:
+              "Highmark Blue Cross Blue Shield of Western New York PPO",
+          },
+          {
+            id: 250,
+            payerName: "Highmark Blue Cross Blue Shield West Virginia HMO",
+          },
+          {
+            id: 251,
+            payerName: "Highmark Blue Cross Blue Shield West Virginia PPO",
+          },
+          {
+            id: 252,
+            payerName: "Highmark Blue Shield of Northeastern New York HMO",
+          },
+          {
+            id: 253,
+            payerName: "Highmark Blue Shield of Northeastern New York PPO",
+          },
+          {
+            id: 254,
+            payerName: "Horizon Blue Cross and Blue Shield of New Jersey HMO",
+          },
+          {
+            id: 255,
+            payerName: "Horizon Blue Cross and Blue Shield of New Jersey PPO",
+          },
           { id: 256, payerName: "Independence Blue Cross HMO" },
           { id: 257, payerName: "Independence Blue Cross PPO" },
-          { id: 258, payerName: "Premera Blue Cross and Blue Shield of Alaska HMO" },
-          { id: 259, payerName: "Premera Blue Cross and Blue Shield of Alaska PPO" },
+          {
+            id: 258,
+            payerName: "Premera Blue Cross and Blue Shield of Alaska HMO",
+          },
+          {
+            id: 259,
+            payerName: "Premera Blue Cross and Blue Shield of Alaska PPO",
+          },
           { id: 260, payerName: "Premera Blue Cross Washington HMO" },
           { id: 261, payerName: "Premera Blue Cross Washington PPO" },
           { id: 262, payerName: "Regence BlueCross BlueShield of Oregon HMO" },
@@ -239,16 +385,31 @@ $(document).ready(function () {
           { id: 267, payerName: "Regence BlueShield of Idaho PPO" },
           { id: 268, payerName: "Regence BlueShield Washington HMO" },
           { id: 269, payerName: "Regence BlueShield Washington PPO" },
-          { id: 270, payerName: "Wellmark Blue Cross and Blue Shield of Iowa HMO" },
-          { id: 271, payerName: "Wellmark Blue Cross and Blue Shield of Iowa PPO" },
-          { id: 272, payerName: "Wellmark Blue Cross and Blue Shield South Dakota HMO" },
-          { id: 273, payerName: "Wellmark Blue Cross and Blue Shield South Dakota PPO" },
+          {
+            id: 270,
+            payerName: "Wellmark Blue Cross and Blue Shield of Iowa HMO",
+          },
+          {
+            id: 271,
+            payerName: "Wellmark Blue Cross and Blue Shield of Iowa PPO",
+          },
+          {
+            id: 272,
+            payerName: "Wellmark Blue Cross and Blue Shield South Dakota HMO",
+          },
+          {
+            id: 273,
+            payerName: "Wellmark Blue Cross and Blue Shield South Dakota PPO",
+          },
           { id: 274, payerName: "Alliant Health Plan" },
           { id: 275, payerName: "AllWays Health Partners" },
           { id: 276, payerName: "AmeriHealth Caritas" },
           { id: 277, payerName: "AultCare Insurance Company" },
           { id: 278, payerName: "Bright Health" },
-          { id: 279, payerName: "Capital District Physicians' Health Plan (CPDHP)" },
+          {
+            id: 279,
+            payerName: "Capital District Physicians' Health Plan (CPDHP)",
+          },
           { id: 280, payerName: "CareOregon" },
           { id: 281, payerName: "CareSource" },
           { id: 282, payerName: "Centene" },
@@ -302,7 +463,7 @@ $(document).ready(function () {
           { id: 330, payerName: "WellSense Health Plan" },
           { id: 331, payerName: "Western Health Advantage" },
           { id: 332, payerName: "Devoted Health" },
-          { id: 333, payerName: "Independence Keystone Health" }
+          { id: 333, payerName: "Independence Keystone Health" },
         ];
         return payersData;
       });
@@ -415,7 +576,6 @@ $(document).ready(function () {
       $('input[type="radio"][data-name="Insurance"]:checked').val() ||
       null;
 
-
     if (selectedInsuranceRaw) {
       var normalizedInsurance = String(selectedInsuranceRaw)
         .replace(/\u2019/g, "'")
@@ -521,16 +681,18 @@ $(document).ready(function () {
     $("#home-filter-cta").attr("href", finalUrl);
 
     // Update all OTHER signup.usenourish.com links on the page with InsuranceSearchInput = false
-    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(function () {
-      var $link = $(this);
-      var currentHref = $link.attr("href");
-      var url = new URL(currentHref);
+    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(
+      function () {
+        var $link = $(this);
+        var currentHref = $link.attr("href");
+        var url = new URL(currentHref);
 
-      // Add InsuranceSearchInput = false for all other CTAs
-      url.searchParams.set("InsuranceSearchInput", "false");
+        // Add InsuranceSearchInput = false for all other CTAs
+        url.searchParams.set("InsuranceSearchInput", "false");
 
-      $link.attr("href", url.toString());
-    });
+        $link.attr("href", url.toString());
+      }
+    );
   }
 
   // UTM parameter capture is handled by global.js
