@@ -411,12 +411,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
    */
   function variationFromPath(path) {
     path = normPath(path);
-    if (path === "/") return "Insurance_Check";
+    if (path === "/") return "Organic_Homepage";
     if (path.indexOf("/blog") === 0) return "blog";
     if (path.indexOf("/landing-page") === 0) return "landing-page";
     if (path.indexOf("/conditions") === 0) return "conditions";
     if (path.indexOf("/local-dietitians") === 0) return "local-dietitians";
-    if (path.indexOf("/paid") === 0) return "Insurance_Check";
+    if (path.indexOf("/paid") === 0) return "Paid_Homepage";
     return null;
   }
 

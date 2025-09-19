@@ -248,6 +248,9 @@ $(document).ready(function () {
       // ignore sessionStorage access errors
     }
 
+    // Add InsuranceSearchInput parameter to URL
+    params.append("InsuranceSearchInput", window.InsuranceSearchInput);
+
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
     $("#home-filter-cta").attr("href", finalUrl);
