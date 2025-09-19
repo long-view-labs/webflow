@@ -245,6 +245,7 @@ $(document).ready(function () {
     // Build final URL
     var finalUrl = baseUrl + "?" + params.toString();
     $("#home-filter-cta").attr("href", finalUrl);
+    $("#footer-splash-cta").attr("href", finalUrl);
   }
 
   // UTM parameter capture is handled by global.js
