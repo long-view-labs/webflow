@@ -57,30 +57,8 @@ $(document).ready(function () {
 
   // Function to find payer ID by name
   function findPayerId(payerName) {
-    // Try exact match first
     var payer = payersData.find((item) => item.payerName === payerName);
-    if (payer) return payer.id;
-
-    // Try case-insensitive match
-    payer = payersData.find(
-      (item) => item.payerName.toLowerCase() === payerName.toLowerCase()
-    );
-    if (payer) return payer.id;
-
-    // Try partial match
-    payer = payersData.find((item) =>
-      item.payerName.toLowerCase().includes(payerName.toLowerCase())
-    );
-    if (payer) return payer.id;
-
-    // Debug: log what we're looking for and what's available
-    console.log("Looking for payer:", payerName);
-    console.log(
-      "Available payers:",
-      payersData.map((p) => p.payerName)
-    );
-
-    return null;
+    return payer ? payer.id : null;
   }
 
   // Function to format DOB input with forward slashes and backspace support
@@ -174,7 +152,7 @@ $(document).ready(function () {
     // Get the form name to determine which variant to use
     var formName = $("form[data-name]").attr("data-name");
 
-    // Add landingPageVariation parameter for form CTA
+    // Add landingPageVariation parameter for tracking (not functionality)
     var v = variationFromPath(window.location.pathname);
     if (v) params.append("landingPageVariation", v);
 
