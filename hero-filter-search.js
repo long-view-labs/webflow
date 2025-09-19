@@ -134,16 +134,7 @@ $(document).ready(function () {
     // Get the form name to determine which variant to use
     var formName = $("form[data-name]").attr("data-name");
 
-    // Determine landing page variation
-    if (isControlGroup()) {
-      // Control group gets Am_I_Covered variant
-      params.append("landingPageVariation", "Am_I_Covered");
-    } else if (formName === "Insurance Check") {
-      params.append("landingPageVariation", "Insurance_Check");
-    } else {
-      // Default to Provider Search for home page
-      params.append("landingPageVariation", "Provider_Search");
-    }
+    // landingPageVariation is now handled by global.js only
 
     // Get selected insurance (use raw value, not truncated label)
     var selectedInsuranceRaw =
