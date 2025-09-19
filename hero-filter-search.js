@@ -5,6 +5,9 @@ $(document).ready(function () {
   // Variable to track if click came from insurance search form (name/dob/payer)
   window.InsuranceSearchInput = false;
 
+  // Variable to track selected insurance
+  var insurance;
+
   // Function to get landing page variation based on current path (same as global.js)
   function variationFromPath(path) {
     path = (path || window.location.pathname || "/").toLowerCase();
@@ -54,8 +57,30 @@ $(document).ready(function () {
 
   // Function to find payer ID by name
   function findPayerId(payerName) {
+    // Try exact match first
     var payer = payersData.find((item) => item.payerName === payerName);
-    return payer ? payer.id : null;
+    if (payer) return payer.id;
+
+    // Try case-insensitive match
+    payer = payersData.find(
+      (item) => item.payerName.toLowerCase() === payerName.toLowerCase()
+    );
+    if (payer) return payer.id;
+
+    // Try partial match
+    payer = payersData.find((item) =>
+      item.payerName.toLowerCase().includes(payerName.toLowerCase())
+    );
+    if (payer) return payer.id;
+
+    // Debug: log what we're looking for and what's available
+    console.log("Looking for payer:", payerName);
+    console.log(
+      "Available payers:",
+      payersData.map((p) => p.payerName)
+    );
+
+    return null;
   }
 
   // Function to format DOB input with forward slashes and backspace support
