@@ -766,6 +766,52 @@
       }
     });
 
+    // Add event listeners for tracking
+    const allInputs = form.querySelectorAll("input, select, textarea");
+    allInputs.forEach((input) => {
+      // Track Application Started on first interaction with any field
+      input.addEventListener("focus", () => {
+        trackApplicationStarted();
+      });
+
+      // Track Application Completed on any field change
+      input.addEventListener("input", () => {
+        checkApplicationCompleted(form);
+      });
+
+      input.addEventListener("change", () => {
+        checkApplicationCompleted(form);
+      });
+    });
+
+    // Special handling for resume upload
+    const resumeInput = form.querySelector('input[name="resume"]');
+    if (resumeInput) {
+      resumeInput.addEventListener("change", function () {
+        if (this.files && this.files.length > 0) {
+          trackResumeUploaded();
+        }
+        checkApplicationCompleted(form);
+      });
+    }
+
+    // Special handling for tag pickers
+    const tagPickers = form.querySelectorAll(".tagpicker");
+    tagPickers.forEach((tagPicker) => {
+      const input = tagPicker.querySelector(".tagpicker-input");
+      if (input) {
+        input.addEventListener("focus", () => {
+          trackApplicationStarted();
+        });
+      }
+
+      // Listen for changes in tag picker selections
+      const observer = new MutationObserver(() => {
+        checkApplicationCompleted(form);
+      });
+      observer.observe(tagPicker, { childList: true, subtree: true });
+    });
+
     const mount = document.getElementById("gh-app");
     mount.innerHTML = "";
     mount.appendChild(form);
@@ -794,6 +840,71 @@
     }
 
     return utmParams;
+  }
+
+  // ---------- EVENT TRACKING ----------
+  let applicationStartedTracked = false;
+  let resumeUploadedTracked = false;
+  let applicationCompletedTracked = false;
+
+  function trackEvent(eventName, properties = {}) {
+    if (
+      window.rudderanalytics &&
+      typeof window.rudderanalytics.track === "function"
+    ) {
+      window.rudderanalytics.track(eventName, properties);
+    }
+  }
+
+  function trackApplicationStarted() {
+    if (!applicationStartedTracked) {
+      trackEvent("Application Started");
+      applicationStartedTracked = true;
+    }
+  }
+
+  function trackResumeUploaded() {
+    if (!resumeUploadedTracked) {
+      trackEvent("Resume Uploaded");
+      resumeUploadedTracked = true;
+    }
+  }
+
+  function checkApplicationCompleted(form) {
+    if (applicationCompletedTracked) return;
+
+    // Check if all required fields are filled
+    const requiredInputs = form.querySelectorAll(
+      "input[required], select[required], textarea[required]"
+    );
+    const requiredTagPickers = form.querySelectorAll(
+      '.tagpicker[data-required="1"]'
+    );
+
+    let allFieldsValid = true;
+
+    // Check regular required inputs
+    requiredInputs.forEach((input) => {
+      if (input.type === "file") {
+        if (!input.files || input.files.length === 0) {
+          allFieldsValid = false;
+        }
+      } else if (!input.value.trim()) {
+        allFieldsValid = false;
+      }
+    });
+
+    // Check required tag pickers
+    requiredTagPickers.forEach((tagPicker) => {
+      if (tagPicker.getSelectedCount && tagPicker.getSelectedCount() === 0) {
+        allFieldsValid = false;
+      }
+    });
+
+    if (allFieldsValid) {
+      trackEvent("Application Completed");
+      applicationCompletedTracked = true;
+    }
   }
 
   // ---------- INIT ----------
