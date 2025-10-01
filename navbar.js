@@ -68,7 +68,12 @@ function revealDropdown(currentLink, currentContent) {
     const minOffset = 10; // Minimum distance from left edge
     const maxOffset = viewportWidth - contentWidth - 10; // Minimum distance from right edge
 
-    linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
+    // Only constrain if the dropdown would go outside viewport
+    if (linkTextOffset < minOffset) {
+      linkTextOffset = minOffset;
+    } else if (linkTextOffset > maxOffset) {
+      linkTextOffset = maxOffset;
+    }
   } else {
     linkTextOffset = linkLeft - 25; // original position
 
@@ -76,7 +81,12 @@ function revealDropdown(currentLink, currentContent) {
     const minOffset = 10;
     const maxOffset = viewportWidth - contentWidth - 10;
 
-    linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
+    // Only constrain if the dropdown would go outside viewport
+    if (linkTextOffset < minOffset) {
+      linkTextOffset = minOffset;
+    } else if (linkTextOffset > maxOffset) {
+      linkTextOffset = maxOffset;
+    }
   }
 
   // Set the initial width of menuBG with constrained dimensions
@@ -122,7 +132,12 @@ function switchDropdown(currentLink, previousContent, currentContent) {
     const minOffset = 10;
     const maxOffset = viewportWidth - contentWidth - 10;
 
-    linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
+    // Only constrain if the dropdown would go outside viewport
+    if (linkTextOffset < minOffset) {
+      linkTextOffset = minOffset;
+    } else if (linkTextOffset > maxOffset) {
+      linkTextOffset = maxOffset;
+    }
   } else {
     linkTextOffset = linkLeft - 25; // original position
 
@@ -130,7 +145,12 @@ function switchDropdown(currentLink, previousContent, currentContent) {
     const minOffset = 10;
     const maxOffset = viewportWidth - contentWidth - 10;
 
-    linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
+    // Only constrain if the dropdown would go outside viewport
+    if (linkTextOffset < minOffset) {
+      linkTextOffset = minOffset;
+    } else if (linkTextOffset > maxOffset) {
+      linkTextOffset = maxOffset;
+    }
   }
 
   // invert moveDistance if needed
@@ -256,7 +276,12 @@ let showDropdown = gsap.timeline({
       const minOffset = 10;
       const maxOffset = viewportWidth - contentWidth - 10;
 
-      linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
+      // Only constrain if the dropdown would go outside viewport
+      if (linkTextOffset < minOffset) {
+        linkTextOffset = minOffset;
+      } else if (linkTextOffset > maxOffset) {
+        linkTextOffset = maxOffset;
+      }
     } else {
       linkTextOffset = linkLeft - 25; // original position
 
@@ -264,7 +289,12 @@ let showDropdown = gsap.timeline({
       const minOffset = 10;
       const maxOffset = viewportWidth - contentWidth - 10;
 
-      linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
+      // Only constrain if the dropdown would go outside viewport
+      if (linkTextOffset < minOffset) {
+        linkTextOffset = minOffset;
+      } else if (linkTextOffset > maxOffset) {
+        linkTextOffset = maxOffset;
+      }
     }
 
     gsap.killTweensOf(content);
