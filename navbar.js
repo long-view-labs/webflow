@@ -59,34 +59,18 @@ function revealDropdown(currentLink, currentContent) {
   const linkLeft = linkText.offset().left;
   const linkWidth = linkText.outerWidth();
 
-  // Check if window's width is less than or equal to your breakpoint
-  if (window.innerWidth <= 1400) {
-    // Center the dropdown under the link
-    linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
+  // Center the dropdown under the link for all screen sizes
+  linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
 
-    // Ensure dropdown doesn't go beyond viewport boundaries
-    const minOffset = 10; // Minimum distance from left edge
-    const maxOffset = viewportWidth - contentWidth - 10; // Minimum distance from right edge
+  // Ensure dropdown doesn't go beyond viewport boundaries
+  const minOffset = 10; // Minimum distance from left edge
+  const maxOffset = viewportWidth - contentWidth - 10; // Minimum distance from right edge
 
-    // Only constrain if the dropdown would go outside viewport
-    if (linkTextOffset < minOffset) {
-      linkTextOffset = minOffset;
-    } else if (linkTextOffset > maxOffset) {
-      linkTextOffset = maxOffset;
-    }
-  } else {
-    linkTextOffset = linkLeft - 25; // original position
-
-    // Ensure dropdown doesn't go beyond viewport boundaries
-    const minOffset = 10;
-    const maxOffset = viewportWidth - contentWidth - 10;
-
-    // Only constrain if the dropdown would go outside viewport
-    if (linkTextOffset < minOffset) {
-      linkTextOffset = minOffset;
-    } else if (linkTextOffset > maxOffset) {
-      linkTextOffset = maxOffset;
-    }
+  // Only constrain if the dropdown would go outside viewport
+  if (linkTextOffset < minOffset) {
+    linkTextOffset = minOffset;
+  } else if (linkTextOffset > maxOffset) {
+    linkTextOffset = maxOffset;
   }
 
   // Set the initial width of menuBG with constrained dimensions
@@ -123,34 +107,18 @@ function switchDropdown(currentLink, previousContent, currentContent) {
   const linkLeft = linkText.offset().left;
   const linkWidth = linkText.outerWidth();
 
-  // Check if window's width is less than or equal to your breakpoint
-  if (window.innerWidth <= 1440) {
-    // Center the dropdown under the link
-    linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
+  // Center the dropdown under the link for all screen sizes
+  linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
 
-    // Ensure dropdown doesn't go beyond viewport boundaries
-    const minOffset = 10;
-    const maxOffset = viewportWidth - contentWidth - 10;
+  // Ensure dropdown doesn't go beyond viewport boundaries
+  const minOffset = 10;
+  const maxOffset = viewportWidth - contentWidth - 10;
 
-    // Only constrain if the dropdown would go outside viewport
-    if (linkTextOffset < minOffset) {
-      linkTextOffset = minOffset;
-    } else if (linkTextOffset > maxOffset) {
-      linkTextOffset = maxOffset;
-    }
-  } else {
-    linkTextOffset = linkLeft - 25; // original position
-
-    // Ensure dropdown doesn't go beyond viewport boundaries
-    const minOffset = 10;
-    const maxOffset = viewportWidth - contentWidth - 10;
-
-    // Only constrain if the dropdown would go outside viewport
-    if (linkTextOffset < minOffset) {
-      linkTextOffset = minOffset;
-    } else if (linkTextOffset > maxOffset) {
-      linkTextOffset = maxOffset;
-    }
+  // Only constrain if the dropdown would go outside viewport
+  if (linkTextOffset < minOffset) {
+    linkTextOffset = minOffset;
+  } else if (linkTextOffset > maxOffset) {
+    linkTextOffset = maxOffset;
   }
 
   // invert moveDistance if needed
@@ -267,34 +235,18 @@ let showDropdown = gsap.timeline({
     const linkWidth = linkText.outerWidth();
     let linkTextOffset;
 
-    // Check if window's width is less than or equal to your breakpoint
-    if (window.innerWidth <= 1440) {
-      // Center the dropdown under the link
-      linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
+    // Center the dropdown under the link for all screen sizes
+    linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
 
-      // Ensure dropdown doesn't go beyond viewport boundaries
-      const minOffset = 10;
-      const maxOffset = viewportWidth - contentWidth - 10;
+    // Ensure dropdown doesn't go beyond viewport boundaries
+    const minOffset = 10;
+    const maxOffset = viewportWidth - contentWidth - 10;
 
-      // Only constrain if the dropdown would go outside viewport
-      if (linkTextOffset < minOffset) {
-        linkTextOffset = minOffset;
-      } else if (linkTextOffset > maxOffset) {
-        linkTextOffset = maxOffset;
-      }
-    } else {
-      linkTextOffset = linkLeft - 25; // original position
-
-      // Ensure dropdown doesn't go beyond viewport boundaries
-      const minOffset = 10;
-      const maxOffset = viewportWidth - contentWidth - 10;
-
-      // Only constrain if the dropdown would go outside viewport
-      if (linkTextOffset < minOffset) {
-        linkTextOffset = minOffset;
-      } else if (linkTextOffset > maxOffset) {
-        linkTextOffset = maxOffset;
-      }
+    // Only constrain if the dropdown would go outside viewport
+    if (linkTextOffset < minOffset) {
+      linkTextOffset = minOffset;
+    } else if (linkTextOffset > maxOffset) {
+      linkTextOffset = maxOffset;
     }
 
     gsap.killTweensOf(content);
