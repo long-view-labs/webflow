@@ -10,7 +10,8 @@
     "release:major": "node release.js major",
     "release:prerelease": "node release.js prerelease",
     "version": "node release.js version",
-    "changelog": "node release.js changelog"
+    "changelog": "node release.js changelog",
+    "deploy": "node deploy.js"
   },
   "repository": {
     "type": "git",
