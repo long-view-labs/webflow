@@ -45,22 +45,44 @@ function handleMobileNavDisplay() {
 
 function revealDropdown(currentLink, currentContent) {
   dropdownWrap.css("display", "flex");
+
+  // Prevent horizontal scrollbar during dropdown animation
+  $("body").css("overflow-x", "hidden");
+
   let linkText = currentLink.find(".menu_link-text");
   let linkTextOffset; // center of the link
 
+  // Get content dimensions
+  const contentWidth = currentContent.outerWidth();
+  const contentHeight = currentContent.outerHeight();
+  const viewportWidth = window.innerWidth;
+  const linkLeft = linkText.offset().left;
+  const linkWidth = linkText.outerWidth();
+
   // Check if window's width is less than or equal to your breakpoint
   if (window.innerWidth <= 1400) {
-    // change 1222 to your desired breakpoint
-    linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
-    linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
+    // Center the dropdown under the link
+    linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
+
+    // Ensure dropdown doesn't go beyond viewport boundaries
+    const minOffset = 10; // Minimum distance from left edge
+    const maxOffset = viewportWidth - contentWidth - 10; // Minimum distance from right edge
+
+    linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
   } else {
-    linkTextOffset = linkText.offset().left - 25; // original position
+    linkTextOffset = linkLeft - 25; // original position
+
+    // Ensure dropdown doesn't go beyond viewport boundaries
+    const minOffset = 10;
+    const maxOffset = viewportWidth - contentWidth - 10;
+
+    linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
   }
 
-  // Set the initial width of menuBG
+  // Set the initial width of menuBG with constrained dimensions
   gsap.set(menuBG, {
-    width: currentContent.outerWidth(),
-    height: currentContent.outerHeight(),
+    width: Math.min(contentWidth, viewportWidth - 20), // Ensure it doesn't exceed viewport
+    height: contentHeight,
     x: linkTextOffset,
   });
 
@@ -84,13 +106,31 @@ function switchDropdown(currentLink, previousContent, currentContent) {
   let linkText = currentLink.find(".menu_link-text");
   let linkTextOffset;
 
+  // Get content dimensions and viewport info
+  const contentWidth = currentContent.outerWidth();
+  const contentHeight = currentContent.outerHeight();
+  const viewportWidth = window.innerWidth;
+  const linkLeft = linkText.offset().left;
+  const linkWidth = linkText.outerWidth();
+
   // Check if window's width is less than or equal to your breakpoint
   if (window.innerWidth <= 1440) {
-    // change 1222 to your desired breakpoint
-    linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
-    linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
+    // Center the dropdown under the link
+    linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
+
+    // Ensure dropdown doesn't go beyond viewport boundaries
+    const minOffset = 10;
+    const maxOffset = viewportWidth - contentWidth - 10;
+
+    linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
   } else {
-    linkTextOffset = linkText.offset().left - 25; // original position
+    linkTextOffset = linkLeft - 25; // original position
+
+    // Ensure dropdown doesn't go beyond viewport boundaries
+    const minOffset = 10;
+    const maxOffset = viewportWidth - contentWidth - 10;
+
+    linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
   }
 
   // invert moveDistance if needed
@@ -101,8 +141,8 @@ function switchDropdown(currentLink, previousContent, currentContent) {
 
   gsap.to(menuBG, {
     x: linkTextOffset,
-    width: currentContent.outerWidth(),
-    height: currentContent.outerHeight(),
+    width: Math.min(contentWidth, viewportWidth - 20), // Ensure it doesn't exceed viewport
+    height: contentHeight,
     duration: 0.2,
   });
 
@@ -157,10 +197,14 @@ menuLink.on("mouseenter", function () {
   // Set the display property of the currentContent to "flex"
   gsap.set(currentContent, { display: "flex" });
 
-  // Update the x transform of menuBG
+  // Update the x transform of menuBG with viewport constraints
+  const contentWidth = currentContent.outerWidth();
+  const contentHeight = currentContent.outerHeight();
+  const viewportWidth = window.innerWidth;
+
   gsap.to(menuBG, {
-    width: currentContent.outerWidth(),
-    height: currentContent.outerHeight(),
+    width: Math.min(contentWidth, viewportWidth - 20), // Ensure it doesn't exceed viewport
+    height: contentHeight,
     duration: 0.2,
   });
 
@@ -193,25 +237,43 @@ let showDropdown = gsap.timeline({
   onStart: function () {
     let currentLink = menuLink.filter(".active");
     let linkText = currentLink.find(".menu_link-text");
-    let linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
     let currentContent = content.eq(currentLink.index());
+
+    // Get dimensions and viewport info
+    const contentWidth = currentContent.outerWidth();
+    const contentHeight = currentContent.outerHeight();
+    const viewportWidth = window.innerWidth;
+    const linkLeft = linkText.offset().left;
+    const linkWidth = linkText.outerWidth();
+    let linkTextOffset;
 
     // Check if window's width is less than or equal to your breakpoint
     if (window.innerWidth <= 1440) {
-      // change 1222 to your desired breakpoint
-      linkTextOffset = linkText.offset().left + linkText.outerWidth() / 2; // center of the link
-      linkTextOffset -= currentContent.outerWidth() / 2; // adjust the dropdown position
+      // Center the dropdown under the link
+      linkTextOffset = linkLeft + linkWidth / 2 - contentWidth / 2;
+
+      // Ensure dropdown doesn't go beyond viewport boundaries
+      const minOffset = 10;
+      const maxOffset = viewportWidth - contentWidth - 10;
+
+      linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
     } else {
-      linkTextOffset = linkText.offset().left - 25; // original position
+      linkTextOffset = linkLeft - 25; // original position
+
+      // Ensure dropdown doesn't go beyond viewport boundaries
+      const minOffset = 10;
+      const maxOffset = viewportWidth - contentWidth - 10;
+
+      linkTextOffset = Math.max(minOffset, Math.min(linkTextOffset, maxOffset));
     }
 
     gsap.killTweensOf(content);
 
-    // Update the x transform of menuBG
+    // Update the x transform of menuBG with viewport constraints
     gsap.to(menuBG, {
       x: linkTextOffset,
-      width: currentContent.outerWidth(),
-      height: currentContent.outerHeight(),
+      width: Math.min(contentWidth, viewportWidth - 20), // Ensure it doesn't exceed viewport
+      height: contentHeight,
       duration: 0.2,
     });
   },
@@ -219,6 +281,8 @@ let showDropdown = gsap.timeline({
   onReverseComplete: () => {
     dropdownWrap.css("display", "none");
     menuLink.removeClass("active");
+    // Restore normal overflow when dropdown closes
+    $("body").css("overflow-x", "");
   },
 });
 showDropdown.from(dropdownWrap, { opacity: 0, rotateX: -10, duration: 0.2 });
