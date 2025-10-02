@@ -124,7 +124,7 @@ $(".menu_slug").each(function () {
  * Comprehensive UTM parameter tracking system
  * - Tracks UTM parameters across page navigation within 30-minute sessions
  * - Sets cookies for backward compatibility
- * - Automatically injects UTM parameters into outbound signup links
+ * - Automatically injects UTM parameters into outbound signup links and iframes
  * - Clears old UTMs when coming from external referrers
  * - Supports all tracking parameters (utm_*, gclid, fbclid, msclkid, ttclid, im_ref)
  */
@@ -315,17 +315,41 @@ $(".menu_slug").each(function () {
   }
 
   /**
-   * Apply UTM parameters to all existing links on the page
+   * Apply UTM parameters to an iframe's src URL
+   * @param {HTMLIFrameElement} iframe - Iframe element to modify
+   * @param {Object} params - UTM parameters to apply
+   */
+  function applyParamsToIframe(iframe, params) {
+    try {
+      const u = new URL(iframe.src, location.origin);
+
+      // Only apply UTMs to signup.usenourish.com iframes
+      if (u.hostname !== TARGET_HOST) return;
+
+      // Don't overwrite if the iframe already has that param
+      for (const [k, v] of Object.entries(params)) {
+        if (!u.searchParams.has(k)) u.searchParams.set(k, v);
+      }
+      iframe.src = u.toString();
+    } catch (_) {}
+  }
+
+  /**
+   * Apply UTM parameters to all existing links and iframes on the page
    * @param {Object} params - UTM parameters to apply
    */
   function applyToAllLinks(params) {
     document
       .querySelectorAll("a[href]")
       .forEach((a) => applyParamsToLink(a, params));
+
+    document
+      .querySelectorAll("iframe[src]")
+      .forEach((iframe) => applyParamsToIframe(iframe, params));
   }
 
   /**
-   * Set up observer to apply UTM parameters to dynamically added links
+   * Set up observer to apply UTM parameters to dynamically added links and iframes
    * @param {Object} params - UTM parameters to apply
    */
   function setupLinkObserver(params) {
@@ -333,12 +357,24 @@ $(".menu_slug").each(function () {
       for (const m of muts) {
         m.addedNodes.forEach((node) => {
           if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+          // Handle links
           if (node.tagName === "A" && node.href)
             applyParamsToLink(node, params);
-          node.querySelectorAll &&
+
+          // Handle iframes
+          if (node.tagName === "IFRAME" && node.src)
+            applyParamsToIframe(node, params);
+
+          // Handle nested elements
+          if (node.querySelectorAll) {
             node
               .querySelectorAll("a[href]")
               .forEach((a) => applyParamsToLink(a, params));
+            node
+              .querySelectorAll("iframe[src]")
+              .forEach((iframe) => applyParamsToIframe(iframe, params));
+          }
         });
       }
     });
