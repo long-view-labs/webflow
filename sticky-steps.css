@@ -1,0 +1,102 @@
+/* ========================================
+DEFAULT/INACTIVE STATE
+======================================== */
+.step-scroll_image-wrapper {
+  background-color: transparent;
+  transition: background-color 0.5s ease;
+}
+
+.step-scroll_title,
+.step-scroll_img {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+
+.step-scroll_overview {
+  opacity: 0;
+  transition: opacity 0.5s ease, max-height 0.5s ease;
+}
+
+.step-scroll_check {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* ========================================
+ACTIVE STATE - Everything 100% visible
+======================================== */
+.step-scroll_item.active .step-scroll_image-wrapper {
+  background-color: #fce0d6;
+}
+
+.step-scroll_item.active .step-scroll_title,
+.step-scroll_item.active .step-scroll_img {
+  opacity: 1;
+}
+
+.step-scroll_item.active .step-scroll_overview {
+  opacity: 1;
+  max-height: 500px;
+  /* Adjust based on your content height */
+}
+
+.step-scroll_item.active .step-scroll_check {
+  opacity: 1;
+}
+
+/* ========================================
+COMPLETE STATE - Checkmark always visible
+======================================== */
+.step-scroll_item.complete .step-scroll_check {
+  opacity: 1;
+  /* Always visible once completed */
+}
+
+.step-scroll_item.complete .step-scroll_title {
+  opacity: 0.6;
+  /* Dimmed but readable */
+}
+
+.step-scroll_item.complete .step-scroll_img {
+  opacity: 0.5;
+  /* Dimmed */
+}
+
+/* Overview stays hidden in complete state */
+.step-scroll_item.complete .step-scroll_overview {
+  opacity: 0;
+  max-height: 0;
+}
+
+/* ========================================
+STICKY WRAPPER
+======================================== */
+.step-cards_wrapper {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* ========================================
+MOBILE: Hide image wrapper for inactive
+======================================== */
+@media (max-width: 767px) {
+  .step-scroll_image-wrapper {
+    display: none;
+  }
+
+  .step-scroll_item.active .step-scroll_image-wrapper {
+    display: block;
+    /* Show for active */
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Keep image wrapper hidden even for complete state */
+  .step-scroll_item.complete .step-scroll_image-wrapper {
+    display: none;
+    /* Gone from layout */
+  }
+}
