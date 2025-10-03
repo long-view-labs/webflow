@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.602.4] - 2025-10-03
+
+No release notes provided.
+
+
 ## [2.602.3] - 2025-10-03
 
 No release notes provided.
