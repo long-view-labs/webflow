@@ -470,9 +470,21 @@ $(document).ready(function () {
   function updateInsuranceOptions() {
     if (!payersData || payersData.length === 0) return;
 
-    var $container = $("#insurance_filter .filter-list_list-wrapper");
+    // Try multiple selectors to find the insurance container
+    var $container = $(
+      ".filter-list_list-wrapper:has(input[value='I'm paying for myself'])"
+    );
     if ($container.length === 0) {
-      console.warn("Insurance container not found");
+      $container = $(
+        ".filter-list_list-wrapper:has(input[value='I'll choose my insurance later'])"
+      );
+    }
+    if ($container.length === 0) {
+      console.warn("Insurance container not found with any selector");
+      console.log(
+        "Available filter-list_list-wrapper elements:",
+        $(".filter-list_list-wrapper").length
+      );
       return;
     }
 
