@@ -468,6 +468,8 @@ $(document).ready(function () {
 
   // Function to populate insurance dropdown with live API data
   function updateInsuranceOptions() {
+    console.log("updateInsuranceOptions called");
+    console.log("payersData:", payersData);
     if (!payersData || payersData.length === 0) return;
 
     // Try multiple selectors to find the insurance container
