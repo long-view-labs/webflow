@@ -227,8 +227,15 @@ $(document).ready(function () {
       });
   }
 
-  // Function to find payer ID by name
+  // Function to find payer ID by name (now uses data-payer-id attribute)
   function findPayerId(payerName) {
+    // First try to get from data attribute on selected radio button
+    var $selectedRadio = $('input[data-name="Insurance"]:checked');
+    if ($selectedRadio.length && $selectedRadio.attr("data-payer-id")) {
+      return parseInt($selectedRadio.attr("data-payer-id"));
+    }
+
+    // Fallback: search in payersData array
     var payer = payersData.find((item) => item.payerName === payerName);
     return payer ? payer.id : null;
   }
@@ -459,52 +466,56 @@ $(document).ready(function () {
     updateCTAUrl();
   }, 100);
 
-  // Function to replace static insurance options with live API data
+  // Function to populate insurance dropdown with live API data
   function updateInsuranceOptions() {
     if (!payersData || payersData.length === 0) return;
 
     var $container = $("#insurance_filter .filter-list_list-wrapper");
     if ($container.length === 0) return;
 
-    // Find the divider to insert after
-    var $divider = $container.find(".filter-divider");
-    var insertAfter =
-      $divider.length > 0
-        ? $divider
-        : $container
-            .find('input[value="I\'ll choose my insurance later"]')
-            .closest("label");
+    // Find where to insert after the two special options
+    var $insertAfter = $container
+      .find('input[value="I\'ll choose my insurance later"]')
+      .closest("label");
 
-    // Remove old insurance options (keep "I'm paying for myself" and "I'll choose my insurance later")
+    // Remove ALL hardcoded insurance options except the two special ones
     $container
       .find(
         'label:has(input[data-name="Insurance"]):not(:has(input[value="I\'m paying for myself"])):not(:has(input[value="I\'ll choose my insurance later"]))'
       )
       .remove();
 
-    // Add API options
-    payersData.forEach(function (payer) {
-      if (payer.payerName && payer.payerName.trim()) {
-        var payerId = payer.payerName.replace(/[^a-zA-Z0-9]/g, "-");
-        var html =
-          '<label class="filter-list_radio-field w-radio">' +
-          '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
-          '<input type="radio" name="Insurance" id="' +
-          payerId +
-          '" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="' +
-          payer.payerName +
-          '">' +
-          '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="' +
-          payerId +
-          '" tabindex="0">' +
-          payer.payerName +
-          "</span>" +
-          "</label>";
-        insertAfter.after(html);
-      }
+    // Add live API options (sorted alphabetically)
+    var sortedPayers = payersData
+      .filter(function (payer) {
+        return payer.payerName && payer.payerName.trim();
+      })
+      .sort(function (a, b) {
+        return a.payerName.localeCompare(b.payerName);
+      });
+
+    sortedPayers.forEach(function (payer) {
+      var payerId = payer.payerName.replace(/[^a-zA-Z0-9]/g, "-");
+      var html =
+        '<label class="filter-list_radio-field w-radio">' +
+        '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
+        '<input type="radio" name="Insurance" id="' +
+        payerId +
+        '" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="' +
+        payer.payerName +
+        '" data-payer-id="' +
+        payer.id +
+        '">' +
+        '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="' +
+        payerId +
+        '" tabindex="0">' +
+        payer.payerName +
+        "</span>" +
+        "</label>";
+      $insertAfter.after(html);
     });
 
-    // Add "Other" option
+    // Add "Other" option at the end
     var otherHtml =
       '<label class="filter-list_radio-field w-radio">' +
       '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
@@ -512,6 +523,10 @@ $(document).ready(function () {
       '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="Other" tabindex="0">Other</span>' +
       "</label>";
     $container.append(otherHtml);
+
+    console.log(
+      "Insurance dropdown updated with " + payersData.length + " live payers"
+    );
   }
 
   // Load API data on page load
