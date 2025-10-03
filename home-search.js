@@ -471,12 +471,19 @@ $(document).ready(function () {
     if (!payersData || payersData.length === 0) return;
 
     var $container = $("#insurance_filter .filter-list_list-wrapper");
-    if ($container.length === 0) return;
+    if ($container.length === 0) {
+      console.warn("Insurance container not found");
+      return;
+    }
 
-    // Find where to insert after the two special options
-    var $insertAfter = $container
-      .find('input[value="I\'ll choose my insurance later"]')
-      .closest("label");
+    // Find where to insert after the divider
+    var $insertAfter = $container.find(".filter-divider");
+    if ($insertAfter.length === 0) {
+      console.warn("Divider not found, using fallback");
+      $insertAfter = $container
+        .find('input[value="I\'ll choose my insurance later"]')
+        .closest("label");
+    }
 
     // Remove ALL hardcoded insurance options except the two special ones
     $container
@@ -527,6 +534,9 @@ $(document).ready(function () {
     console.log(
       "Insurance dropdown updated with " + payersData.length + " live payers"
     );
+    console.log("Container found:", $container.length > 0);
+    console.log("Insert after element found:", $insertAfter.length > 0);
+    console.log("Sorted payers count:", sortedPayers.length);
   }
 
   // Load API data on page load
