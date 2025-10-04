@@ -484,10 +484,13 @@ $(document).ready(function () {
         return a.payerName.localeCompare(b.payerName);
       });
 
-    // Add each payer after the divider
+    // Build all HTML at once
+    var allHtml = "";
+
+    // Add each payer
     sortedPayers.forEach(function (payer) {
       var payerId = payer.payerName.replace(/[^a-zA-Z0-9]/g, "-");
-      var html =
+      allHtml +=
         '<label class="filter-list_radio-field w-radio">' +
         '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
         '<input type="radio" name="Insurance" id="' +
@@ -503,17 +506,18 @@ $(document).ready(function () {
         payer.payerName +
         "</span>" +
         "</label>";
-      $divider.parent().after(html);
     });
 
     // Add "Other" at the end
-    var otherHtml =
+    allHtml +=
       '<label class="filter-list_radio-field w-radio">' +
       '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
       '<input type="radio" name="Insurance" id="Other" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="Other">' +
       '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="Other" tabindex="0">Other</span>' +
       "</label>";
-    $container.append(otherHtml);
+
+    // Insert everything after the divider
+    $divider.after(allHtml);
   }
 
   // Load API data on page load
