@@ -522,9 +522,11 @@ $(document).ready(function () {
     // Insert everything inside the container after the divider
     $container.append(allHtml);
 
-    // Bind click events to the newly created insurance options
+    // Bind click events to the newly created insurance options (exclude hardcoded ones)
     $container
-      .find('input[type="radio"][data-name="Insurance"]')
+      .find(
+        'input[type="radio"][data-name="Insurance"]:not([value="I\'m paying for myself"]):not([value="I\'ll choose my insurance later"])'
+      )
       .off("click")
       .on("click", function () {
         var selected = $(this).val();
@@ -556,10 +558,10 @@ $(document).ready(function () {
         }, 0);
       });
 
-    // Bind label click events for the newly created insurance options
+    // Bind label click events for the newly created insurance options (exclude hardcoded ones)
     $container
       .find(
-        '.filter-list_label:has(input[type="radio"][data-name="Insurance"])'
+        '.filter-list_label:has(input[type="radio"][data-name="Insurance"]:not([value="I\'m paying for myself"]):not([value="I\'ll choose my insurance later"]))'
       )
       .off("click")
       .on("click", function () {
