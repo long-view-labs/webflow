@@ -530,8 +530,11 @@ $(document).ready(function () {
           }
           $(this).addClass("processing");
 
+          // Store reference to clicked element
+          var $clickedElement = $(this);
+
           // Get the selected insurance value
-          var selected = $(this).find('input[type="radio"]').val();
+          var selected = $clickedElement.find('input[type="radio"]').val();
 
           insurance = selected;
           insFilter = selected; // Also set insFilter to prevent updateInsurancePlaceholder from overriding
@@ -561,7 +564,7 @@ $(document).ready(function () {
           // Trigger click on the same element to close dropdown
           setTimeout(function () {
             // Trigger click on the same dynamic option that was clicked
-            $(this).trigger("click");
+            $clickedElement.trigger("click");
           }, 100);
 
           // Remove processing flag after a delay
