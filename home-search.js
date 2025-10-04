@@ -547,11 +547,10 @@ $(document).ready(function () {
     // Insert everything inside the container after the divider
     $container.append(allHtml);
 
-    // Trigger Webflow interaction manually for dynamic options
+    // Trigger Webflow interaction manually for dynamic options by simulating a click on the template
     $container.find(".dynamic-insurance-option").on("click", function () {
-      // Trigger the Webflow interaction that hides the dropdown
-      $(".filter-list_list-wrapper").hide();
-      $(".provider-filter_dopdown-list").hide();
+      // Simulate a click on the original template to trigger its Webflow interaction
+      $template.trigger("click");
     });
   }
 
