@@ -474,16 +474,16 @@ $(document).ready(function () {
     console.log("payersData:", payersData);
     if (!payersData || payersData.length === 0) return;
 
-    // Try multiple selectors to find the insurance container
-    var $container = $(
-      ".filter-list_list-wrapper:has(input[value='I'm paying for myself'])"
-    );
-    if ($container.length === 0) {
-      $container = $(
-        ".filter-list_list-wrapper:has(input[value='I'll choose my insurance later'])"
-      );
-    }
-    if ($container.length === 0) {
+    // Find insurance container by looking for the specific input values
+    var $container = null;
+    $(".filter-list_list-wrapper").each(function () {
+      var $wrapper = $(this);
+      if ($wrapper.find('input[value="I\'m paying for myself"]').length > 0) {
+        $container = $wrapper;
+        return false; // break out of loop
+      }
+    });
+    if (!$container || $container.length === 0) {
       console.warn("Insurance container not found with any selector");
       console.log(
         "Available filter-list_list-wrapper elements:",
@@ -566,7 +566,12 @@ $(document).ready(function () {
       updateCTAUrl();
     })
     .catch((error) => {
-      console.log("fetchPayersData failed:", error);
+      console.log(
+        "fetchPayersData failed (CORS in staging), using backup data:",
+        error
+      );
+      // In staging with CORS, use backup data and still populate dropdown
+      updateInsuranceOptions();
       // Still update URL even if APIs fail
       updateCTAUrl();
     });
