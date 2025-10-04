@@ -584,26 +584,11 @@ $(document).ready(function () {
 
       updateCTAUrl();
 
-      // Try the Webflow forum solution for closing dropdown
+      // Close dropdown using template click (which worked before)
       setTimeout(function () {
-        console.log("Attempting to close dropdown...");
-
-        const $dropdown = $(".provider-filter_dopdown.hero.w-dropdown");
-        const $toggle = $dropdown.find(".w-dropdown-toggle");
-        const $list = $dropdown.find(".w-dropdown-list");
-
-        console.log("Found dropdown elements:", {
-          dropdown: $dropdown.length,
-          toggle: $toggle.length,
-          list: $list.length,
-        });
-
-        $toggle.removeClass("w--open").attr("aria-expanded", "false");
-        $list.removeClass("w--open");
-        $(document).trigger("mouseup");
-        $(document).trigger("touchend");
-
-        console.log("Dropdown close attempted");
+        console.log("Closing dropdown with template click...");
+        // Simulate a click on the original template to trigger its Webflow interaction
+        $template.trigger("click");
       }, 100);
     });
   }
