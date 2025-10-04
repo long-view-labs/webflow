@@ -558,6 +558,12 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
+          // Trigger click on the same element to close dropdown
+          setTimeout(function () {
+            // Trigger click on the same dynamic option that was clicked
+            $(this).trigger("click");
+          }, 100);
+
           // Remove processing flag after a delay
           setTimeout(function () {
             $container
