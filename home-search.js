@@ -470,35 +470,12 @@ $(document).ready(function () {
 
   // Function to populate insurance dropdown with live API data
   function updateInsuranceOptions() {
-    console.log("updateInsuranceOptions called");
-    console.log("payersData:", payersData);
     if (!payersData || payersData.length === 0) return;
 
-    // Just target the exact container
     var $container = $(".filter-list_list-wrapper.filter-page.filter");
-    if ($container.length === 0) {
-      console.warn("Container not found");
-      return;
-    }
-    console.log("Found container:", $container.length);
+    var $divider = $container.find(".filter-divider");
 
-    // Find where to insert after the divider
-    var $insertAfter = $container.find(".filter-divider");
-    if ($insertAfter.length === 0) {
-      console.warn("Divider not found, using fallback");
-      $insertAfter = $container
-        .find('input[value="I\'ll choose my insurance later"]')
-        .closest("label");
-    }
-
-    // Remove ALL hardcoded insurance options except the two special ones
-    $container
-      .find(
-        'label:has(input[data-name="Insurance"]):not(:has(input[value="I\'m paying for myself"])):not(:has(input[value="I\'ll choose my insurance later"]))'
-      )
-      .remove();
-
-    // Add live API options (sorted alphabetically)
+    // Sort payers alphabetically
     var sortedPayers = payersData
       .filter(function (payer) {
         return payer.payerName && payer.payerName.trim();
@@ -507,6 +484,7 @@ $(document).ready(function () {
         return a.payerName.localeCompare(b.payerName);
       });
 
+    // Add each payer after the divider
     sortedPayers.forEach(function (payer) {
       var payerId = payer.payerName.replace(/[^a-zA-Z0-9]/g, "-");
       var html =
@@ -525,10 +503,10 @@ $(document).ready(function () {
         payer.payerName +
         "</span>" +
         "</label>";
-      $insertAfter.after(html);
+      $divider.parent().after(html);
     });
 
-    // Add "Other" option at the end
+    // Add "Other" at the end
     var otherHtml =
       '<label class="filter-list_radio-field w-radio">' +
       '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
@@ -536,13 +514,6 @@ $(document).ready(function () {
       '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="Other" tabindex="0">Other</span>' +
       "</label>";
     $container.append(otherHtml);
-
-    console.log(
-      "Insurance dropdown updated with " + payersData.length + " live payers"
-    );
-    console.log("Container found:", $container.length > 0);
-    console.log("Insert after element found:", $insertAfter.length > 0);
-    console.log("Sorted payers count:", sortedPayers.length);
   }
 
   // Load API data on page load
