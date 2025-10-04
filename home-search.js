@@ -561,13 +561,19 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Close dropdown by clicking the empty element with Webflow interactions
+          // Close dropdown using Webflow forum solution
           setTimeout(function () {
-            // Click the empty radio element to close dropdown (has Webflow interactions but no value)
-            var $templateClick = $container.find('input[value=""]');
-            if ($templateClick.length > 0) {
-              $templateClick.trigger("click");
-            }
+            // Find the insurance dropdown specifically
+            var $dropdown = $("#insurance_filter").closest(
+              ".provider-filter_dopdown"
+            );
+            var $toggle = $dropdown.find(".w-dropdown-toggle");
+            var $list = $dropdown.find(".w-dropdown-list");
+
+            $toggle.removeClass("w--open").attr("aria-expanded", "false");
+            $list.removeClass("w--open");
+            $(document).trigger("mouseup");
+            $(document).trigger("touchend");
           }, 100);
 
           // Remove processing flag after a delay
@@ -871,7 +877,7 @@ $(document).ready(function () {
 
   // Handle clicks on hardcoded insurance labels only (exclude dynamic options)
   $(
-    'label:has(input[type="radio"][data-name="Insurance"]:not(.dynamic-insurance-radio))'
+    'label:has(input[type="radio"][data-name="Insurance"]:not(.dynamic-insurance-radio):not([value=""]))'
   ).on("click", function () {
     var $radio = $(this).find('input[type="radio"]');
     var selected = $radio.val();
