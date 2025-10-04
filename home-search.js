@@ -549,16 +549,26 @@ $(document).ready(function () {
 
     // Trigger Webflow interaction manually for dynamic options by simulating a click on the template
     $container.find(".dynamic-insurance-option").on("click", function () {
+      console.log("Dynamic insurance option clicked");
+
       // Get the selected insurance value
       var selected = $(this).find('input[type="radio"]').val();
+      console.log("Selected insurance:", selected);
+
       insurance = selected;
       var $insuranceFilter = $("#insurance_filter");
       var maxWidth = $insuranceFilter.width();
+      console.log("Max width:", maxWidth);
 
       // Update the text of #insurance-text with the selected insurance
       var $insuranceText = $("#insurance-text");
+      console.log("Found insurance text element:", $insuranceText.length);
+
       var newText = truncateText(insurance, maxWidth);
+      console.log("New text:", newText);
+
       $insuranceText.text(newText);
+      console.log("Text set, current text:", $insuranceText.text());
 
       // Update color
       $insuranceText.css("color", "#191918");
@@ -573,8 +583,11 @@ $(document).ready(function () {
 
       updateCTAUrl();
 
-      // Simulate a click on the original template to trigger its Webflow interaction
-      $template.trigger("click");
+      // Delay the dropdown closing to ensure text updates first
+      setTimeout(function () {
+        // Simulate a click on the original template to trigger its Webflow interaction
+        $template.trigger("click");
+      }, 50);
     });
   }
 
