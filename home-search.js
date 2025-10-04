@@ -594,11 +594,16 @@ $(document).ready(function () {
             var currentInsurance = insurance;
             var currentInsFilter = insFilter;
 
+            // Temporarily hide the template to prevent visual selection
+            $template.hide();
+
             // Simulate a click on the original template to trigger its Webflow interaction
             $template.trigger("click");
 
-            // Immediately restore the values after template click
+            // Show the template again and restore values after template click
             setTimeout(function () {
+              $template.show();
+
               insurance = currentInsurance;
               insFilter = currentInsFilter;
 
