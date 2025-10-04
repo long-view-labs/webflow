@@ -550,13 +550,8 @@ $(document).ready(function () {
 
         updateCTAUrl();
 
-        // Close the dropdown after selection (matching hardcoded behavior)
-        setTimeout(function () {
-          var $toggle = $("#insurance_filter");
-          if ($toggle.attr("aria-expanded") === "true") {
-            $toggle.click();
-          }
-        }, 0);
+        // Close the dropdown after selection
+        $(".w-dropdown").trigger("w-close");
       });
 
     // Bind label click events for the newly created insurance options
@@ -588,13 +583,8 @@ $(document).ready(function () {
 
         updateCTAUrl();
 
-        // Close the dropdown after selection (matching hardcoded behavior)
-        setTimeout(function () {
-          var $toggle = $("#insurance_filter");
-          if ($toggle.attr("aria-expanded") === "true") {
-            $toggle.click();
-          }
-        }, 0);
+        // Close the dropdown after selection
+        $(".w-dropdown").trigger("w-close");
       });
   }
 
@@ -715,6 +705,9 @@ $(document).ready(function () {
           $input[0].setSelectionRange(newCursorPos, newCursorPos);
 
           updateCTAUrl();
+
+          // Close the dropdown after selection
+          $(".w-dropdown").trigger("w-close");
           return;
         }
 
@@ -733,6 +726,9 @@ $(document).ready(function () {
             $input[0].setSelectionRange(newCursorPos, newCursorPos);
 
             updateCTAUrl();
+
+            // Close the dropdown after selection
+            $(".w-dropdown").trigger("w-close");
           }, 0);
           e.preventDefault();
           return;
@@ -748,6 +744,9 @@ $(document).ready(function () {
           $input[0].setSelectionRange(newCursorPos, newCursorPos);
 
           updateCTAUrl();
+
+          // Close the dropdown after selection
+          $(".w-dropdown").trigger("w-close");
         }, 0);
         return;
       } else if (e.key === "Delete") {
@@ -762,6 +761,9 @@ $(document).ready(function () {
           $input[0].setSelectionRange(newCursorPos, newCursorPos);
 
           updateCTAUrl();
+
+          // Close the dropdown after selection
+          $(".w-dropdown").trigger("w-close");
         }, 0);
         return;
       }
