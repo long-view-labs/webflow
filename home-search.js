@@ -547,68 +547,70 @@ $(document).ready(function () {
     // Insert everything inside the container after the divider
     $container.append(allHtml);
 
-    // Trigger Webflow interaction manually for dynamic options by simulating a click on the template
-    $container.find(".dynamic-insurance-option").on("click", function (event) {
-      // Prevent double execution and event bubbling
-      if ($(this).hasClass("processing")) {
-        console.log("Already processing, ignoring click");
-        return;
-      }
-      $(this).addClass("processing");
+    // Use event delegation to prevent double binding and allow natural event flow
+    $(document)
+      .off("click.dynamicInsurance")
+      .on(
+        "click.dynamicInsurance",
+        ".dynamic-insurance-option",
+        function (event) {
+          // Prevent double execution
+          if ($(this).hasClass("processing")) {
+            console.log("Already processing, ignoring click");
+            return false;
+          }
+          $(this).addClass("processing");
 
-      console.log("Dynamic insurance option clicked");
+          console.log("Dynamic insurance option clicked");
 
-      // Prevent event bubbling to avoid triggering other handlers
-      event.stopPropagation();
-      event.preventDefault();
+          // Get the selected insurance value
+          var selected = $(this).find('input[type="radio"]').val();
+          console.log("Selected insurance:", selected);
 
-      // Get the selected insurance value
-      var selected = $(this).find('input[type="radio"]').val();
-      console.log("Selected insurance:", selected);
+          insurance = selected;
+          insFilter = selected; // Also set insFilter to prevent updateInsurancePlaceholder from overriding
+          var $insuranceFilter = $("#insurance_filter");
+          var maxWidth = $insuranceFilter.width();
+          console.log("Max width:", maxWidth);
 
-      insurance = selected;
-      insFilter = selected; // Also set insFilter to prevent updateInsurancePlaceholder from overriding
-      var $insuranceFilter = $("#insurance_filter");
-      var maxWidth = $insuranceFilter.width();
-      console.log("Max width:", maxWidth);
+          // Update the text of #insurance-text with the selected insurance
+          var $insuranceText = $("#insurance-text");
+          console.log("Found insurance text element:", $insuranceText.length);
 
-      // Update the text of #insurance-text with the selected insurance
-      var $insuranceText = $("#insurance-text");
-      console.log("Found insurance text element:", $insuranceText.length);
+          var newText = truncateText(insurance, maxWidth);
+          console.log("New text:", newText);
 
-      var newText = truncateText(insurance, maxWidth);
-      console.log("New text:", newText);
+          $insuranceText.text(newText);
+          console.log("Text set, current text:", $insuranceText.text());
 
-      $insuranceText.text(newText);
-      console.log("Text set, current text:", $insuranceText.text());
+          // Update color
+          $insuranceText.css("color", "#191918");
+          $("#insurance_filter .provider-filter_dropdown-label.filter").css(
+            "color",
+            "#191918"
+          );
+          var insuranceTextElement = document.getElementById("insurance-text");
+          if (insuranceTextElement) {
+            insuranceTextElement.style.color = "#191918";
+          }
 
-      // Update color
-      $insuranceText.css("color", "#191918");
-      $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-        "color",
-        "#191918"
+          updateCTAUrl();
+
+          // Close dropdown using template click (which worked before)
+          setTimeout(function () {
+            console.log("Closing dropdown with template click...");
+            // Simulate a click on the original template to trigger its Webflow interaction
+            $template.trigger("click");
+
+            // Remove processing flag after a delay
+            setTimeout(function () {
+              $container
+                .find(".dynamic-insurance-option")
+                .removeClass("processing");
+            }, 500);
+          }, 100);
+        }
       );
-      var insuranceTextElement = document.getElementById("insurance-text");
-      if (insuranceTextElement) {
-        insuranceTextElement.style.color = "#191918";
-      }
-
-      updateCTAUrl();
-
-      // Close dropdown using template click (which worked before)
-      setTimeout(function () {
-        console.log("Closing dropdown with template click...");
-        // Simulate a click on the original template to trigger its Webflow interaction
-        $template.trigger("click");
-
-        // Remove processing flag after a delay
-        setTimeout(function () {
-          $container
-            .find(".dynamic-insurance-option")
-            .removeClass("processing");
-        }, 500);
-      }, 100);
-    });
   }
 
   // Load API data on page load
