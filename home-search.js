@@ -588,46 +588,10 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Close dropdown using template click with longer delay
+          // Close dropdown using template click
           setTimeout(function () {
-            // Store the current values before template click
-            var currentInsurance = insurance;
-            var currentInsFilter = insFilter;
-
-            // Temporarily hide the template to prevent visual selection
-            $template.hide();
-
             // Simulate a click on the original template to trigger its Webflow interaction
             $template.trigger("click");
-
-            // Show the template again and restore values after template click
-            setTimeout(function () {
-              $template.show();
-
-              insurance = currentInsurance;
-              insFilter = currentInsFilter;
-
-              // Update the placeholder text again
-              var $insuranceFilter = $("#insurance_filter");
-              var maxWidth = $insuranceFilter.width();
-              var $insuranceText = $("#insurance-text");
-              var newText = truncateText(insurance, maxWidth);
-              $insuranceText.text(newText);
-
-              // Update color again
-              $insuranceText.css("color", "#191918");
-              $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-                "color",
-                "#191918"
-              );
-              var insuranceTextElement =
-                document.getElementById("insurance-text");
-              if (insuranceTextElement) {
-                insuranceTextElement.style.color = "#191918";
-              }
-
-              updateCTAUrl();
-            }, 50);
 
             // Remove processing flag after a delay
             setTimeout(function () {
@@ -635,7 +599,7 @@ $(document).ready(function () {
                 .find(".dynamic-insurance-option")
                 .removeClass("processing");
             }, 500);
-          }, 200);
+          }, 100);
         }
       );
   }
@@ -1001,37 +965,6 @@ $(document).ready(function () {
 
     updateCTAUrl();
   });
-
-  // Also listen for clicks on insurance labels
-  $('label:has(input[type="radio"][data-name="Insurance"])').on(
-    "click",
-    function () {
-      var $radio = $(this).find('input[type="radio"]');
-      var selected = $radio.val();
-      insurance = selected;
-      var $insuranceFilter = $("#insurance_filter");
-      var maxWidth = $insuranceFilter.width();
-
-      // Update the text of #insurance-text with the selected insurance
-      var $insuranceText = $("#insurance-text");
-      var newText = truncateText(insurance, maxWidth);
-      $insuranceText.text(newText);
-      // Match color behavior of mouse selection
-      if (newText !== "Insurance carrier") {
-        $insuranceText.css("color", "#191918");
-        $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-          "color",
-          "#191918"
-        );
-        var insuranceTextElement = document.getElementById("insurance-text");
-        if (insuranceTextElement) {
-          insuranceTextElement.style.color = "#191918";
-        }
-      }
-
-      updateCTAUrl();
-    }
-  );
 
   // Listen for change events on insurance radio buttons
   $('input[type="radio"][data-name="Insurance"]').on("change", function () {
