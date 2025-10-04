@@ -550,6 +550,38 @@ $(document).ready(function () {
 
         updateCTAUrl();
       });
+
+    // Bind label click events for the newly created insurance options
+    $container
+      .find(
+        '.filter-list_label:has(input[type="radio"][data-name="Insurance"])'
+      )
+      .off("click")
+      .on("click", function () {
+        var $radio = $(this).find('input[type="radio"]');
+        var selected = $radio.val();
+        insurance = selected;
+        var $insuranceFilter = $("#insurance_filter");
+        var maxWidth = $insuranceFilter.width();
+
+        // Update the text of #insurance-text with the selected insurance
+        var $insuranceText = $("#insurance-text");
+        var newText = truncateText(insurance, maxWidth);
+        $insuranceText.text(newText);
+
+        // Update color
+        $insuranceText.css("color", "#191918");
+        $("#insurance_filter .provider-filter_dropdown-label.filter").css(
+          "color",
+          "#191918"
+        );
+        var insuranceTextElement = document.getElementById("insurance-text");
+        if (insuranceTextElement) {
+          insuranceTextElement.style.color = "#191918";
+        }
+
+        updateCTAUrl();
+      });
   }
 
   // Load API data on page load
