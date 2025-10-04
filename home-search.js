@@ -552,7 +552,10 @@ $(document).ready(function () {
 
         // Close the dropdown after selection (matching hardcoded behavior)
         setTimeout(function () {
-          $("#insurance_filter .w-dropdown-toggle").click();
+          var $toggle = $("#insurance_filter");
+          if ($toggle.attr("aria-expanded") === "true") {
+            $toggle.click();
+          }
         }, 0);
       });
 
@@ -587,7 +590,10 @@ $(document).ready(function () {
 
         // Close the dropdown after selection (matching hardcoded behavior)
         setTimeout(function () {
-          $("#insurance_filter .w-dropdown-toggle").click();
+          var $toggle = $("#insurance_filter");
+          if ($toggle.attr("aria-expanded") === "true") {
+            $toggle.click();
+          }
         }, 0);
       });
   }
