@@ -556,6 +556,7 @@ $(document).ready(function () {
       console.log("Selected insurance:", selected);
 
       insurance = selected;
+      insFilter = selected; // Also set insFilter to prevent updateInsurancePlaceholder from overriding
       var $insuranceFilter = $("#insurance_filter");
       var maxWidth = $insuranceFilter.width();
       console.log("Max width:", maxWidth);
@@ -583,10 +584,41 @@ $(document).ready(function () {
 
       updateCTAUrl();
 
+      // Debug: Check values after updates
+      setTimeout(function () {
+        console.log("After updates - insurance:", insurance);
+        console.log("After updates - insFilter:", insFilter);
+        console.log(
+          "After updates - placeholder text:",
+          $("#insurance-text").text()
+        );
+        console.log("After updates - payerId:", payerId);
+      }, 10);
+
       // Delay the dropdown closing to ensure text updates first
       setTimeout(function () {
+        // Debug: Check values before closing dropdown
+        console.log("Before dropdown close - insurance:", insurance);
+        console.log("Before dropdown close - insFilter:", insFilter);
+        console.log(
+          "Before dropdown close - placeholder text:",
+          $("#insurance-text").text()
+        );
+        console.log("Before dropdown close - payerId:", payerId);
+
         // Simulate a click on the original template to trigger its Webflow interaction
         $template.trigger("click");
+
+        // Debug: Check values after dropdown close
+        setTimeout(function () {
+          console.log("After dropdown close - insurance:", insurance);
+          console.log("After dropdown close - insFilter:", insFilter);
+          console.log(
+            "After dropdown close - placeholder text:",
+            $("#insurance-text").text()
+          );
+          console.log("After dropdown close - payerId:", payerId);
+        }, 100);
       }, 50);
     });
   }
