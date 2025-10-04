@@ -514,8 +514,8 @@ $(document).ready(function () {
       '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="Other" tabindex="0">Other</span>' +
       "</label>";
 
-    // Insert everything after the divider div (but inside the container)
-    $divider.after(allHtml);
+    // Insert everything after the divider's parent div (the outer filter-divider div)
+    $divider.parent().after(allHtml);
   }
 
   // Load API data on page load
