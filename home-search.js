@@ -588,25 +588,15 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Close dropdown by clicking the toggle button
+          // Close dropdown by simulating a click outside the dropdown
           setTimeout(function () {
-            // Find and click the insurance dropdown toggle
-            const $toggle = $("#insurance_filter .w-dropdown-toggle");
-            if ($toggle.length > 0) {
-              // Trigger both mouse and touch events to ensure compatibility
-              $toggle[0].click();
-              $toggle.trigger("mousedown");
-              $toggle.trigger("mouseup");
-              $toggle.trigger("touchend");
-            } else {
-              const altToggle = $(
-                ".provider-filter_dopdown.hero.w-dropdown .w-dropdown-toggle"
-              )[0];
-              altToggle.click();
-              $(altToggle).trigger("mousedown");
-              $(altToggle).trigger("mouseup");
-              $(altToggle).trigger("touchend");
-            }
+            // Find a safe area outside the dropdown to click
+            const $body = $("body");
+            const $safeArea =
+              $body.find("footer").length > 0 ? $body.find("footer") : $body;
+
+            // Simulate a click outside the dropdown
+            $safeArea.trigger("click");
 
             // Remove processing flag after a delay
             setTimeout(function () {
