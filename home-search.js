@@ -556,32 +556,24 @@ $(document).ready(function () {
         function (event) {
           // Prevent double execution
           if ($(this).hasClass("processing")) {
-            console.log("Already processing, ignoring click");
             return false;
           }
           $(this).addClass("processing");
 
-          console.log("Dynamic insurance option clicked");
-
           // Get the selected insurance value
           var selected = $(this).find('input[type="radio"]').val();
-          console.log("Selected insurance:", selected);
 
           insurance = selected;
           insFilter = selected; // Also set insFilter to prevent updateInsurancePlaceholder from overriding
           var $insuranceFilter = $("#insurance_filter");
           var maxWidth = $insuranceFilter.width();
-          console.log("Max width:", maxWidth);
 
           // Update the text of #insurance-text with the selected insurance
           var $insuranceText = $("#insurance-text");
-          console.log("Found insurance text element:", $insuranceText.length);
 
           var newText = truncateText(insurance, maxWidth);
-          console.log("New text:", newText);
 
           $insuranceText.text(newText);
-          console.log("Text set, current text:", $insuranceText.text());
 
           // Update color
           $insuranceText.css("color", "#191918");
@@ -598,21 +590,23 @@ $(document).ready(function () {
 
           // Close dropdown by clicking the toggle button
           setTimeout(function () {
-            console.log("Closing dropdown by clicking toggle...");
-
             // Find and click the insurance dropdown toggle
             const $toggle = $("#insurance_filter .w-dropdown-toggle");
             if ($toggle.length > 0) {
-              console.log("Found toggle, clicking it");
+              // Trigger both mouse and touch events to ensure compatibility
               $toggle[0].click();
+              $toggle.trigger("mousedown");
+              $toggle.trigger("mouseup");
+              $toggle.trigger("touchend");
             } else {
-              console.log("Toggle not found, trying alternative selector");
-              $(
+              const altToggle = $(
                 ".provider-filter_dopdown.hero.w-dropdown .w-dropdown-toggle"
-              )[0].click();
+              )[0];
+              altToggle.click();
+              $(altToggle).trigger("mousedown");
+              $(altToggle).trigger("mouseup");
+              $(altToggle).trigger("touchend");
             }
-
-            console.log("Toggle clicked");
 
             // Remove processing flag after a delay
             setTimeout(function () {
