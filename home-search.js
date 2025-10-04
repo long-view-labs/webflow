@@ -897,6 +897,69 @@ $(document).ready(function () {
   }
   updateStatePlaceholder();
 
+  // Handle clicks on hardcoded insurance options only (exclude dynamic options)
+  $(
+    'input[type="radio"][data-name="Insurance"]:not(.dynamic-insurance-radio)'
+  ).on("click", function () {
+    var selected = $(this).val();
+    insurance = selected;
+    insFilter = selected;
+    var $insuranceFilter = $("#insurance_filter");
+    var maxWidth = $insuranceFilter.width();
+
+    // Update the text of #insurance-text with the selected insurance
+    var $insuranceText = $("#insurance-text");
+    var newText = truncateText(insurance, maxWidth);
+    $insuranceText.text(newText);
+
+    // Update color
+    if (newText !== "Insurance carrier") {
+      $insuranceText.css("color", "#191918");
+      $("#insurance_filter .provider-filter_dropdown-label.filter").css(
+        "color",
+        "#191918"
+      );
+      var insuranceTextElement = document.getElementById("insurance-text");
+      if (insuranceTextElement) {
+        insuranceTextElement.style.color = "#191918";
+      }
+    }
+
+    updateCTAUrl();
+  });
+
+  // Handle clicks on hardcoded insurance labels only (exclude dynamic options)
+  $(
+    'label:has(input[type="radio"][data-name="Insurance"]:not(.dynamic-insurance-radio))'
+  ).on("click", function () {
+    var $radio = $(this).find('input[type="radio"]');
+    var selected = $radio.val();
+    insurance = selected;
+    insFilter = selected;
+    var $insuranceFilter = $("#insurance_filter");
+    var maxWidth = $insuranceFilter.width();
+
+    // Update the text of #insurance-text with the selected insurance
+    var $insuranceText = $("#insurance-text");
+    var newText = truncateText(insurance, maxWidth);
+    $insuranceText.text(newText);
+
+    // Update color
+    if (newText !== "Insurance carrier") {
+      $insuranceText.css("color", "#191918");
+      $("#insurance_filter .provider-filter_dropdown-label.filter").css(
+        "color",
+        "#191918"
+      );
+      var insuranceTextElement = document.getElementById("insurance-text");
+      if (insuranceTextElement) {
+        insuranceTextElement.style.color = "#191918";
+      }
+    }
+
+    updateCTAUrl();
+  });
+
   function updateInsurancePlaceholder() {
     if (typeof insFilter !== "undefined" && insFilter !== null) {
       var $insuranceFilter = $("#insurance_filter");
