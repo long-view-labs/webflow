@@ -596,11 +596,20 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Close dropdown using template click (which worked before)
+          // Close dropdown using Webflow forum solution (avoid template click)
           setTimeout(function () {
-            console.log("Closing dropdown with template click...");
-            // Simulate a click on the original template to trigger its Webflow interaction
-            $template.trigger("click");
+            console.log("Closing dropdown with Webflow solution...");
+
+            const $dropdown = $(".provider-filter_dopdown.hero.w-dropdown");
+            const $toggle = $dropdown.find(".w-dropdown-toggle");
+            const $list = $dropdown.find(".w-dropdown-list");
+
+            $toggle.removeClass("w--open").attr("aria-expanded", "false");
+            $list.removeClass("w--open");
+            $(document).trigger("mouseup");
+            $(document).trigger("touchend");
+
+            console.log("Dropdown closed");
 
             // Remove processing flag after a delay
             setTimeout(function () {
