@@ -588,15 +588,10 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Close dropdown by simulating a click outside the dropdown
+          // Close dropdown using template click with longer delay
           setTimeout(function () {
-            // Find a safe area outside the dropdown to click
-            const $body = $("body");
-            const $safeArea =
-              $body.find("footer").length > 0 ? $body.find("footer") : $body;
-
-            // Simulate a click outside the dropdown
-            $safeArea.trigger("click");
+            // Simulate a click on the original template to trigger its Webflow interaction
+            $template.trigger("click");
 
             // Remove processing flag after a delay
             setTimeout(function () {
@@ -604,7 +599,7 @@ $(document).ready(function () {
                 .find(".dynamic-insurance-option")
                 .removeClass("processing");
             }, 500);
-          }, 100);
+          }, 200);
         }
       );
   }
