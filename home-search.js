@@ -548,8 +548,19 @@ $(document).ready(function () {
     $container.append(allHtml);
 
     // Trigger Webflow interaction manually for dynamic options by simulating a click on the template
-    $container.find(".dynamic-insurance-option").on("click", function () {
+    $container.find(".dynamic-insurance-option").on("click", function (event) {
+      // Prevent double execution and event bubbling
+      if ($(this).hasClass("processing")) {
+        console.log("Already processing, ignoring click");
+        return;
+      }
+      $(this).addClass("processing");
+
       console.log("Dynamic insurance option clicked");
+
+      // Prevent event bubbling to avoid triggering other handlers
+      event.stopPropagation();
+      event.preventDefault();
 
       // Get the selected insurance value
       var selected = $(this).find('input[type="radio"]').val();
@@ -589,6 +600,13 @@ $(document).ready(function () {
         console.log("Closing dropdown with template click...");
         // Simulate a click on the original template to trigger its Webflow interaction
         $template.trigger("click");
+
+        // Remove processing flag after a delay
+        setTimeout(function () {
+          $container
+            .find(".dynamic-insurance-option")
+            .removeClass("processing");
+        }, 500);
       }, 100);
     });
   }
