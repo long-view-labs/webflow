@@ -596,20 +596,23 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Close dropdown using Webflow forum solution (avoid template click)
+          // Close dropdown by clicking the toggle button
           setTimeout(function () {
-            console.log("Closing dropdown with Webflow solution...");
+            console.log("Closing dropdown by clicking toggle...");
 
-            const $dropdown = $(".provider-filter_dopdown.hero.w-dropdown");
-            const $toggle = $dropdown.find(".w-dropdown-toggle");
-            const $list = $dropdown.find(".w-dropdown-list");
+            // Find and click the insurance dropdown toggle
+            const $toggle = $("#insurance_filter .w-dropdown-toggle");
+            if ($toggle.length > 0) {
+              console.log("Found toggle, clicking it");
+              $toggle[0].click();
+            } else {
+              console.log("Toggle not found, trying alternative selector");
+              $(
+                ".provider-filter_dopdown.hero.w-dropdown .w-dropdown-toggle"
+              )[0].click();
+            }
 
-            $toggle.removeClass("w--open").attr("aria-expanded", "false");
-            $list.removeClass("w--open");
-            $(document).trigger("mouseup");
-            $(document).trigger("touchend");
-
-            console.log("Dropdown closed");
+            console.log("Toggle clicked");
 
             // Remove processing flag after a delay
             setTimeout(function () {
