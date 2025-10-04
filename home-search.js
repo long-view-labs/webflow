@@ -1,4 +1,6 @@
 $(document).ready(function () {
+  console.log("=== HOME-SEARCH.JS LOADED ===");
+
   // Global variables to store API data
   var payersData = [];
 
@@ -554,14 +556,17 @@ $(document).ready(function () {
   }
 
   // Load API data on page load
+  console.log("Starting fetchPayersData...");
   fetchPayersData()
     .then(() => {
+      console.log("fetchPayersData succeeded");
       // Replace static options with live API data
       updateInsuranceOptions();
       // Initial URL update
       updateCTAUrl();
     })
     .catch((error) => {
+      console.log("fetchPayersData failed:", error);
       // Still update URL even if APIs fail
       updateCTAUrl();
     });
