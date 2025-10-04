@@ -474,23 +474,13 @@ $(document).ready(function () {
     console.log("payersData:", payersData);
     if (!payersData || payersData.length === 0) return;
 
-    // Find insurance container by looking for the specific input values
-    var $container = null;
-    $(".filter-list_list-wrapper").each(function () {
-      var $wrapper = $(this);
-      if ($wrapper.find('input[value="I\'m paying for myself"]').length > 0) {
-        $container = $wrapper;
-        return false; // break out of loop
-      }
-    });
-    if (!$container || $container.length === 0) {
-      console.warn("Insurance container not found with any selector");
-      console.log(
-        "Available filter-list_list-wrapper elements:",
-        $(".filter-list_list-wrapper").length
-      );
+    // Just target the exact container
+    var $container = $(".filter-list_list-wrapper.filter-page.filter");
+    if ($container.length === 0) {
+      console.warn("Container not found");
       return;
     }
+    console.log("Found container:", $container.length);
 
     // Find where to insert after the divider
     var $insertAfter = $container.find(".filter-divider");
