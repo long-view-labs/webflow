@@ -590,8 +590,39 @@ $(document).ready(function () {
 
           // Close dropdown using template click with longer delay
           setTimeout(function () {
+            // Store the current values before template click
+            var currentInsurance = insurance;
+            var currentInsFilter = insFilter;
+
             // Simulate a click on the original template to trigger its Webflow interaction
             $template.trigger("click");
+
+            // Immediately restore the values after template click
+            setTimeout(function () {
+              insurance = currentInsurance;
+              insFilter = currentInsFilter;
+
+              // Update the placeholder text again
+              var $insuranceFilter = $("#insurance_filter");
+              var maxWidth = $insuranceFilter.width();
+              var $insuranceText = $("#insurance-text");
+              var newText = truncateText(insurance, maxWidth);
+              $insuranceText.text(newText);
+
+              // Update color again
+              $insuranceText.css("color", "#191918");
+              $("#insurance_filter .provider-filter_dropdown-label.filter").css(
+                "color",
+                "#191918"
+              );
+              var insuranceTextElement =
+                document.getElementById("insurance-text");
+              if (insuranceTextElement) {
+                insuranceTextElement.style.color = "#191918";
+              }
+
+              updateCTAUrl();
+            }, 50);
 
             // Remove processing flag after a delay
             setTimeout(function () {
