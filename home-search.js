@@ -552,7 +552,7 @@ $(document).ready(function () {
 
         // Close the dropdown after selection (matching hardcoded behavior)
         setTimeout(function () {
-          $("#insurance_filter").trigger("w-close");
+          $("#insurance_filter").click();
         }, 0);
       });
 
@@ -589,7 +589,7 @@ $(document).ready(function () {
 
         // Close the dropdown after selection (matching hardcoded behavior)
         setTimeout(function () {
-          $("#insurance_filter").trigger("w-close");
+          $("#insurance_filter").click();
         }, 0);
       });
   }
