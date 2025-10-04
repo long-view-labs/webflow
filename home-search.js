@@ -561,10 +561,13 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Trigger click on the same element to close dropdown
+          // Close dropdown by clicking the empty element with Webflow interactions
           setTimeout(function () {
-            // Trigger click on the same dynamic option that was clicked
-            $clickedElement.trigger("click");
+            // Click the empty radio element to close dropdown (has Webflow interactions but no value)
+            var $templateClick = $container.find('input[value=""]');
+            if ($templateClick.length > 0) {
+              $templateClick.trigger("click");
+            }
           }, 100);
 
           // Remove processing flag after a delay
