@@ -492,57 +492,27 @@ $(document).ready(function () {
     // Build all HTML at once
     var allHtml = "";
 
-    // Find an existing filter-list_radio-field to clone
-    var $template = $container.find("label.filter-list_radio-field").first();
-    if ($template.length === 0) {
-      console.error("No template found to clone");
-      return;
-    }
-
-    // Add each payer by cloning the template
+    // Build HTML from scratch for each payer
     sortedPayers.forEach(function (payer) {
-      var $clone = $template.clone();
       var payerId = payer.payerName.replace(/[^a-zA-Z0-9]/g, "-");
 
-      // Update the clone
-      $clone.addClass("dynamic-insurance-option");
-      $clone
-        .find("input")
-        .attr({
-          id: payerId,
-          value: payer.payerName,
-        })
-        .addClass("dynamic-insurance-radio");
-      $clone
-        .find("span")
-        .attr({
-          for: payerId,
-        })
-        .addClass("dynamic-insurance-label")
-        .text(payer.payerName);
-
-      allHtml += $clone.prop("outerHTML");
+      allHtml += `
+        <label class="filter-list_radio-field w-radio dynamic-insurance-option">
+          <div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>
+          <input type="radio" name="Insurance" id="${payerId}" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="${payer.payerName}" class="dynamic-insurance-radio">
+          <span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label dynamic-insurance-label" for="${payerId}" tabindex="0">${payer.payerName}</span>
+        </label>
+      `;
     });
 
-    // Add "Other" at the end by cloning the template
-    var $otherClone = $template.clone();
-    $otherClone.addClass("dynamic-insurance-option");
-    $otherClone
-      .find("input")
-      .attr({
-        id: "Other",
-        value: "Other",
-      })
-      .addClass("dynamic-insurance-radio");
-    $otherClone
-      .find("span")
-      .attr({
-        for: "Other",
-      })
-      .addClass("dynamic-insurance-label")
-      .text("Other");
-
-    allHtml += $otherClone.prop("outerHTML");
+    // Add "Other" option
+    allHtml += `
+      <label class="filter-list_radio-field w-radio dynamic-insurance-option">
+        <div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>
+        <input type="radio" name="Insurance" id="Other" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="Other" class="dynamic-insurance-radio">
+        <span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label dynamic-insurance-label" for="Other" tabindex="0">Other</span>
+      </label>
+    `;
 
     // Insert everything inside the container after the divider
     $container.append(allHtml);
