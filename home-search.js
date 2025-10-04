@@ -809,23 +809,29 @@ $(document).ready(function () {
   // Call the function for the 'Insurance' query parameter
   clickMatchingRadioButton("insurance", "Insurance");
 
-  $(".w-button, .w-radio, .provider-filter_close-box").on("click", function () {
-    // Trigger a custom event "w-close"
-    $(".w-dropdown").trigger("w-close");
+  $(document)
+    .off("click.dropdownClose")
+    .on(
+      "click.dropdownClose",
+      ".w-button, .w-radio, .provider-filter_close-box",
+      function () {
+        // Trigger a custom event "w-close"
+        $(".w-dropdown").trigger("w-close");
 
-    // Create and dispatch a keydown event for the Escape key using vanilla JavaScript
-    var event = new KeyboardEvent("keydown", {
-      key: "Escape",
-      keyCode: 27,
-      code: "Escape",
-      which: 27,
-      bubbles: true,
-      cancelable: true,
-    });
+        // Create and dispatch a keydown event for the Escape key using vanilla JavaScript
+        var event = new KeyboardEvent("keydown", {
+          key: "Escape",
+          keyCode: 27,
+          code: "Escape",
+          which: 27,
+          bubbles: true,
+          cancelable: true,
+        });
 
-    // Dispatch the event on the active element to mimic the actual Escape key behavior
-    document.activeElement.dispatchEvent(event);
-  });
+        // Dispatch the event on the active element to mimic the actual Escape key behavior
+        document.activeElement.dispatchEvent(event);
+      }
+    );
 
   var state, insurance, insFilter, thisDropdown;
 
