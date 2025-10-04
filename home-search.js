@@ -492,32 +492,53 @@ $(document).ready(function () {
     // Build all HTML at once
     var allHtml = "";
 
-    // Add each payer
+    // Find an existing filter-list_radio-field to clone
+    var $template = $container.find("label.filter-list_radio-field").first();
+    if ($template.length === 0) {
+      console.error("No template found to clone");
+      return;
+    }
+
+    // Add each payer by cloning the template
     sortedPayers.forEach(function (payer) {
+      var $clone = $template.clone();
       var payerId = payer.payerName.replace(/[^a-zA-Z0-9]/g, "-");
-      allHtml +=
-        '<label class="filter-list_radio-field w-radio dynamic-insurance-option">' +
-        '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
-        '<input type="radio" name="Insurance" id="' +
-        payerId +
-        '" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="' +
-        payer.payerName +
-        '" class="dynamic-insurance-radio">' +
-        '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label dynamic-insurance-label" for="' +
-        payerId +
-        '" tabindex="0">' +
-        payer.payerName +
-        "</span>" +
-        "</label>";
+
+      // Update the clone
+      $clone.addClass("dynamic-insurance-option");
+      $clone.find("input").attr({
+        id: payerId,
+        value: payer.payerName,
+        class: "dynamic-insurance-radio",
+      });
+      $clone
+        .find("span")
+        .attr({
+          for: payerId,
+          class: "filter-list_label state w-form-label dynamic-insurance-label",
+        })
+        .text(payer.payerName);
+
+      allHtml += $clone.prop("outerHTML");
     });
 
-    // Add "Other" at the end
-    allHtml +=
-      '<label class="filter-list_radio-field w-radio dynamic-insurance-option">' +
-      '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
-      '<input type="radio" name="Insurance" id="Other" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="Other" class="dynamic-insurance-radio">' +
-      '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label dynamic-insurance-label" for="Other" tabindex="0">Other</span>' +
-      "</label>";
+    // Add "Other" at the end by cloning the template
+    var $otherClone = $template.clone();
+    $otherClone.addClass("dynamic-insurance-option");
+    $otherClone.find("input").attr({
+      id: "Other",
+      value: "Other",
+      class: "dynamic-insurance-radio",
+    });
+    $otherClone
+      .find("span")
+      .attr({
+        for: "Other",
+        class: "filter-list_label state w-form-label dynamic-insurance-label",
+      })
+      .text("Other");
+
+    allHtml += $otherClone.prop("outerHTML");
 
     // Insert everything inside the container after the divider
     $container.append(allHtml);
@@ -573,9 +594,18 @@ $(document).ready(function () {
           const $toggle = $dropdown.find(".w-dropdown-toggle");
           const $list = $dropdown.find(".w-dropdown-list");
 
+          console.log("Dropdown found:", $dropdown.length);
+          console.log("Toggle found:", $toggle.length);
+          console.log("List found:", $list.length);
+          console.log("Toggle classes before:", $toggle.attr("class"));
+          console.log("List classes before:", $list.attr("class"));
+
           // Step 1: Remove open state manually
           $toggle.removeClass("w--open").attr("aria-expanded", "false");
           $list.removeClass("w--open");
+
+          console.log("Toggle classes after:", $toggle.attr("class"));
+          console.log("List classes after:", $list.attr("class"));
 
           // Step 2: Trigger mouseup to sync Webflow's internal state
           // Webflow uses mouseup on body to reset dropdown state
