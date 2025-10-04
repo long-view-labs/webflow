@@ -549,6 +549,11 @@ $(document).ready(function () {
         }
 
         updateCTAUrl();
+
+        // Close the dropdown after selection (matching hardcoded behavior)
+        setTimeout(function () {
+          $("#insurance_filter").trigger("w-close");
+        }, 0);
       });
 
     // Bind label click events for the newly created insurance options
@@ -581,6 +586,11 @@ $(document).ready(function () {
         }
 
         updateCTAUrl();
+
+        // Close the dropdown after selection (matching hardcoded behavior)
+        setTimeout(function () {
+          $("#insurance_filter").trigger("w-close");
+        }, 0);
       });
   }
 
