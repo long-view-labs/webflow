@@ -506,17 +506,19 @@ $(document).ready(function () {
 
       // Update the clone
       $clone.addClass("dynamic-insurance-option");
-      $clone.find("input").attr({
-        id: payerId,
-        value: payer.payerName,
-        class: "dynamic-insurance-radio",
-      });
+      $clone
+        .find("input")
+        .attr({
+          id: payerId,
+          value: payer.payerName,
+        })
+        .addClass("dynamic-insurance-radio");
       $clone
         .find("span")
         .attr({
           for: payerId,
-          class: "filter-list_label state w-form-label dynamic-insurance-label",
         })
+        .addClass("dynamic-insurance-label")
         .text(payer.payerName);
 
       allHtml += $clone.prop("outerHTML");
@@ -525,17 +527,19 @@ $(document).ready(function () {
     // Add "Other" at the end by cloning the template
     var $otherClone = $template.clone();
     $otherClone.addClass("dynamic-insurance-option");
-    $otherClone.find("input").attr({
-      id: "Other",
-      value: "Other",
-      class: "dynamic-insurance-radio",
-    });
+    $otherClone
+      .find("input")
+      .attr({
+        id: "Other",
+        value: "Other",
+      })
+      .addClass("dynamic-insurance-radio");
     $otherClone
       .find("span")
       .attr({
         for: "Other",
-        class: "filter-list_label state w-form-label dynamic-insurance-label",
       })
+      .addClass("dynamic-insurance-label")
       .text("Other");
 
     allHtml += $otherClone.prop("outerHTML");
