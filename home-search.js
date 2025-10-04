@@ -475,6 +475,21 @@ $(document).ready(function () {
     var $container = $(".filter-list_list-wrapper.filter-page.filter");
     var $divider = $container.find(".filter-divider");
 
+    // Remove existing dynamic options (keep only "I'm paying for myself" and "I'll choose my insurance later")
+    $container.find("label").each(function () {
+      var $label = $(this);
+      var $input = $label.find('input[data-name="Insurance"]');
+      if ($input.length > 0) {
+        var value = $input.val();
+        if (
+          value !== "I'm paying for myself" &&
+          value !== "I'll choose my insurance later"
+        ) {
+          $label.remove();
+        }
+      }
+    });
+
     // Sort payers alphabetically
     var sortedPayers = payersData
       .filter(function (payer) {
@@ -497,8 +512,6 @@ $(document).ready(function () {
         payerId +
         '" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="' +
         payer.payerName +
-        '" data-payer-id="' +
-        payer.id +
         '">' +
         '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="' +
         payerId +
@@ -516,8 +529,8 @@ $(document).ready(function () {
       '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="Other" tabindex="0">Other</span>' +
       "</label>";
 
-    // Insert everything after the divider
-    $divider.after(allHtml);
+    // Insert everything after the divider's PARENT (the outer div)
+    $divider.parent().after(allHtml);
   }
 
   // Load API data on page load
