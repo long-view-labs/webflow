@@ -496,14 +496,14 @@ $(document).ready(function () {
     sortedPayers.forEach(function (payer) {
       var payerId = payer.payerName.replace(/[^a-zA-Z0-9]/g, "-");
       allHtml +=
-        '<label class="filter-list_radio-field w-radio">' +
+        '<label class="filter-list_radio-field w-radio dynamic-insurance-option">' +
         '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
         '<input type="radio" name="Insurance" id="' +
         payerId +
         '" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="' +
         payer.payerName +
-        '">' +
-        '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="' +
+        '" class="dynamic-insurance-radio">' +
+        '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label dynamic-insurance-label" for="' +
         payerId +
         '" tabindex="0">' +
         payer.payerName +
@@ -513,20 +513,18 @@ $(document).ready(function () {
 
     // Add "Other" at the end
     allHtml +=
-      '<label class="filter-list_radio-field w-radio">' +
+      '<label class="filter-list_radio-field w-radio dynamic-insurance-option">' +
       '<div class="w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input"></div>' +
-      '<input type="radio" name="Insurance" id="Other" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="Other">' +
-      '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label" for="Other" tabindex="0">Other</span>' +
+      '<input type="radio" name="Insurance" id="Other" data-name="Insurance" style="opacity:0;position:absolute;z-index:-1" value="Other" class="dynamic-insurance-radio">' +
+      '<span fs-cmsfilter-field="insurance" class="filter-list_label state w-form-label dynamic-insurance-label" for="Other" tabindex="0">Other</span>' +
       "</label>";
 
     // Insert everything inside the container after the divider
     $container.append(allHtml);
 
-    // Bind click events to the newly created insurance options (exclude hardcoded ones)
+    // Bind click events to the newly created insurance options
     $container
-      .find(
-        'input[type="radio"][data-name="Insurance"]:not([value="I\'m paying for myself"]):not([value="I\'ll choose my insurance later"])'
-      )
+      .find(".dynamic-insurance-radio")
       .off("click")
       .on("click", function () {
         var selected = $(this).val();
@@ -558,11 +556,9 @@ $(document).ready(function () {
         }, 0);
       });
 
-    // Bind label click events for the newly created insurance options (exclude hardcoded ones)
+    // Bind label click events for the newly created insurance options
     $container
-      .find(
-        '.filter-list_label:has(input[type="radio"][data-name="Insurance"]:not([value="I\'m paying for myself"]):not([value="I\'ll choose my insurance later"]))'
-      )
+      .find(".dynamic-insurance-label")
       .off("click")
       .on("click", function () {
         var $radio = $(this).find('input[type="radio"]');
