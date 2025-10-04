@@ -584,42 +584,27 @@ $(document).ready(function () {
 
       updateCTAUrl();
 
-      // Debug: Check values after updates
+      // Try the Webflow forum solution for closing dropdown
       setTimeout(function () {
-        console.log("After updates - insurance:", insurance);
-        console.log("After updates - insFilter:", insFilter);
-        console.log(
-          "After updates - placeholder text:",
-          $("#insurance-text").text()
-        );
-        console.log("After updates - payerId:", payerId);
-      }, 10);
+        console.log("Attempting to close dropdown...");
 
-      // Delay the dropdown closing to ensure text updates first
-      setTimeout(function () {
-        // Debug: Check values before closing dropdown
-        console.log("Before dropdown close - insurance:", insurance);
-        console.log("Before dropdown close - insFilter:", insFilter);
-        console.log(
-          "Before dropdown close - placeholder text:",
-          $("#insurance-text").text()
-        );
-        console.log("Before dropdown close - payerId:", payerId);
+        const $dropdown = $(".provider-filter_dopdown.hero.w-dropdown");
+        const $toggle = $dropdown.find(".w-dropdown-toggle");
+        const $list = $dropdown.find(".w-dropdown-list");
 
-        // Simulate a click on the original template to trigger its Webflow interaction
-        $template.trigger("click");
+        console.log("Found dropdown elements:", {
+          dropdown: $dropdown.length,
+          toggle: $toggle.length,
+          list: $list.length,
+        });
 
-        // Debug: Check values after dropdown close
-        setTimeout(function () {
-          console.log("After dropdown close - insurance:", insurance);
-          console.log("After dropdown close - insFilter:", insFilter);
-          console.log(
-            "After dropdown close - placeholder text:",
-            $("#insurance-text").text()
-          );
-          console.log("After dropdown close - payerId:", payerId);
-        }, 100);
-      }, 50);
+        $toggle.removeClass("w--open").attr("aria-expanded", "false");
+        $list.removeClass("w--open");
+        $(document).trigger("mouseup");
+        $(document).trigger("touchend");
+
+        console.log("Dropdown close attempted");
+      }, 100);
     });
   }
 
