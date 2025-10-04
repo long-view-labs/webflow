@@ -468,9 +468,14 @@ $(document).ready(function () {
     updateCTAUrl();
   }, 100);
 
+  // Flag to prevent duplicate calls
+  var insuranceOptionsUpdated = false;
+
   // Function to populate insurance dropdown with live API data
   function updateInsuranceOptions() {
-    if (!payersData || payersData.length === 0) return;
+    if (!payersData || payersData.length === 0 || insuranceOptionsUpdated)
+      return;
+    insuranceOptionsUpdated = true;
 
     var $container = $(".filter-list_list-wrapper.filter-page.filter");
     var $divider = $container.find(".filter-divider");
