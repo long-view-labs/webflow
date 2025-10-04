@@ -522,50 +522,55 @@ $(document).ready(function () {
     // Insert everything inside the container after the divider
     $container.append(allHtml);
 
-    // Use event delegation to handle dynamic options without interfering with existing listeners
-    $(document)
-      .off("click.dynamicInsurance")
-      .on(
-        "click.dynamicInsurance",
-        ".dynamic-insurance-radio, .dynamic-insurance-label",
-        function () {
-          var $this = $(this);
-          var selected;
+    // Debug: Check if dynamic elements were created
+    console.log(
+      "Dynamic elements created:",
+      $container.find(".dynamic-insurance-radio").length
+    );
 
-          if ($this.hasClass("dynamic-insurance-radio")) {
-            selected = $this.val();
-          } else {
-            selected = $this.find('input[type="radio"]').val();
-          }
+    // Bind click events directly to the newly created elements
+    $container
+      .find(".dynamic-insurance-radio, .dynamic-insurance-label")
+      .on("click", function () {
+        console.log("Dynamic element clicked!");
+        var $this = $(this);
+        var selected;
 
-          insurance = selected;
-          var $insuranceFilter = $("#insurance_filter");
-          var maxWidth = $insuranceFilter.width();
-
-          // Update the text of #insurance-text with the selected insurance
-          var $insuranceText = $("#insurance-text");
-          var newText = truncateText(insurance, maxWidth);
-          $insuranceText.text(newText);
-
-          // Update color
-          $insuranceText.css("color", "#191918");
-          $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-            "color",
-            "#191918"
-          );
-          var insuranceTextElement = document.getElementById("insurance-text");
-          if (insuranceTextElement) {
-            insuranceTextElement.style.color = "#191918";
-          }
-
-          updateCTAUrl();
-
-          // Close the dropdown after selection
-          setTimeout(function () {
-            $(".provider-filter_dopdown.hero.w-dropdown").trigger("w-close");
-          }, 100);
+        if ($this.hasClass("dynamic-insurance-radio")) {
+          selected = $this.val();
+        } else {
+          selected = $this.find('input[type="radio"]').val();
         }
-      );
+
+        console.log("Dynamic insurance selected:", selected);
+        insurance = selected;
+        var $insuranceFilter = $("#insurance_filter");
+        var maxWidth = $insuranceFilter.width();
+
+        // Update the text of #insurance-text with the selected insurance
+        var $insuranceText = $("#insurance-text");
+        var newText = truncateText(insurance, maxWidth);
+        $insuranceText.text(newText);
+
+        // Update color
+        $insuranceText.css("color", "#191918");
+        $("#insurance_filter .provider-filter_dropdown-label.filter").css(
+          "color",
+          "#191918"
+        );
+        var insuranceTextElement = document.getElementById("insurance-text");
+        if (insuranceTextElement) {
+          insuranceTextElement.style.color = "#191918";
+        }
+
+        updateCTAUrl();
+
+        // Close the dropdown after selection
+        setTimeout(function () {
+          console.log("Attempting to close dropdown");
+          $(".provider-filter_dopdown.hero.w-dropdown").trigger("w-close");
+        }, 100);
+      });
   }
 
   // Load API data on page load
