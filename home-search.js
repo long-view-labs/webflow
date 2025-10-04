@@ -549,6 +549,30 @@ $(document).ready(function () {
 
     // Trigger Webflow interaction manually for dynamic options by simulating a click on the template
     $container.find(".dynamic-insurance-option").on("click", function () {
+      // Get the selected insurance value
+      var selected = $(this).find('input[type="radio"]').val();
+      insurance = selected;
+      var $insuranceFilter = $("#insurance_filter");
+      var maxWidth = $insuranceFilter.width();
+
+      // Update the text of #insurance-text with the selected insurance
+      var $insuranceText = $("#insurance-text");
+      var newText = truncateText(insurance, maxWidth);
+      $insuranceText.text(newText);
+
+      // Update color
+      $insuranceText.css("color", "#191918");
+      $("#insurance_filter .provider-filter_dropdown-label.filter").css(
+        "color",
+        "#191918"
+      );
+      var insuranceTextElement = document.getElementById("insurance-text");
+      if (insuranceTextElement) {
+        insuranceTextElement.style.color = "#191918";
+      }
+
+      updateCTAUrl();
+
       // Simulate a click on the original template to trigger its Webflow interaction
       $template.trigger("click");
     });
