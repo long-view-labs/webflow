@@ -588,18 +588,12 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Close dropdown using template click
+          // Remove processing flag after a delay
           setTimeout(function () {
-            // Simulate a click on the original template to trigger its Webflow interaction
-            $template.trigger("click");
-
-            // Remove processing flag after a delay
-            setTimeout(function () {
-              $container
-                .find(".dynamic-insurance-option")
-                .removeClass("processing");
-            }, 500);
-          }, 100);
+            $container
+              .find(".dynamic-insurance-option")
+              .removeClass("processing");
+          }, 500);
         }
       );
   }
