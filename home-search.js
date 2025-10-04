@@ -1,6 +1,4 @@
 $(document).ready(function () {
-  console.log("=== HOME-SEARCH.JS LOADED ===");
-
   // Global variables to store API data
   var payersData = [];
 
@@ -561,21 +559,6 @@ $(document).ready(function () {
 
           updateCTAUrl();
 
-          // Close dropdown using Webflow forum solution
-          setTimeout(function () {
-            // Find the insurance dropdown specifically
-            var $dropdown = $("#insurance_filter").closest(
-              ".provider-filter_dopdown"
-            );
-            var $toggle = $dropdown.find(".w-dropdown-toggle");
-            var $list = $dropdown.find(".w-dropdown-list");
-
-            $toggle.removeClass("w--open").attr("aria-expanded", "false");
-            $list.removeClass("w--open");
-            $(document).trigger("mouseup");
-            $(document).trigger("touchend");
-          }, 100);
-
           // Remove processing flag after a delay
           setTimeout(function () {
             $container
@@ -587,20 +570,14 @@ $(document).ready(function () {
   }
 
   // Load API data on page load
-  console.log("Starting fetchPayersData...");
   fetchPayersData()
     .then(() => {
-      console.log("fetchPayersData succeeded");
       // Replace static options with live API data
       updateInsuranceOptions();
       // Initial URL update
       updateCTAUrl();
     })
     .catch((error) => {
-      console.log(
-        "fetchPayersData failed (CORS in staging), using backup data:",
-        error
-      );
       // In staging with CORS, use backup data and still populate dropdown
       updateInsuranceOptions();
       // Still update URL even if APIs fail
@@ -850,7 +827,7 @@ $(document).ready(function () {
     document.activeElement.dispatchEvent(event);
   });
 
-  var state, insurance, thisDropdown;
+  var state, insurance, insFilter, thisDropdown;
 
   // Listen for click events on radio buttons with data-name="States"
   $('input[type="radio"][data-name="States"]').on("click", function () {
