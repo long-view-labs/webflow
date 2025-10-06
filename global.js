@@ -452,6 +452,8 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     if (path.indexOf("/landing-page") === 0) return "landing-page";
     if (path.indexOf("/conditions") === 0) return "conditions";
     if (path.indexOf("/local-dietitians") === 0) return "local-dietitians";
+    if (path.indexOf("/insurance-dietitians") === 0)
+      return "insurance-dietitians";
     if (path.indexOf("/paid") === 0) return "Paid_Homepage";
     if (path.indexOf("/does-my-insurance-cover-nutrition") === 0)
       return "Am_I_Covered";
