@@ -625,7 +625,7 @@ $(document).ready(function () {
       window.InsuranceSearchInput = false;
     }
 
-    // Append UTM parameters from global.js (stored in sessionStorage)
+    // Append UTM parameters from the shared helper
     try {
       // Get UTM keys dynamically from global.js to avoid duplication
       var utmKeys = window.NOURISH_UTM_PARAMS || [
@@ -641,23 +641,34 @@ $(document).ready(function () {
         "im_ref",
       ];
 
-      // Read from global.js persistedUTMs object
-      var persistedUTMs = null;
+      var utmSnapshot = {};
       try {
-        var stored = sessionStorage.getItem("persistedUTMs");
-        if (stored) {
-          persistedUTMs = JSON.parse(stored);
+        if (typeof window.NOURISH_GET_UTMS === "function") {
+          utmSnapshot = window.NOURISH_GET_UTMS() || {};
         }
       } catch (e) {
-        // ignore sessionStorage access errors
+        utmSnapshot = {};
+      }
+
+      var persistedUTMs = null;
+      if (!utmSnapshot || !Object.keys(utmSnapshot).length) {
+        try {
+          var stored = sessionStorage.getItem("persistedUTMs");
+          if (stored) {
+            persistedUTMs = JSON.parse(stored);
+          }
+        } catch (e) {
+          persistedUTMs = null;
+        }
       }
 
       for (var i = 0; i < utmKeys.length; i++) {
         var key = utmKeys[i];
         var value = null;
 
-        // Try to get from persistedUTMs first
-        if (
+        if (utmSnapshot && utmSnapshot[key]) {
+          value = utmSnapshot[key];
+        } else if (
           persistedUTMs &&
           persistedUTMs.params &&
           persistedUTMs.params[key]
@@ -665,12 +676,12 @@ $(document).ready(function () {
           value = persistedUTMs.params[key];
         }
 
-        if (value && value.trim()) {
+        if (value && typeof value === "string" && value.trim()) {
           params.append(key, value.trim());
         }
       }
     } catch (e) {
-      // ignore sessionStorage access errors
+      // ignore UTM resolution errors
     }
 
     // Add InsuranceSearchInput parameter to URL

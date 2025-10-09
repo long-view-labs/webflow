@@ -380,6 +380,50 @@ $(".menu_slug").each(function () {
     });
     mo.observe(document.body, { childList: true, subtree: true });
   }
+
+  /**
+   * Return a normalized snapshot of the active UTM parameters
+   * @returns {Object}
+   */
+  function getActiveUtmParamsSnapshot() {
+    const snapshot = {};
+
+    const storedState = readStored();
+    let source = null;
+
+    if (storedState && storedState.params) {
+      source = storedState.params;
+    } else if (Object.keys(currentParams).length) {
+      source = currentParams;
+    }
+
+    if (!source) {
+      return snapshot;
+    }
+
+    for (const [key, value] of Object.entries(source)) {
+      if (!value) continue;
+      const normalizedKey = normalizeParamKey(key);
+      if (SUPPORTED_PARAMS.has(normalizedKey)) {
+        snapshot[normalizedKey] = String(value);
+      }
+    }
+
+    return snapshot;
+  }
+
+  if (typeof window.NOURISH_GET_UTMS !== "function") {
+    window.NOURISH_GET_UTMS = function () {
+      return Object.assign({}, getActiveUtmParamsSnapshot());
+    };
+  }
+
+  if (typeof window.NOURISH_WITH_UTMS !== "function") {
+    window.NOURISH_WITH_UTMS = function (obj) {
+      var base = obj && typeof obj === "object" ? obj : {};
+      return Object.assign({}, base, getActiveUtmParamsSnapshot());
+    };
+  }
 })();
 
 // ============================================================================
@@ -414,6 +458,130 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
 // ============================================================================
 // ANALYTICS AND TRACKING
 // ============================================================================
+
+function nourishGetUtms() {
+  try {
+    if (typeof window.NOURISH_GET_UTMS === "function") {
+      var utms = window.NOURISH_GET_UTMS();
+      if (utms && typeof utms === "object") {
+        return utms;
+      }
+    }
+  } catch (e) {}
+  return {};
+}
+
+function nourishMergeUtmsIntoProps(props) {
+  var base = props && typeof props === "object" ? props : {};
+  return Object.assign({}, base, nourishGetUtms());
+}
+
+function nourishMergeUtmsIntoArgs(args) {
+  var utms = nourishGetUtms();
+  if (!utms || !Object.keys(utms).length) {
+    return Array.prototype.slice.call(args || []);
+  }
+
+  var updatedArgs = Array.prototype.slice.call(args || []);
+  var propsIndex = -1;
+
+  for (var i = 0; i < updatedArgs.length; i++) {
+    var arg = updatedArgs[i];
+    if (!arg || typeof arg !== "object") continue;
+    if (Array.isArray(arg)) continue;
+    if (arg instanceof Date) continue;
+    if (typeof arg === "function") continue;
+    propsIndex = i;
+    break;
+  }
+
+  if (propsIndex === -1) {
+    updatedArgs.push(Object.assign({}, utms));
+  } else {
+    updatedArgs[propsIndex] = Object.assign({}, updatedArgs[propsIndex], utms);
+  }
+
+  return updatedArgs;
+}
+
+function nourishPatchRudderQueue() {
+  var ra = window.rudderanalytics;
+  if (!ra) return;
+
+  if (Array.isArray(ra)) {
+    if (ra.__nourishQueuePatched) {
+      return;
+    }
+
+    for (var i = 0; i < ra.length; i++) {
+      var entry = ra[i];
+      if (!Array.isArray(entry) || entry.length === 0) continue;
+      var method = entry[0];
+      if (method !== "track" && method !== "page") continue;
+      var enriched = nourishMergeUtmsIntoArgs(entry.slice(1));
+      ra[i] = [method].concat(enriched);
+    }
+
+    ["track", "page"].forEach(function (method) {
+      var original = ra[method];
+      if (typeof original !== "function") return;
+      ra[method] = function () {
+        var args = nourishMergeUtmsIntoArgs(arguments);
+        return original.apply(this, args);
+      };
+    });
+
+    ra.__nourishQueuePatched = true;
+  }
+}
+
+function nourishPatchLiveRudder() {
+  var ra = window.rudderanalytics;
+  if (!ra || typeof ra !== "object") {
+    return false;
+  }
+  if (ra.__nourishUtmsPatched) {
+    return true;
+  }
+
+  ["track", "page"].forEach(function (method) {
+    var original = ra && ra[method];
+    if (typeof original !== "function") return;
+    ra[method] = function () {
+      var args = nourishMergeUtmsIntoArgs(arguments);
+      return original.apply(this, args);
+    };
+  });
+
+  ra.__nourishUtmsPatched = true;
+  return true;
+}
+
+function nourishEnsureRudderUtms() {
+  nourishPatchRudderQueue();
+
+  if (nourishPatchLiveRudder()) {
+    return;
+  }
+
+  var attempts = 0;
+  var maxAttempts = 40;
+  var delay = 250;
+
+  (function poll() {
+    attempts += 1;
+    nourishPatchRudderQueue();
+    if (nourishPatchLiveRudder()) {
+      return;
+    }
+    if (attempts >= maxAttempts) {
+      return;
+    }
+    setTimeout(poll, delay);
+  })();
+}
+
+nourishEnsureRudderUtms();
 
 /**
  * Global "Get Started" tracking + param injection
@@ -522,13 +690,15 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
         : el.tagName.toLowerCase());
 
     try {
-      window.rudderanalytics.track(EVENT, {
+      var payload = nourishMergeUtmsIntoProps({
         location: window.location.pathname || "/",
         element: elementId,
         "cta copy": text,
         url: href || null,
         deviceType: deviceType(),
       });
+
+      window.rudderanalytics.track(EVENT, payload);
     } catch (e) {}
   }
 
