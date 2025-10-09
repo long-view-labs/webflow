@@ -636,6 +636,39 @@ function nourishEnsureRudderUtms() {
 
 nourishEnsureRudderUtms();
 
+function nourishBasePageProps() {
+  return {
+    path: window.location.pathname || "/",
+    search: window.location.search || "",
+    title: document.title || "",
+    url: window.location.href || "",
+    referrer: document.referrer || "",
+  };
+}
+
+function nourishQueueViewedPageEvent() {
+  var pageProps = nourishMergeUtmsIntoProps(nourishBasePageProps());
+
+  if (window.rudderanalytics && typeof window.rudderanalytics.track === "function") {
+    window.rudderanalytics.track("Viewed Page", pageProps);
+  } else if (window.rudderanalytics && Array.isArray(window.rudderanalytics)) {
+    window.rudderanalytics.push(["track", "Viewed Page", pageProps]);
+  }
+}
+
+(function () {
+  if (window.__nourishViewedPageQueued) return;
+  window.__nourishViewedPageQueued = true;
+
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    setTimeout(nourishQueueViewedPageEvent, 0);
+  } else {
+    document.addEventListener("DOMContentLoaded", function () {
+      nourishQueueViewedPageEvent();
+    });
+  }
+})();
+
 /**
  * Global "Get Started" tracking + param injection
  * - Fires on ANY click that goes to signup.usenourish.com
