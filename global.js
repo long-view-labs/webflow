@@ -476,32 +476,85 @@ function nourishMergeUtmsIntoProps(props) {
   return Object.assign({}, base, nourishGetUtms());
 }
 
-function nourishMergeUtmsIntoArgs(args) {
+function nourishIsPlainObject(value) {
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return false;
+  if (value instanceof Date) return false;
+  return true;
+}
+
+function nourishMergeTrackArgs(args, utms) {
+  var arr = Array.prototype.slice.call(args || []);
+  if (!utms || !Object.keys(utms).length) {
+    return arr;
+  }
+
+  var propsIndex = 1;
+  if (arr.length <= propsIndex || !nourishIsPlainObject(arr[propsIndex])) {
+    arr.splice(propsIndex, 0, {});
+  }
+
+  arr[propsIndex] = Object.assign({}, arr[propsIndex], utms);
+  return arr;
+}
+
+function nourishMergePageArgs(args, utms) {
+  var arr = Array.prototype.slice.call(args || []);
+  if (!utms || !Object.keys(utms).length) {
+    return arr;
+  }
+
+  var propsIndex = 0;
+
+  if (arr.length && typeof arr[0] === "string") {
+    propsIndex = 1;
+    if (arr.length > 1 && typeof arr[1] === "string") {
+      propsIndex = 2;
+    }
+  }
+
+  if (arr.length > propsIndex && nourishIsPlainObject(arr[propsIndex])) {
+    arr[propsIndex] = Object.assign({}, arr[propsIndex], utms);
+  } else {
+    arr.splice(propsIndex, 0, Object.assign({}, utms));
+  }
+
+  return arr;
+}
+
+function nourishMergeUtmsIntoArgs(method, args) {
+  if (!method) {
+    return Array.prototype.slice.call(args || []);
+  }
+
   var utms = nourishGetUtms();
   if (!utms || !Object.keys(utms).length) {
     return Array.prototype.slice.call(args || []);
   }
 
-  var updatedArgs = Array.prototype.slice.call(args || []);
-  var propsIndex = -1;
-
-  for (var i = 0; i < updatedArgs.length; i++) {
-    var arg = updatedArgs[i];
-    if (!arg || typeof arg !== "object") continue;
-    if (Array.isArray(arg)) continue;
-    if (arg instanceof Date) continue;
-    if (typeof arg === "function") continue;
-    propsIndex = i;
-    break;
+  if (method === "track") {
+    return nourishMergeTrackArgs(args, utms);
   }
 
-  if (propsIndex === -1) {
-    updatedArgs.push(Object.assign({}, utms));
-  } else {
-    updatedArgs[propsIndex] = Object.assign({}, updatedArgs[propsIndex], utms);
+  if (method === "page") {
+    return nourishMergePageArgs(args, utms);
   }
 
-  return updatedArgs;
+  var cloned = Array.prototype.slice.call(args || []);
+  if (!cloned.length) {
+    cloned.push(Object.assign({}, utms));
+    return cloned;
+  }
+
+  for (var i = 0; i < cloned.length; i++) {
+    if (nourishIsPlainObject(cloned[i])) {
+      cloned[i] = Object.assign({}, cloned[i], utms);
+      return cloned;
+    }
+  }
+
+  cloned.push(Object.assign({}, utms));
+  return cloned;
 }
 
 function nourishPatchRudderQueue() {
@@ -518,7 +571,7 @@ function nourishPatchRudderQueue() {
       if (!Array.isArray(entry) || entry.length === 0) continue;
       var method = entry[0];
       if (method !== "track" && method !== "page") continue;
-      var enriched = nourishMergeUtmsIntoArgs(entry.slice(1));
+      var enriched = nourishMergeUtmsIntoArgs(method, entry.slice(1));
       ra[i] = [method].concat(enriched);
     }
 
@@ -526,7 +579,7 @@ function nourishPatchRudderQueue() {
       var original = ra[method];
       if (typeof original !== "function") return;
       ra[method] = function () {
-        var args = nourishMergeUtmsIntoArgs(arguments);
+        var args = nourishMergeUtmsIntoArgs(method, arguments);
         return original.apply(this, args);
       };
     });
@@ -548,7 +601,7 @@ function nourishPatchLiveRudder() {
     var original = ra && ra[method];
     if (typeof original !== "function") return;
     ra[method] = function () {
-      var args = nourishMergeUtmsIntoArgs(arguments);
+      var args = nourishMergeUtmsIntoArgs(method, arguments);
       return original.apply(this, args);
     };
   });
