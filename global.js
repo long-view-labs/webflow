@@ -368,63 +368,30 @@ $(".menu_slug").each(function () {
   function setupLinkObserver(params) {
     const mo = new MutationObserver((muts) => {
       for (const m of muts) {
-        if (m.type === "childList") {
-          m.addedNodes.forEach((node) => {
-            if (node.nodeType !== Node.ELEMENT_NODE) return;
+        m.addedNodes.forEach((node) => {
+          if (node.nodeType !== Node.ELEMENT_NODE) return;
 
-            // Handle links
-            if (node.tagName === "A" && node.href)
-              applyParamsToLink(node, params);
+          // Handle links
+          if (node.tagName === "A" && node.href)
+            applyParamsToLink(node, params);
 
-            // Handle iframes
-            if (node.tagName === "IFRAME" && node.src)
-              applyParamsToIframe(node, params);
+          // Handle iframes
+          if (node.tagName === "IFRAME" && node.src)
+            applyParamsToIframe(node, params);
 
-            // Handle nested elements
-            if (node.querySelectorAll) {
-              node
-                .querySelectorAll("a[href]")
-                .forEach((a) => applyParamsToLink(a, params));
-              node
-                .querySelectorAll("iframe[src]")
-                .forEach((iframe) => applyParamsToIframe(iframe, params));
-            }
-          });
-        } else if (m.type === "attributes") {
-          var target = m.target;
-          if (!target || target.nodeType !== Node.ELEMENT_NODE) continue;
-
-          if (target.tagName === "A" && target.getAttribute("href")) {
-            applyParamsToLink(target, params);
+          // Handle nested elements
+          if (node.querySelectorAll) {
+            node
+              .querySelectorAll("a[href]")
+              .forEach((a) => applyParamsToLink(a, params));
+            node
+              .querySelectorAll("iframe[src]")
+              .forEach((iframe) => applyParamsToIframe(iframe, params));
           }
-
-          if (target.tagName === "IFRAME") {
-            if (target.getAttribute("src")) {
-              applyParamsToIframe(target, params);
-            }
-            if (target.hasAttribute("data-src")) {
-              try {
-                const dataSrcValue = target.getAttribute("data-src");
-                const dataUrl = new URL(dataSrcValue, location.origin);
-                if (dataUrl.hostname === TARGET_HOST) {
-                  for (const [k, v] of Object.entries(params)) {
-                    if (!dataUrl.searchParams.has(k))
-                      dataUrl.searchParams.set(k, v);
-                  }
-                  target.setAttribute("data-src", dataUrl.toString());
-                }
-              } catch (_) {}
-            }
-          }
-        }
+        });
       }
     });
-    mo.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["href", "src", "data-src"],
-    });
+    mo.observe(document.body, { childList: true, subtree: true });
   }
 
   /**
