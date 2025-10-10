@@ -149,11 +149,6 @@ $(".menu_slug").each(function () {
 
   // All supported UTM and tracking parameters
   const SUPPORTED_PARAMS = new Set([
-    "utm_source",
-    "utm_medium",
-    "utm_campaign",
-    "utm_content",
-    "utm_term",
     "gclid",
     "fbclid",
     "msclkid",
@@ -215,8 +210,15 @@ $(".menu_slug").each(function () {
 
       const normalizedKey = normalizeParamKey(key);
 
-      if (SUPPORTED_PARAMS.has(normalizedKey)) {
+      if (
+        SUPPORTED_PARAMS.has(normalizedKey) ||
+        normalizedKey.startsWith("utm_")
+      ) {
         params[normalizedKey] = value;
+        if (!SUPPORTED_PARAMS.has(normalizedKey) && normalizedKey.startsWith("utm_")) {
+          SUPPORTED_PARAMS.add(normalizedKey);
+          window.NOURISH_UTM_PARAMS = Array.from(SUPPORTED_PARAMS);
+        }
       }
     }
 
