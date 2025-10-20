@@ -31,6 +31,30 @@ $(document).ready(function () {
 
   // Function to fetch payers data
   function fetchPayersData() {
+    var cacheKey = "nourishHeroPayersData";
+    var cacheTTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+    var now = Date.now();
+
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        var cachedRaw = window.localStorage.getItem(cacheKey);
+        if (cachedRaw) {
+          var cached = JSON.parse(cachedRaw);
+          if (
+            cached &&
+            typeof cached.timestamp === "number" &&
+            Array.isArray(cached.data) &&
+            now - cached.timestamp < cacheTTL
+          ) {
+            payersData = cached.data;
+            return Promise.resolve(payersData);
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore storage access issues (private mode, etc.)
+    }
+
     return fetch("https://app.usenourish.com/api/payers?source=homepage", {
       method: "GET",
       headers: {
@@ -46,6 +70,18 @@ $(document).ready(function () {
       })
       .then((data) => {
         payersData = data;
+
+        try {
+          if (typeof window !== "undefined" && window.localStorage) {
+            window.localStorage.setItem(
+              cacheKey,
+              JSON.stringify({ timestamp: Date.now(), data: data })
+            );
+          }
+        } catch (e) {
+          // Ignore storage write errors
+        }
+
         return data;
       })
       .catch((error) => {
