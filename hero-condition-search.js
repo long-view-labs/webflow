@@ -1095,13 +1095,27 @@ $(function () {
 
         var $dropdownList = $(this).closest(".w-dropdown-list");
         if ($dropdownList.length) {
-          var $dropdown = $dropdownList.closest(".w-dropdown");
           setTimeout(function () {
+            var $dropdown = $dropdownList.closest(".w-dropdown");
+            var $toggle = $dropdown.find(".w-dropdown-toggle").first();
+            var $list = $dropdown.find(".w-dropdown-list").first();
+
             $dropdown.trigger("w-close");
-            $dropdown
-              .find(".w-dropdown-toggle")
-              .attr("aria-expanded", "false")
-              .removeClass("w--open");
+            $dropdown.removeClass("w--open").attr("data-open", "false");
+
+            if ($toggle.length) {
+              $toggle
+                .removeClass("w--open")
+                .attr("aria-expanded", "false")
+                .attr("data-open", "false");
+            }
+
+            if ($list.length) {
+              $list
+                .removeClass("w--open")
+                .attr("aria-hidden", "true")
+                .css("display", "none");
+            }
           }, 0);
         }
       }
@@ -1118,13 +1132,27 @@ $(function () {
 
         var $dropdownList = $(this).closest(".w-dropdown-list");
         if ($dropdownList.length) {
-          var $dropdown = $dropdownList.closest(".w-dropdown");
           setTimeout(function () {
+            var $dropdown = $dropdownList.closest(".w-dropdown");
+            var $toggle = $dropdown.find(".w-dropdown-toggle").first();
+            var $list = $dropdown.find(".w-dropdown-list").first();
+
             $dropdown.trigger("w-close");
-            $dropdown
-              .find(".w-dropdown-toggle")
-              .attr("aria-expanded", "false")
-              .removeClass("w--open");
+            $dropdown.removeClass("w--open").attr("data-open", "false");
+
+            if ($toggle.length) {
+              $toggle
+                .removeClass("w--open")
+                .attr("aria-expanded", "false")
+                .attr("data-open", "false");
+            }
+
+            if ($list.length) {
+              $list
+                .removeClass("w--open")
+                .attr("aria-hidden", "true")
+                .css("display", "none");
+            }
           }, 0);
         }
       }
