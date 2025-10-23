@@ -740,6 +740,83 @@ $(function () {
     });
   }
 
+  function attachPlacesAutocomplete($widget) {
+    var widgetState = getWidgetState($widget);
+    if (widgetState.placesAttached) return;
+
+    var inputEl = $widget.find("#city-state-zip").get(0);
+    if (!inputEl) return;
+
+    var googleObj = window.google;
+    var placesAvailable =
+      googleObj &&
+      googleObj.maps &&
+      googleObj.maps.places &&
+      typeof googleObj.maps.places.Autocomplete === "function";
+
+    if (!placesAvailable) {
+      widgetState.placesRetryCount = (widgetState.placesRetryCount || 0) + 1;
+      if (widgetState.placesRetryCount > 20) return;
+      setTimeout(function () {
+        attachPlacesAutocomplete($widget);
+      }, 500);
+      return;
+    }
+
+    try {
+      var autocomplete = new google.maps.places.Autocomplete(inputEl, {
+        fields: ["address_components", "formatted_address", "name"],
+      });
+
+      autocomplete.addListener("place_changed", function () {
+        var place = autocomplete.getPlace() || {};
+        var components = place.address_components || [];
+        var city = "";
+        var state = "";
+        var postalCode = "";
+
+        for (var i = 0; i < components.length; i++) {
+          var component = components[i];
+          if (!component || !component.types) continue;
+
+          if (component.types.indexOf("locality") !== -1) {
+            city = component.long_name || component.short_name || city;
+          } else if (
+            component.types.indexOf("administrative_area_level_1") !== -1
+          ) {
+            state = component.short_name || component.long_name || state;
+          } else if (component.types.indexOf("postal_code") !== -1) {
+            postalCode =
+              component.long_name || component.short_name || postalCode;
+          }
+        }
+
+        var displayValue = "";
+        if (city && state) {
+          displayValue = city + ", " + state;
+          if (postalCode) {
+            displayValue += " " + postalCode;
+          }
+        } else if (place.formatted_address) {
+          displayValue = place.formatted_address;
+        } else if (place.name) {
+          displayValue = place.name;
+        }
+
+        if (displayValue) {
+          $(inputEl).val(displayValue).trigger("input");
+        }
+
+        updateWidgetCTA($widget);
+      });
+
+      widgetState.placesAttached = true;
+      widgetState.placesAutocomplete = autocomplete;
+    } catch (e) {
+      console.error("Failed to initialise Google Places Autocomplete", e);
+    }
+  }
+
   function getSelectedInsurance($widget) {
     var $radio = $widget
       .find('input[type="radio"][data-name="Insurance"]:checked')
@@ -1018,6 +1095,7 @@ $(function () {
     applyGlobalPrefills($widget);
     applyQueryParamSelection($widget);
     applyPathPreselect($widget);
+    attachPlacesAutocomplete($widget);
 
     syncStateFromDOM($widget, { skipCta: true });
 
