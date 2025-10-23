@@ -838,6 +838,55 @@ $(function () {
     }
   }
 
+  function closeDropdown($dropdown) {
+    if (!$dropdown || !$dropdown.length) return;
+
+    var dropdownApi =
+      window.Webflow &&
+      window.Webflow.require &&
+      window.Webflow.require("dropdown");
+
+    if (dropdownApi && typeof dropdownApi.close === "function") {
+      dropdownApi.close($dropdown[0]);
+    } else {
+      $dropdown.trigger("w-close");
+      var $toggleManual = $dropdown.find(".w-dropdown-toggle").first();
+      var $listManual = $dropdown.find(".w-dropdown-list").first();
+      $dropdown.removeClass("w--open").attr("data-open", "false");
+      if ($toggleManual.length) {
+        $toggleManual.removeClass("w--open").attr("aria-expanded", "false");
+      }
+      if ($listManual.length) {
+        $listManual
+          .removeClass("w--open")
+          .attr("aria-hidden", "true")
+          .css("display", "none");
+      }
+    }
+
+    setTimeout(function () {
+      var escEvent;
+      try {
+        escEvent = new KeyboardEvent("keydown", {
+          key: "Escape",
+          keyCode: 27,
+          code: "Escape",
+          which: 27,
+          bubbles: true,
+          cancelable: true,
+        });
+      } catch (err) {
+        escEvent = document.createEvent("KeyboardEvent");
+        escEvent.initEvent("keydown", true, true);
+      }
+
+      var activeEl = document.activeElement;
+      if (activeEl && typeof activeEl.dispatchEvent === "function") {
+        activeEl.dispatchEvent(escEvent);
+      }
+    }, 0);
+  }
+
   function getSelectedInsurance($widget) {
     var $radio = $widget
       .find('input[type="radio"][data-name="Insurance"]:checked')
@@ -1096,14 +1145,7 @@ $(function () {
         var $dropdownList = $(this).closest(".w-dropdown-list");
         if ($dropdownList.length) {
           var $dropdown = $dropdownList.closest(".w-dropdown");
-          var $toggle = $dropdown.find(".w-dropdown-toggle").first();
-          if ($toggle.length) {
-            setTimeout(function () {
-              if ($toggle.attr("aria-expanded") === "true") {
-                $toggle.trigger("click");
-              }
-            }, 0);
-          }
+          closeDropdown($dropdown);
         }
       }
     );
@@ -1120,14 +1162,7 @@ $(function () {
         var $dropdownList = $(this).closest(".w-dropdown-list");
         if ($dropdownList.length) {
           var $dropdown = $dropdownList.closest(".w-dropdown");
-          var $toggle = $dropdown.find(".w-dropdown-toggle").first();
-          if ($toggle.length) {
-            setTimeout(function () {
-              if ($toggle.attr("aria-expanded") === "true") {
-                $toggle.trigger("click");
-              }
-            }, 0);
-          }
+          closeDropdown($dropdown);
         }
       }
     );
