@@ -740,11 +740,22 @@ $(function () {
     });
   }
 
+  function ensurePlacesStyle() {
+    if (document.getElementById("nourish-places-style")) return;
+    var style = document.createElement("style");
+    style.id = "nourish-places-style";
+    style.textContent =
+      ".pac-container{z-index:10000!important;}.pac-item{cursor:pointer!important;}";
+    document.head.appendChild(style);
+  }
+
   function attachPlacesAutocomplete($widget) {
     var widgetState = getWidgetState($widget);
     if (widgetState.placesAttached) return;
 
-    var inputEl = $widget.find("#city-state-zip").get(0);
+    var inputEl =
+      $widget.find("#city-state-zip").get(0) ||
+      $widget.find(".pac-target-input").get(0);
     if (!inputEl) return;
 
     var googleObj = window.google;
@@ -764,8 +775,12 @@ $(function () {
     }
 
     try {
+      ensurePlacesStyle();
+      inputEl.setAttribute("autocomplete", "off");
+
       var autocomplete = new google.maps.places.Autocomplete(inputEl, {
         fields: ["address_components", "formatted_address", "name"],
+        types: ["geocode"],
       });
 
       autocomplete.addListener("place_changed", function () {
@@ -808,6 +823,12 @@ $(function () {
         }
 
         updateWidgetCTA($widget);
+      });
+
+      google.maps.event.addDomListener(inputEl, "keydown", function (e) {
+        if (e.keyCode === 13) {
+          e.preventDefault();
+        }
       });
 
       widgetState.placesAttached = true;
