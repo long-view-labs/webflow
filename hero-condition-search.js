@@ -1095,28 +1095,15 @@ $(function () {
 
         var $dropdownList = $(this).closest(".w-dropdown-list");
         if ($dropdownList.length) {
-          setTimeout(function () {
-            var $dropdown = $dropdownList.closest(".w-dropdown");
-            var $toggle = $dropdown.find(".w-dropdown-toggle").first();
-            var $list = $dropdown.find(".w-dropdown-list").first();
-
-            $dropdown.trigger("w-close");
-            $dropdown.removeClass("w--open").attr("data-open", "false");
-
-            if ($toggle.length) {
-              $toggle
-                .removeClass("w--open")
-                .attr("aria-expanded", "false")
-                .attr("data-open", "false");
-            }
-
-            if ($list.length) {
-              $list
-                .removeClass("w--open")
-                .attr("aria-hidden", "true")
-                .css("display", "none");
-            }
-          }, 0);
+          var $dropdown = $dropdownList.closest(".w-dropdown");
+          var $toggle = $dropdown.find(".w-dropdown-toggle").first();
+          if ($toggle.length) {
+            setTimeout(function () {
+              if ($toggle.attr("aria-expanded") === "true") {
+                $toggle.trigger("click");
+              }
+            }, 0);
+          }
         }
       }
     );
@@ -1132,28 +1119,15 @@ $(function () {
 
         var $dropdownList = $(this).closest(".w-dropdown-list");
         if ($dropdownList.length) {
-          setTimeout(function () {
-            var $dropdown = $dropdownList.closest(".w-dropdown");
-            var $toggle = $dropdown.find(".w-dropdown-toggle").first();
-            var $list = $dropdown.find(".w-dropdown-list").first();
-
-            $dropdown.trigger("w-close");
-            $dropdown.removeClass("w--open").attr("data-open", "false");
-
-            if ($toggle.length) {
-              $toggle
-                .removeClass("w--open")
-                .attr("aria-expanded", "false")
-                .attr("data-open", "false");
-            }
-
-            if ($list.length) {
-              $list
-                .removeClass("w--open")
-                .attr("aria-hidden", "true")
-                .css("display", "none");
-            }
-          }, 0);
+          var $dropdown = $dropdownList.closest(".w-dropdown");
+          var $toggle = $dropdown.find(".w-dropdown-toggle").first();
+          if ($toggle.length) {
+            setTimeout(function () {
+              if ($toggle.attr("aria-expanded") === "true") {
+                $toggle.trigger("click");
+              }
+            }, 0);
+          }
         }
       }
     );
