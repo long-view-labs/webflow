@@ -1092,6 +1092,18 @@ $(function () {
         state.insurance = value || null;
         updateInsuranceLabel($widget, state.insurance);
         updateWidgetCTA($widget);
+
+        var $dropdownList = $(this).closest(".w-dropdown-list");
+        if ($dropdownList.length) {
+          var $dropdown = $dropdownList.closest(".w-dropdown");
+          setTimeout(function () {
+            $dropdown.trigger("w-close");
+            $dropdown
+              .find(".w-dropdown-toggle")
+              .attr("aria-expanded", "false")
+              .removeClass("w--open");
+          }, 0);
+        }
       }
     );
 
@@ -1103,6 +1115,18 @@ $(function () {
         state.concern = value || null;
         updateConcernLabel($widget, state.concern);
         updateWidgetCTA($widget);
+
+        var $dropdownList = $(this).closest(".w-dropdown-list");
+        if ($dropdownList.length) {
+          var $dropdown = $dropdownList.closest(".w-dropdown");
+          setTimeout(function () {
+            $dropdown.trigger("w-close");
+            $dropdown
+              .find(".w-dropdown-toggle")
+              .attr("aria-expanded", "false")
+              .removeClass("w--open");
+          }, 0);
+        }
       }
     );
 
