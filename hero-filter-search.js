@@ -1,14 +1,18 @@
-$(document).ready(function () {
-  // Global variables to store API data
+$(function () {
   var payersData = [];
+  var dataReady = false;
 
-  // Variable to track if click came from insurance search form (name/dob/payer)
-  window.InsuranceSearchInput = false;
+  if (typeof window.InsuranceSearchInput === "undefined") {
+    window.InsuranceSearchInput = false;
+  }
 
-  // Variable to track selected insurance
-  var insurance;
+  var widgetSelectors = [
+    ".home-filter_component",
+    ".provider-filter_component",
+    ".provider-filter_wrapper",
+    ".provider-filter",
+  ];
 
-  // Function to get landing page variation based on current path (same as global.js)
   function variationFromPath(path) {
     path = (path || window.location.pathname || "/").toLowerCase();
     if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
@@ -23,20 +27,30 @@ $(document).ready(function () {
     return null;
   }
 
-  // Function to get query parameter by name
   function getQueryParam(name) {
-    var urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(name);
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      return params.get(name);
+    } catch (e) {
+      return null;
+    }
   }
 
-  // Function to fetch payers data
+  function normalizeValue(value) {
+    if (value === null || typeof value === "undefined") return "";
+    return String(value)
+      .replace(/\u2019/g, "'")
+      .trim()
+      .toLowerCase();
+  }
+
   function fetchPayersData() {
     var cacheKey = "nourishHeroPayersData";
-    var cacheTTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+    var cacheTTL = 24 * 60 * 60 * 1000;
     var now = Date.now();
 
     try {
-      if (typeof window !== "undefined" && window.localStorage) {
+      if (window.localStorage) {
         var cachedRaw = window.localStorage.getItem(cacheKey);
         if (cachedRaw) {
           var cached = JSON.parse(cachedRaw);
@@ -51,8 +65,8 @@ $(document).ready(function () {
           }
         }
       }
-    } catch (e) {
-      // Ignore storage access issues (private mode, etc.)
+    } catch (storageError) {
+      // ignore storage issues
     }
 
     return fetch("https://app.usenourish.com/api/payers?source=homepage", {
@@ -62,627 +76,498 @@ $(document).ready(function () {
         "Content-Type": "application/json",
       },
     })
-      .then((response) => {
+      .then(function (response) {
         if (!response.ok) {
           throw new Error("Failed to fetch payers data: " + response.status);
         }
         return response.json();
       })
-      .then((data) => {
-        payersData = data;
-
+      .then(function (data) {
+        payersData = Array.isArray(data) ? data : [];
         try {
-          if (typeof window !== "undefined" && window.localStorage) {
+          if (window.localStorage) {
             window.localStorage.setItem(
               cacheKey,
-              JSON.stringify({ timestamp: Date.now(), data: data })
+              JSON.stringify({ timestamp: Date.now(), data: payersData })
             );
           }
-        } catch (e) {
-          // Ignore storage write errors
+        } catch (writeError) {
+          // ignore write errors
         }
-
-        return data;
+        return payersData;
       })
-      .catch((error) => {
-        // Fallback to hardcoded payer data for staging/CORS issues
-        payersData = [
-          {
-            id: 1,
-            payerName: "Aetna",
-            groupNameDeprecated: "Aetna",
-            isOON: false,
-            shouldHardMatchInsurance: false,
-            displayGroup: "Aetna",
-            healthieId: 64,
-          },
-          {
-            id: 2,
-            payerName: "Blue Cross Blue Shield",
-            groupNameDeprecated: "Blue Cross Blue Shield",
-            isOON: false,
-            shouldHardMatchInsurance: false,
-            displayGroup: "Blue Cross Blue Shield",
-            healthieId: 347,
-          },
-          {
-            id: 3,
-            payerName: "Cigna",
-            groupNameDeprecated: "Cigna",
-            isOON: false,
-            shouldHardMatchInsurance: false,
-            displayGroup: "Cigna",
-            healthieId: 528,
-          },
-          {
-            id: 4,
-            payerName: "Humana",
-            groupNameDeprecated: null,
-            isOON: true,
-            shouldHardMatchInsurance: false,
-            displayGroup: "Other",
-            healthieId: null,
-          },
-          {
-            id: 5,
-            payerName: "United Healthcare",
-            groupNameDeprecated: "United Healthcare",
-            isOON: false,
-            shouldHardMatchInsurance: false,
-            displayGroup: "United Healthcare",
-            healthieId: 2413,
-          },
-          {
-            id: 6,
-            payerName: "Medicare",
-            groupNameDeprecated: "Medicare",
-            isOON: false,
-            shouldHardMatchInsurance: false,
-            displayGroup: "Medicare",
-            healthieId: 1552,
-          },
-          { id: 136, payerName: "Medical Mutual of Ohio" },
-          { id: 137, payerName: "Aetna Medicare" },
-          { id: 138, payerName: "All Savers" },
-          { id: 139, payerName: "Anthem Blue Cross / Anthem Blue Shield" },
-          { id: 140, payerName: "Blue Cross Blue Shield Medicare" },
-          { id: 141, payerName: "Cigna Local Plus" },
-          { id: 142, payerName: "Cigna Medicare" },
-          { id: 143, payerName: "Cigna Open Access Plus" },
-          { id: 144, payerName: "Medicaid" },
-          { id: 145, payerName: "Meritain" },
-          { id: 146, payerName: "Oxford" },
-          { id: 147, payerName: "UHC Medicare" },
-          { id: 148, payerName: "United Medical Resources (UMR)" },
-          { id: 149, payerName: "Wellmed" },
-          {
-            id: 150,
-            payerName: "Anthem Blue Cross and Blue Shield Colorado HMO",
-          },
-          {
-            id: 151,
-            payerName: "Anthem Blue Cross and Blue Shield Colorado PPO",
-          },
-          {
-            id: 152,
-            payerName: "Anthem Blue Cross and Blue Shield Connecticut HMO",
-          },
-          {
-            id: 153,
-            payerName: "Anthem Blue Cross and Blue Shield Connecticut PPO",
-          },
-          {
-            id: 154,
-            payerName: "Anthem Blue Cross and Blue Shield Indiana HMO",
-          },
-          {
-            id: 155,
-            payerName: "Anthem Blue Cross and Blue Shield Indiana PPO",
-          },
-          {
-            id: 156,
-            payerName: "Anthem Blue Cross and Blue Shield Kentucky HMO",
-          },
-          {
-            id: 157,
-            payerName: "Anthem Blue Cross and Blue Shield Kentucky PPO",
-          },
-          { id: 158, payerName: "Anthem Blue Cross and Blue Shield Maine HMO" },
-          { id: 159, payerName: "Anthem Blue Cross and Blue Shield Maine PPO" },
-          {
-            id: 160,
-            payerName: "Anthem Blue Cross and Blue Shield Missouri HMO",
-          },
-          {
-            id: 161,
-            payerName: "Anthem Blue Cross and Blue Shield Missouri PPO",
-          },
-          {
-            id: 162,
-            payerName: "Anthem Blue Cross and Blue Shield Nevada HMO",
-          },
-          {
-            id: 163,
-            payerName: "Anthem Blue Cross and Blue Shield Nevada PPO",
-          },
-          {
-            id: 164,
-            payerName: "Anthem Blue Cross and Blue Shield New Hampshire HMO",
-          },
-          {
-            id: 165,
-            payerName: "Anthem Blue Cross and Blue Shield New Hampshire PPO",
-          },
-          {
-            id: 166,
-            payerName: "Anthem Blue Cross and Blue Shield of Georgia HMO",
-          },
-          {
-            id: 167,
-            payerName: "Anthem Blue Cross and Blue Shield of Georgia PPO",
-          },
-          { id: 168, payerName: "Anthem Blue Cross and Blue Shield Ohio HMO" },
-          { id: 169, payerName: "Anthem Blue Cross and Blue Shield Ohio PPO" },
-          {
-            id: 170,
-            payerName: "Anthem Blue Cross and Blue Shield Virginia HMO",
-          },
-          {
-            id: 171,
-            payerName: "Anthem Blue Cross and Blue Shield Virginia PPO",
-          },
-          {
-            id: 172,
-            payerName: "Anthem Blue Cross and Blue Shield Wisconsin HMO",
-          },
-          {
-            id: 173,
-            payerName: "Anthem Blue Cross and Blue Shield Wisconsin PPO",
-          },
-          {
-            id: 174,
-            payerName: "Anthem Blue Cross Blue Shield of New York (Empire) HMO",
-          },
-          {
-            id: 175,
-            payerName: "Anthem Blue Cross Blue Shield of New York (Empire) PPO",
-          },
-          { id: 176, payerName: "Anthem Blue Cross of California HMO" },
-          { id: 177, payerName: "Anthem Blue Cross of California PPO" },
-          { id: 178, payerName: "Arkansas Blue Cross and Blue Shield HMO" },
-          { id: 179, payerName: "Arkansas Blue Cross and Blue Shield PPO" },
-          { id: 180, payerName: "Blue Cross & Blue Shield of Mississippi HMO" },
-          { id: 181, payerName: "Blue Cross & Blue Shield of Mississippi PPO" },
-          {
-            id: 182,
-            payerName: "Blue Cross & Blue Shield of Rhode Island HMO",
-          },
-          {
-            id: 183,
-            payerName: "Blue Cross & Blue Shield of Rhode Island PPO",
-          },
-          { id: 184, payerName: "Blue Cross and Blue Shield of Alabama HMO" },
-          { id: 185, payerName: "Blue Cross and Blue Shield of Alabama PPO" },
-          { id: 186, payerName: "Blue Cross and Blue Shield of Hawaii HMO" },
-          { id: 187, payerName: "Blue Cross and Blue Shield of Hawaii PPO" },
-          { id: 188, payerName: "Blue Cross and Blue Shield of Illinois HMO" },
-          { id: 189, payerName: "Blue Cross and Blue Shield of Illinois PPO" },
-          {
-            id: 190,
-            payerName: "Blue Cross and Blue Shield of Kansas City HMO",
-          },
-          {
-            id: 191,
-            payerName: "Blue Cross and Blue Shield of Kansas City PPO",
-          },
-          { id: 192, payerName: "Blue Cross and Blue Shield of Kansas HMO" },
-          { id: 193, payerName: "Blue Cross and Blue Shield of Kansas PPO" },
-          { id: 194, payerName: "Blue Cross and Blue Shield of Louisiana HMO" },
-          { id: 195, payerName: "Blue Cross and Blue Shield of Louisiana PPO" },
-          {
-            id: 196,
-            payerName: "Blue Cross and Blue Shield of Massachusetts HMO",
-          },
-          {
-            id: 197,
-            payerName: "Blue Cross and Blue Shield of Massachusetts PPO",
-          },
-          { id: 198, payerName: "Blue Cross and Blue Shield of Minnesota HMO" },
-          { id: 199, payerName: "Blue Cross and Blue Shield of Minnesota PPO" },
-          { id: 200, payerName: "Blue Cross and Blue Shield of Montana HMO" },
-          { id: 201, payerName: "Blue Cross and Blue Shield of Montana PPO" },
-          { id: 202, payerName: "Blue Cross and Blue Shield of Nebraska HMO" },
-          { id: 203, payerName: "Blue Cross and Blue Shield of Nebraska PPO" },
-          {
-            id: 204,
-            payerName: "Blue Cross and Blue Shield of New Mexico HMO",
-          },
-          {
-            id: 205,
-            payerName: "Blue Cross and Blue Shield of New Mexico PPO",
-          },
-          {
-            id: 206,
-            payerName: "Blue Cross and Blue Shield of North Carolina HMO",
-          },
-          {
-            id: 207,
-            payerName: "Blue Cross and Blue Shield of North Carolina PPO",
-          },
-          { id: 208, payerName: "Blue Cross and Blue Shield of Oklahoma HMO" },
-          { id: 209, payerName: "Blue Cross and Blue Shield of Oklahoma PPO" },
-          {
-            id: 210,
-            payerName: "Blue Cross and Blue Shield of South Carolina HMO",
-          },
-          {
-            id: 211,
-            payerName: "Blue Cross and Blue Shield of South Carolina POC",
-          },
-          { id: 212, payerName: "Blue Cross and Blue Shield of Texas HMO" },
-          { id: 213, payerName: "Blue Cross and Blue Shield of Texas PPO" },
-          { id: 214, payerName: "Blue Cross and Blue Shield of Vermont HMO" },
-          { id: 215, payerName: "Blue Cross and Blue Shield of Vermont PPO" },
-          { id: 216, payerName: "Blue Cross Blue Shield of Arizona HMO" },
-          { id: 217, payerName: "Blue Cross Blue Shield of Arizona PPO" },
-          { id: 218, payerName: "Blue Cross Blue Shield of Michigan HMO" },
-          { id: 219, payerName: "Blue Cross Blue Shield of Michigan PPO" },
-          { id: 220, payerName: "Blue Cross Blue Shield of North Dakota HMO" },
-          { id: 221, payerName: "Blue Cross Blue Shield of North Dakota PPO" },
-          { id: 222, payerName: "Blue Cross Blue Shield of Wyoming HMO" },
-          { id: 223, payerName: "Blue Cross Blue Shield of Wyoming PPO" },
-          { id: 224, payerName: "Blue Cross of Idaho HMO" },
-          { id: 225, payerName: "Blue Cross of Idaho PPO" },
-          { id: 226, payerName: "Blue Shield of California HMO" },
-          { id: 227, payerName: "Blue Shield of California PPO" },
-          { id: 228, payerName: "BlueCross BlueShield of Puerto Rico HMO" },
-          { id: 229, payerName: "BlueCross BlueShield of Puerto Rico PPO" },
-          { id: 230, payerName: "BlueCross BlueShield of Tennessee HMO" },
-          { id: 231, payerName: "BlueCross BlueShield of Tennessee PPO" },
-          { id: 232, payerName: "Capital Blue Cross HMO" },
-          { id: 233, payerName: "Capital Blue Cross PPO" },
-          { id: 234, payerName: "CareFirst BlueCross BlueShield HMO" },
-          { id: 235, payerName: "CareFirst BlueCross BlueShield Maryland HMO" },
-          { id: 236, payerName: "CareFirst BlueCross BlueShield Maryland PPO" },
-          { id: 237, payerName: "CareFirst BlueCross BlueShield PPO" },
-          { id: 238, payerName: "CareFirst BlueCross BlueShield Virginia HMO" },
-          { id: 239, payerName: "CareFirst BlueCross BlueShield Virginia PPO" },
-          { id: 240, payerName: "Excellus BlueCross BlueShield HMO" },
-          { id: 241, payerName: "Excellus BlueCross BlueShield PPO" },
-          { id: 242, payerName: "Florida Blue HMO" },
-          { id: 243, payerName: "Florida Blue PPO" },
-          {
-            id: 244,
-            payerName: "Highmark Blue Cross Blue Shield Delaware HMO",
-          },
-          {
-            id: 245,
-            payerName: "Highmark Blue Cross Blue Shield Delaware PPO",
-          },
-          {
-            id: 246,
-            payerName: "Highmark Blue Cross Blue Shield of Pennsylvania HMO",
-          },
-          {
-            id: 247,
-            payerName: "Highmark Blue Cross Blue Shield of Pennsylvania PPO",
-          },
-          {
-            id: 248,
-            payerName:
-              "Highmark Blue Cross Blue Shield of Western New York HMO",
-          },
-          {
-            id: 249,
-            payerName:
-              "Highmark Blue Cross Blue Shield of Western New York PPO",
-          },
-          {
-            id: 250,
-            payerName: "Highmark Blue Cross Blue Shield West Virginia HMO",
-          },
-          {
-            id: 251,
-            payerName: "Highmark Blue Cross Blue Shield West Virginia PPO",
-          },
-          {
-            id: 252,
-            payerName: "Highmark Blue Shield of Northeastern New York HMO",
-          },
-          {
-            id: 253,
-            payerName: "Highmark Blue Shield of Northeastern New York PPO",
-          },
-          {
-            id: 254,
-            payerName: "Horizon Blue Cross and Blue Shield of New Jersey HMO",
-          },
-          {
-            id: 255,
-            payerName: "Horizon Blue Cross and Blue Shield of New Jersey PPO",
-          },
-          { id: 256, payerName: "Independence Blue Cross HMO" },
-          { id: 257, payerName: "Independence Blue Cross PPO" },
-          {
-            id: 258,
-            payerName: "Premera Blue Cross and Blue Shield of Alaska HMO",
-          },
-          {
-            id: 259,
-            payerName: "Premera Blue Cross and Blue Shield of Alaska PPO",
-          },
-          { id: 260, payerName: "Premera Blue Cross Washington HMO" },
-          { id: 261, payerName: "Premera Blue Cross Washington PPO" },
-          { id: 262, payerName: "Regence BlueCross BlueShield of Oregon HMO" },
-          { id: 263, payerName: "Regence BlueCross BlueShield of Oregon PPO" },
-          { id: 264, payerName: "Regence BlueCross BlueShield of Utah HMO" },
-          { id: 265, payerName: "Regence BlueCross BlueShield of Utah PPO" },
-          { id: 266, payerName: "Regence BlueShield of Idaho HMO" },
-          { id: 267, payerName: "Regence BlueShield of Idaho PPO" },
-          { id: 268, payerName: "Regence BlueShield Washington HMO" },
-          { id: 269, payerName: "Regence BlueShield Washington PPO" },
-          {
-            id: 270,
-            payerName: "Wellmark Blue Cross and Blue Shield of Iowa HMO",
-          },
-          {
-            id: 271,
-            payerName: "Wellmark Blue Cross and Blue Shield of Iowa PPO",
-          },
-          {
-            id: 272,
-            payerName: "Wellmark Blue Cross and Blue Shield South Dakota HMO",
-          },
-          {
-            id: 273,
-            payerName: "Wellmark Blue Cross and Blue Shield South Dakota PPO",
-          },
-          { id: 274, payerName: "Alliant Health Plan" },
-          { id: 275, payerName: "AllWays Health Partners" },
-          { id: 276, payerName: "AmeriHealth Caritas" },
-          { id: 277, payerName: "AultCare Insurance Company" },
-          { id: 278, payerName: "Bright Health" },
-          {
-            id: 279,
-            payerName: "Capital District Physicians' Health Plan (CPDHP)",
-          },
-          { id: 280, payerName: "CareOregon" },
-          { id: 281, payerName: "CareSource" },
-          { id: 282, payerName: "Centene" },
-          { id: 283, payerName: "ChampVA" },
-          { id: 284, payerName: "Clover Health" },
-          { id: 285, payerName: "CountyCare Health Plan" },
-          { id: 286, payerName: "Dean Health Plan" },
-          { id: 287, payerName: "EmblemHealth" },
-          { id: 288, payerName: "Geisinger Health Plan" },
-          { id: 289, payerName: "Health Alliance Plan (HAP)" },
-          { id: 290, payerName: "Healthfirst" },
-          { id: 291, payerName: "HealthPartners" },
-          { id: 292, payerName: "HMO Partners, Inc." },
-          { id: 293, payerName: "Independent Health Association (Inc)" },
-          { id: 294, payerName: "Kaiser Foundation Health Plan" },
-          { id: 295, payerName: "L.A. Care Health Plan" },
-          { id: 296, payerName: "McLaren Health Plan" },
-          { id: 297, payerName: "MDWise" },
-          { id: 298, payerName: "Medica" },
-          { id: 299, payerName: "MetroPlus" },
-          { id: 300, payerName: "Moda Health" },
-          { id: 301, payerName: "Molina Healthcare" },
-          { id: 302, payerName: "Mountain Health Co-Op" },
-          { id: 303, payerName: "MVP Health Plan" },
-          { id: 304, payerName: "Optum VACare" },
-          { id: 305, payerName: "Oscar" },
-          { id: 306, payerName: "PacificSource Health Plans" },
-          { id: 307, payerName: "Paramount" },
-          { id: 308, payerName: "Passport Health Plan" },
-          { id: 309, payerName: "Point32Health" },
-          { id: 310, payerName: "Presbyterian Health Plan" },
-          { id: 311, payerName: "Priority Health" },
-          { id: 312, payerName: "Priority Partners" },
-          { id: 313, payerName: "Providence Health Plan" },
-          { id: 314, payerName: "Quarts Health Solutions" },
-          { id: 315, payerName: "Sanford Health Group" },
-          { id: 316, payerName: "SCAN Health Plan" },
-          { id: 317, payerName: "Scott & White Health Care" },
-          { id: 318, payerName: "Select Health" },
-          { id: 319, payerName: "Sentara Health Plans" },
-          { id: 320, payerName: "Sharp Health Plan" },
-          { id: 321, payerName: "Sutter Health Plus" },
-          { id: 322, payerName: "The Health Plan" },
-          { id: 323, payerName: "Tricare East" },
-          { id: 324, payerName: "Tricare West" },
-          { id: 325, payerName: "UCare" },
-          { id: 326, payerName: "UPMC Health Plan" },
-          { id: 327, payerName: "US Health and Life Insurance Company (USHL)" },
-          { id: 328, payerName: "WEA Trust" },
-          { id: 329, payerName: "WellCare Health" },
-          { id: 330, payerName: "WellSense Health Plan" },
-          { id: 331, payerName: "Western Health Advantage" },
-          { id: 332, payerName: "Devoted Health" },
-          { id: 333, payerName: "Independence Keystone Health" },
-        ];
+      .catch(function () {
+        payersData = getFallbackPayersData();
         return payersData;
       });
   }
 
-  // Function to find payer ID by name
+  function getFallbackPayersData() {
+    return [
+      {
+        id: 1,
+        payerName: "Aetna",
+        groupNameDeprecated: "Aetna",
+        isOON: false,
+        shouldHardMatchInsurance: false,
+        displayGroup: "Aetna",
+        healthieId: 64,
+      },
+      {
+        id: 2,
+        payerName: "Blue Cross Blue Shield",
+        groupNameDeprecated: "Blue Cross Blue Shield",
+        isOON: false,
+        shouldHardMatchInsurance: false,
+        displayGroup: "Blue Cross Blue Shield",
+        healthieId: 347,
+      },
+      {
+        id: 3,
+        payerName: "Cigna",
+        groupNameDeprecated: "Cigna",
+        isOON: false,
+        shouldHardMatchInsurance: false,
+        displayGroup: "Cigna",
+        healthieId: 528,
+      },
+      {
+        id: 4,
+        payerName: "Humana",
+        groupNameDeprecated: null,
+        isOON: true,
+        shouldHardMatchInsurance: false,
+        displayGroup: "Other",
+        healthieId: null,
+      },
+      {
+        id: 5,
+        payerName: "United Healthcare",
+        groupNameDeprecated: "United Healthcare",
+        isOON: false,
+        shouldHardMatchInsurance: false,
+        displayGroup: "United Healthcare",
+        healthieId: 2413,
+      },
+      {
+        id: 6,
+        payerName: "Medicare",
+        groupNameDeprecated: "Medicare",
+        isOON: false,
+        shouldHardMatchInsurance: false,
+        displayGroup: "Medicare",
+        healthieId: 1552,
+      },
+      { id: 136, payerName: "Medical Mutual of Ohio" },
+      { id: 137, payerName: "Aetna Medicare" },
+      { id: 138, payerName: "All Savers" },
+      { id: 139, payerName: "Anthem Blue Cross / Anthem Blue Shield" },
+      { id: 140, payerName: "Blue Cross Blue Shield Medicare" },
+      { id: 141, payerName: "Cigna Local Plus" },
+      { id: 142, payerName: "Cigna Medicare" },
+      { id: 143, payerName: "Cigna Open Access Plus" },
+      { id: 144, payerName: "Medicaid" },
+      { id: 145, payerName: "Meritain" },
+      { id: 146, payerName: "Oxford" },
+      { id: 147, payerName: "UHC Medicare" },
+      { id: 148, payerName: "United Medical Resources (UMR)" },
+      { id: 149, payerName: "Wellmed" },
+      {
+        id: 150,
+        payerName: "Anthem Blue Cross and Blue Shield Colorado HMO",
+      },
+      {
+        id: 151,
+        payerName: "Anthem Blue Cross and Blue Shield Colorado PPO",
+      },
+      {
+        id: 152,
+        payerName: "Anthem Blue Cross and Blue Shield Connecticut HMO",
+      },
+      {
+        id: 153,
+        payerName: "Anthem Blue Cross and Blue Shield Connecticut PPO",
+      },
+      {
+        id: 154,
+        payerName: "Anthem Blue Cross and Blue Shield Indiana HMO",
+      },
+      {
+        id: 155,
+        payerName: "Anthem Blue Cross and Blue Shield Indiana PPO",
+      },
+      {
+        id: 156,
+        payerName: "Anthem Blue Cross and Blue Shield Kentucky HMO",
+      },
+      {
+        id: 157,
+        payerName: "Anthem Blue Cross and Blue Shield Kentucky PPO",
+      },
+      {
+        id: 158,
+        payerName: "Anthem Blue Cross and Blue Shield Maine HMO",
+      },
+      {
+        id: 159,
+        payerName: "Anthem Blue Cross and Blue Shield Maine PPO",
+      },
+      {
+        id: 160,
+        payerName: "Anthem Blue Cross and Blue Shield Missouri HMO",
+      },
+      {
+        id: 161,
+        payerName: "Anthem Blue Cross and Blue Shield Missouri PPO",
+      },
+      {
+        id: 162,
+        payerName: "Anthem Blue Cross and Blue Shield Nevada HMO",
+      },
+      {
+        id: 163,
+        payerName: "Anthem Blue Cross and Blue Shield Nevada PPO",
+      },
+      {
+        id: 164,
+        payerName: "Anthem Blue Cross and Blue Shield New Hampshire HMO",
+      },
+      {
+        id: 165,
+        payerName: "Anthem Blue Cross and Blue Shield New Hampshire PPO",
+      },
+      {
+        id: 166,
+        payerName: "Anthem Blue Cross and Blue Shield of Georgia HMO",
+      },
+      {
+        id: 167,
+        payerName: "Anthem Blue Cross and Blue Shield of Georgia PPO",
+      },
+      { id: 168, payerName: "Anthem Blue Cross and Blue Shield Ohio HMO" },
+      { id: 169, payerName: "Anthem Blue Cross and Blue Shield Ohio PPO" },
+      {
+        id: 170,
+        payerName: "Anthem Blue Cross and Blue Shield Virginia HMO",
+      },
+      {
+        id: 171,
+        payerName: "Anthem Blue Cross and Blue Shield Virginia PPO",
+      },
+      {
+        id: 172,
+        payerName: "Anthem Blue Cross and Blue Shield Wisconsin HMO",
+      },
+      {
+        id: 173,
+        payerName: "Anthem Blue Cross and Blue Shield Wisconsin PPO",
+      },
+      {
+        id: 174,
+        payerName: "Anthem Blue Cross Blue Shield of New York (Empire) HMO",
+      },
+      {
+        id: 175,
+        payerName: "Anthem Blue Cross Blue Shield of New York (Empire) PPO",
+      },
+      { id: 176, payerName: "Anthem Blue Cross of California HMO" },
+      { id: 177, payerName: "Anthem Blue Cross of California PPO" },
+      { id: 178, payerName: "Arkansas Blue Cross and Blue Shield HMO" },
+      { id: 179, payerName: "Arkansas Blue Cross and Blue Shield PPO" },
+      { id: 180, payerName: "Blue Cross & Blue Shield of Mississippi HMO" },
+      { id: 181, payerName: "Blue Cross & Blue Shield of Mississippi PPO" },
+      {
+        id: 182,
+        payerName: "Blue Cross & Blue Shield of Rhode Island HMO",
+      },
+      {
+        id: 183,
+        payerName: "Blue Cross & Blue Shield of Rhode Island PPO",
+      },
+      { id: 184, payerName: "Blue Cross and Blue Shield of Alabama HMO" },
+      { id: 185, payerName: "Blue Cross and Blue Shield of Alabama PPO" },
+      { id: 186, payerName: "Blue Cross and Blue Shield of Hawaii HMO" },
+      { id: 187, payerName: "Blue Cross and Blue Shield of Hawaii PPO" },
+      { id: 188, payerName: "Blue Cross and Blue Shield of Illinois HMO" },
+      { id: 189, payerName: "Blue Cross and Blue Shield of Illinois PPO" },
+      {
+        id: 190,
+        payerName: "Blue Cross and Blue Shield of Kansas City HMO",
+      },
+      {
+        id: 191,
+        payerName: "Blue Cross and Blue Shield of Kansas City PPO",
+      },
+      { id: 192, payerName: "Blue Cross and Blue Shield of Kansas HMO" },
+      { id: 193, payerName: "Blue Cross and Blue Shield of Kansas PPO" },
+      { id: 194, payerName: "Blue Cross and Blue Shield of Louisiana HMO" },
+      { id: 195, payerName: "Blue Cross and Blue Shield of Louisiana PPO" },
+      {
+        id: 196,
+        payerName: "Blue Cross and Blue Shield of Massachusetts HMO",
+      },
+      {
+        id: 197,
+        payerName: "Blue Cross and Blue Shield of Massachusetts PPO",
+      },
+      { id: 198, payerName: "Blue Cross and Blue Shield of Minnesota HMO" },
+      { id: 199, payerName: "Blue Cross and Blue Shield of Minnesota PPO" },
+      { id: 200, payerName: "Blue Cross and Blue Shield of Montana HMO" },
+      { id: 201, payerName: "Blue Cross and Blue Shield of Montana PPO" },
+      { id: 202, payerName: "Blue Cross and Blue Shield of Nebraska HMO" },
+      { id: 203, payerName: "Blue Cross and Blue Shield of Nebraska PPO" },
+      {
+        id: 204,
+        payerName: "Blue Cross and Blue Shield of New Mexico HMO",
+      },
+      {
+        id: 205,
+        payerName: "Blue Cross and Blue Shield of New Mexico PPO",
+      },
+      {
+        id: 206,
+        payerName: "Blue Cross and Blue Shield of North Carolina HMO",
+      },
+      {
+        id: 207,
+        payerName: "Blue Cross and Blue Shield of North Carolina PPO",
+      },
+      { id: 208, payerName: "Blue Cross and Blue Shield of Oklahoma HMO" },
+      { id: 209, payerName: "Blue Cross and Blue Shield of Oklahoma PPO" },
+      {
+        id: 210,
+        payerName: "Blue Cross and Blue Shield of South Carolina HMO",
+      },
+      {
+        id: 211,
+        payerName: "Blue Cross and Blue Shield of South Carolina POC",
+      },
+      { id: 212, payerName: "Blue Cross and Blue Shield of Texas HMO" },
+      { id: 213, payerName: "Blue Cross and Blue Shield of Texas PPO" },
+      { id: 214, payerName: "Blue Cross and Blue Shield of Vermont HMO" },
+      { id: 215, payerName: "Blue Cross and Blue Shield of Vermont PPO" },
+      { id: 216, payerName: "Blue Cross Blue Shield of Arizona HMO" },
+      { id: 217, payerName: "Blue Cross Blue Shield of Arizona PPO" },
+      { id: 218, payerName: "Blue Cross Blue Shield of Michigan HMO" },
+      { id: 219, payerName: "Blue Cross Blue Shield of Michigan PPO" },
+      { id: 220, payerName: "Blue Cross Blue Shield of North Dakota HMO" },
+      { id: 221, payerName: "Blue Cross Blue Shield of North Dakota PPO" },
+      { id: 222, payerName: "Blue Cross Blue Shield of Wyoming HMO" },
+      { id: 223, payerName: "Blue Cross Blue Shield of Wyoming PPO" },
+      { id: 224, payerName: "Blue Cross of Idaho HMO" },
+      { id: 225, payerName: "Blue Cross of Idaho PPO" },
+      { id: 226, payerName: "Blue Shield of California HMO" },
+      { id: 227, payerName: "Blue Shield of California PPO" },
+      { id: 228, payerName: "BlueCross BlueShield of Puerto Rico HMO" },
+      { id: 229, payerName: "BlueCross BlueShield of Puerto Rico PPO" },
+      { id: 230, payerName: "BlueCross BlueShield of Tennessee HMO" },
+      { id: 231, payerName: "BlueCross BlueShield of Tennessee PPO" },
+      { id: 232, payerName: "Capital Blue Cross HMO" },
+      { id: 233, payerName: "Capital Blue Cross PPO" },
+      { id: 234, payerName: "CareFirst BlueCross BlueShield HMO" },
+      { id: 235, payerName: "CareFirst BlueCross BlueShield Maryland HMO" },
+      { id: 236, payerName: "CareFirst BlueCross BlueShield Maryland PPO" },
+      { id: 237, payerName: "CareFirst BlueCross BlueShield PPO" },
+      { id: 238, payerName: "CareFirst BlueCross BlueShield Virginia HMO" },
+      { id: 239, payerName: "CareFirst BlueCross BlueShield Virginia PPO" },
+      { id: 240, payerName: "Excellus BlueCross BlueShield HMO" },
+      { id: 241, payerName: "Excellus BlueCross BlueShield PPO" },
+      { id: 242, payerName: "Florida Blue HMO" },
+      { id: 243, payerName: "Florida Blue PPO" },
+      {
+        id: 244,
+        payerName: "Highmark Blue Cross Blue Shield Delaware HMO",
+      },
+      {
+        id: 245,
+        payerName: "Highmark Blue Cross Blue Shield Delaware PPO",
+      },
+      {
+        id: 246,
+        payerName: "Highmark Blue Cross Blue Shield of Pennsylvania HMO",
+      },
+      {
+        id: 247,
+        payerName: "Highmark Blue Cross Blue Shield of Pennsylvania PPO",
+      },
+      {
+        id: 248,
+        payerName: "Highmark Blue Cross Blue Shield of Western New York HMO",
+      },
+      {
+        id: 249,
+        payerName: "Highmark Blue Cross Blue Shield of Western New York PPO",
+      },
+      {
+        id: 250,
+        payerName: "Highmark Blue Cross Blue Shield West Virginia HMO",
+      },
+      {
+        id: 251,
+        payerName: "Highmark Blue Cross Blue Shield West Virginia PPO",
+      },
+      {
+        id: 252,
+        payerName: "Highmark Blue Shield of Northeastern New York HMO",
+      },
+      {
+        id: 253,
+        payerName: "Highmark Blue Shield of Northeastern New York PPO",
+      },
+      {
+        id: 254,
+        payerName: "Horizon Blue Cross and Blue Shield of New Jersey HMO",
+      },
+      {
+        id: 255,
+        payerName: "Horizon Blue Cross and Blue Shield of New Jersey PPO",
+      },
+      { id: 256, payerName: "Independence Blue Cross HMO" },
+      { id: 257, payerName: "Independence Blue Cross PPO" },
+      {
+        id: 258,
+        payerName: "Premera Blue Cross and Blue Shield of Alaska HMO",
+      },
+      {
+        id: 259,
+        payerName: "Premera Blue Cross and Blue Shield of Alaska PPO",
+      },
+      { id: 260, payerName: "Premera Blue Cross Washington HMO" },
+      { id: 261, payerName: "Premera Blue Cross Washington PPO" },
+      { id: 262, payerName: "Regence BlueCross BlueShield of Oregon HMO" },
+      { id: 263, payerName: "Regence BlueCross BlueShield of Oregon PPO" },
+      { id: 264, payerName: "Regence BlueCross BlueShield of Utah HMO" },
+      { id: 265, payerName: "Regence BlueCross BlueShield of Utah PPO" },
+      { id: 266, payerName: "Regence BlueShield of Idaho HMO" },
+      { id: 267, payerName: "Regence BlueShield of Idaho PPO" },
+      { id: 268, payerName: "Regence BlueShield Washington HMO" },
+      { id: 269, payerName: "Regence BlueShield Washington PPO" },
+      {
+        id: 270,
+        payerName: "Wellmark Blue Cross and Blue Shield of Iowa HMO",
+      },
+      {
+        id: 271,
+        payerName: "Wellmark Blue Cross and Blue Shield of Iowa PPO",
+      },
+      {
+        id: 272,
+        payerName: "Wellmark Blue Cross and Blue Shield South Dakota HMO",
+      },
+      {
+        id: 273,
+        payerName: "Wellmark Blue Cross and Blue Shield South Dakota PPO",
+      },
+      { id: 274, payerName: "Alliant Health Plan" },
+      { id: 275, payerName: "AllWays Health Partners" },
+      { id: 276, payerName: "AmeriHealth Caritas" },
+      { id: 277, payerName: "AultCare Insurance Company" },
+      { id: 278, payerName: "Bright Health" },
+      {
+        id: 279,
+        payerName: "Capital District Physicians' Health Plan (CPDHP)",
+      },
+      { id: 280, payerName: "CareOregon" },
+      { id: 281, payerName: "CareSource" },
+      { id: 282, payerName: "Centene" },
+      { id: 283, payerName: "ChampVA" },
+      { id: 284, payerName: "Clover Health" },
+      { id: 285, payerName: "CountyCare Health Plan" },
+      { id: 286, payerName: "Dean Health Plan" },
+      { id: 287, payerName: "EmblemHealth" },
+      { id: 288, payerName: "Geisinger Health Plan" },
+      { id: 289, payerName: "Health Alliance Plan (HAP)" },
+      { id: 290, payerName: "Healthfirst" },
+      { id: 291, payerName: "HealthPartners" },
+      { id: 292, payerName: "HMO Partners, Inc." },
+      { id: 293, payerName: "Independent Health Association (Inc)" },
+      { id: 294, payerName: "Kaiser Foundation Health Plan" },
+      { id: 295, payerName: "L.A. Care Health Plan" },
+      { id: 296, payerName: "McLaren Health Plan" },
+      { id: 297, payerName: "MDWise" },
+      { id: 298, payerName: "Medica" },
+      { id: 299, payerName: "MetroPlus" },
+      { id: 300, payerName: "Moda Health" },
+      { id: 301, payerName: "Molina Healthcare" },
+      { id: 302, payerName: "Mountain Health Co-Op" },
+      { id: 303, payerName: "MVP Health Plan" },
+      { id: 304, payerName: "Optum VACare" },
+      { id: 305, payerName: "Oscar" },
+      { id: 306, payerName: "PacificSource Health Plans" },
+      { id: 307, payerName: "Paramount" },
+      { id: 308, payerName: "Passport Health Plan" },
+      { id: 309, payerName: "Point32Health" },
+      { id: 310, payerName: "Presbyterian Health Plan" },
+      { id: 311, payerName: "Priority Health" },
+      { id: 312, payerName: "Priority Partners" },
+      { id: 313, payerName: "Providence Health Plan" },
+      { id: 314, payerName: "Quarts Health Solutions" },
+      { id: 315, payerName: "Sanford Health Group" },
+      { id: 316, payerName: "SCAN Health Plan" },
+      { id: 317, payerName: "Scott & White Health Care" },
+      { id: 318, payerName: "Select Health" },
+      { id: 319, payerName: "Sentara Health Plans" },
+      { id: 320, payerName: "Sharp Health Plan" },
+      { id: 321, payerName: "Sutter Health Plus" },
+      { id: 322, payerName: "The Health Plan" },
+      { id: 323, payerName: "Tricare East" },
+      { id: 324, payerName: "Tricare West" },
+      { id: 325, payerName: "UCare" },
+      { id: 326, payerName: "UPMC Health Plan" },
+      { id: 327, payerName: "US Health and Life Insurance Company (USHL)" },
+      { id: 328, payerName: "WEA Trust" },
+      { id: 329, payerName: "WellCare Health" },
+      { id: 330, payerName: "WellSense Health Plan" },
+      { id: 331, payerName: "Western Health Advantage" },
+      { id: 332, payerName: "Devoted Health" },
+      { id: 333, payerName: "Independence Keystone Health" },
+    ];
+  }
+
   function findPayerId(payerName) {
-    var payer = payersData.find((item) => item.payerName === payerName);
-    return payer ? payer.id : null;
-  }
+    var target = normalizeValue(payerName);
+    if (!target) return null;
 
-  // Function to format DOB input with forward slashes and backspace support
-  function formatDOBInput(value) {
-    // Remove non-digits and cap to 8 (MMDDYYYY)
-    var digits = value.replace(/\D/g, "").substring(0, 8);
-
-    var monthStr = digits.substring(0, 2);
-    var dayStr = digits.substring(2, 4);
-    var yearStr = digits.substring(4, 8);
-
-    function clamp(num, min, max) {
-      return Math.max(min, Math.min(max, num));
-    }
-
-    // Clamp month once we have 2 digits
-    if (monthStr.length === 2) {
-      var mm = parseInt(monthStr, 10);
-      if (Number.isNaN(mm)) mm = 1;
-      mm = clamp(mm, 1, 12);
-      monthStr = String(mm).padStart(2, "0");
-    }
-
-    // Clamp day broadly to 1..31 once we have 2 digits
-    if (dayStr.length === 2) {
-      var dd = parseInt(dayStr, 10);
-      if (Number.isNaN(dd)) dd = 1;
-      dd = clamp(dd, 1, 31);
-      dayStr = String(dd).padStart(2, "0");
-    }
-
-    // Clamp year to [currentYear-150, currentYear-1] once we have 4 digits
-    if (yearStr.length === 4) {
-      var yyyy = parseInt(yearStr, 10);
-      var currentYear = new Date().getFullYear();
-      var minYear = currentYear - 150;
-      var maxYear = currentYear - 1; // ensure at least 1 year old
-      if (Number.isNaN(yyyy)) yyyy = minYear;
-      yyyy = clamp(yyyy, minYear, maxYear);
-      yearStr = String(yyyy);
-    }
-
-    // If full date, refine day based on month/year (leap years)
-    if (monthStr.length === 2 && dayStr.length === 2 && yearStr.length === 4) {
-      var mFull = parseInt(monthStr, 10);
-      var yFull = parseInt(yearStr, 10);
-      var maxDay = new Date(yFull, mFull, 0).getDate();
-      var dFull = parseInt(dayStr, 10);
-      dFull = clamp(dFull, 1, maxDay);
-      dayStr = String(dFull).padStart(2, "0");
-    }
-
-    // Rebuild with slashes based on available segments
-    var out = monthStr;
-    if (digits.length >= 2) out = monthStr + "/" + dayStr;
-    if (digits.length >= 4) out = monthStr + "/" + dayStr + "/" + yearStr;
-    return out;
-  }
-
-  // Function to convert MM/DD/YYYY to YYYY-MM-DD for query param
-  function convertDOBForQuery(dobValue) {
-    if (!dobValue || dobValue.length !== 10) return null;
-
-    // Check if it's in MM/DD/YYYY format
-    var match = dobValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (match) {
-      var month = match[1];
-      var day = match[2];
-      var year = match[3];
-      return year + "-" + month + "-" + day;
+    for (var i = 0; i < payersData.length; i++) {
+      var payer = payersData[i] || {};
+      var names = [
+        normalizeValue(payer.payerName),
+        normalizeValue(payer.groupNameDeprecated),
+        normalizeValue(payer.displayGroup),
+      ];
+      if (names.indexOf(target) !== -1) {
+        if (typeof payer.id !== "undefined" && payer.id !== null) {
+          return payer.id;
+        }
+      }
     }
 
     return null;
   }
 
-  // (Removed inline DOB error UI by request)
-
-  // extractCityStateZip function removed - no longer needed since city-state-zip field doesn't exist
-
-  // Function to determine if user is in control group
-  function isControlGroup() {
-    // Always return false to use Provider_Search variant for home page
-    return false;
-  }
-
-  // Function to update the CTA URL with new format
-  function updateCTAUrl() {
-    var baseUrl = "https://signup.usenourish.com/";
-    var params = new URLSearchParams();
-
-    // Get the form name to determine which variant to use
-    var formName = $("form[data-name]").attr("data-name");
-
-    // Add landingPageVariation parameter for tracking (not functionality)
-    var v = variationFromPath(window.location.pathname);
-    if (v) params.append("landingPageVariation", v);
-
-    // Get selected insurance (use raw value, not truncated label)
-    var selectedInsuranceRaw =
-      (typeof insurance !== "undefined" && insurance) ||
-      $('input[type="radio"][data-name="Insurance"]:checked').val() ||
-      null;
-
-    if (selectedInsuranceRaw) {
-      var normalizedInsurance = String(selectedInsuranceRaw)
-        .replace(/\u2019/g, "'")
-        .trim();
-      var normalizedLower = normalizedInsurance.toLowerCase();
-
-      if (normalizedLower === "i'm paying for myself") {
-        params.append("nourishPayerId", -1);
-      } else if (normalizedLower === "other") {
-        params.append("nourishPayerId", -2);
-      } else if (normalizedLower === "i'll choose my insurance later") {
-        // Do not send nourishPayerId for this choice
-      } else {
-        var payerId = findPayerId(normalizedInsurance);
-        if (payerId) {
-          params.append("nourishPayerId", payerId);
-        }
-      }
-    }
-
-    // Location functionality removed - city-state-zip field no longer exists
-
-    // Get Insurance Check form fields (only for Insurance Check form)
-    if (formName === "Insurance Check") {
-      // Set InsuranceSearchInput to true for insurance check form CTA
-      window.InsuranceSearchInput = true;
-
-      var firstName = $("#first-name").val();
-      if (firstName) {
-        params.append("firstName", firstName);
-      }
-
-      var lastName = $("#last-name").val();
-      if (lastName) {
-        params.append("lastName", lastName);
-      }
-
-      var dob = $("#dob").val();
-      if (dob && dob.length === 10) {
-        var convertedDOB = convertDOBForQuery(dob);
-        if (convertedDOB) {
-          params.append("patientBirthday", convertedDOB);
-        }
-      }
-    } else {
-      // Set InsuranceSearchInput to false for main search CTA (not insurance check form)
-      window.InsuranceSearchInput = false;
-    }
-
-    // Append UTM parameters from the shared helper
+  function appendUtmParams(params) {
     try {
-      // Get UTM keys dynamically from global.js to avoid duplication
-      var utmKeys = window.NOURISH_UTM_PARAMS || [
-        "utm_source",
-        "utm_medium",
-        "utm_campaign",
-        "utm_content",
-        "utm_term",
-        "gclid",
-        "fbclid",
-        "msclkid",
-        "ttclid",
-        "im_ref",
-      ];
+      var utmKeys =
+        window.NOURISH_UTM_PARAMS ||
+        [
+          "utm_source",
+          "utm_medium",
+          "utm_campaign",
+          "utm_content",
+          "utm_term",
+          "gclid",
+          "fbclid",
+          "msclkid",
+          "ttclid",
+          "im_ref",
+        ];
 
       var utmSnapshot = {};
       try {
         if (typeof window.NOURISH_GET_UTMS === "function") {
           utmSnapshot = window.NOURISH_GET_UTMS() || {};
         }
-      } catch (e) {
+      } catch (utmError) {
         utmSnapshot = {};
       }
 
@@ -693,7 +578,7 @@ $(document).ready(function () {
           if (stored) {
             persistedUTMs = JSON.parse(stored);
           }
-        } catch (e) {
+        } catch (storageError) {
           persistedUTMs = null;
         }
       }
@@ -719,52 +604,52 @@ $(document).ready(function () {
     } catch (e) {
       // ignore UTM resolution errors
     }
-
-    // Add InsuranceSearchInput parameter to URL
-    params.append("InsuranceSearchInput", window.InsuranceSearchInput);
-
-    // Build final URL
-    var finalUrl = baseUrl + "?" + params.toString();
-    $("#home-filter-cta").attr("href", finalUrl);
-
-    // Update all OTHER signup.usenourish.com links on the page with InsuranceSearchInput = false
-    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(
-      function () {
-        var $link = $(this);
-        var currentHref = $link.attr("href");
-        var url = new URL(currentHref);
-
-        // Add InsuranceSearchInput = false for all other CTAs
-        url.searchParams.set("InsuranceSearchInput", "false");
-
-        $link.attr("href", url.toString());
-      }
-    );
   }
 
-  // UTM parameter capture is handled by global.js
-  // Delay initial call to ensure global.js has processed UTMs
-  setTimeout(function () {
-    updateCTAUrl();
-  }, 100);
+  function truncateTextToWidth(text, $reference, maxWidth) {
+    if (!text) return "";
+    if (!maxWidth || maxWidth <= 0) return text;
 
-  // Load API data on page load
-  fetchPayersData()
-    .then(() => {
-      // Initial URL update
-      updateCTAUrl();
-    })
-    .catch((error) => {
-      // Still update URL even if APIs fail
-      updateCTAUrl();
-    });
+    var ellipsis = "...";
+    var $measure = $("<span>")
+      .css({
+        position: "absolute",
+        visibility: "hidden",
+        whiteSpace: "nowrap",
+      })
+      .appendTo("body");
 
-  // Add event listeners for Insurance Check form fields
-  $("#first-name, #last-name").on("input", function () {
-    updateCTAUrl();
-  });
+    if ($reference && $reference.length) {
+      $measure.css({
+        fontFamily: $reference.css("font-family"),
+        fontSize: $reference.css("font-size"),
+        fontWeight: $reference.css("font-weight"),
+        letterSpacing: $reference.css("letter-spacing"),
+        textTransform: $reference.css("text-transform"),
+      });
+    }
 
-  // Function to detect mobile devices
+    var truncated = text;
+
+    var fits = function (value) {
+      $measure.text(value);
+      return $measure.width() <= maxWidth;
+    };
+
+    if (fits(text)) {
+      $measure.remove();
+      return text;
+    }
+
+    while (truncated.length > 0 && !fits(truncated + ellipsis)) {
+      truncated = truncated.slice(0, -1);
+    }
+
+    var result = truncated.length ? truncated + ellipsis : ellipsis;
+    $measure.remove();
+    return result;
+  }
+
   function isMobileDevice() {
     return (
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -775,437 +660,534 @@ $(document).ready(function () {
     );
   }
 
-  // Initialize mobile-friendly DOB field
-  function initializeMobileDOB() {
-    var $dobInput = $("#dob");
-    if ($dobInput.length === 0) return;
+  function formatDOBInput(value) {
+    if (!value) return "";
+
+    var digits = value.replace(/\D/g, "");
+    if (!digits) return "";
+
+    var monthStr = digits.substring(0, 2);
+    var dayStr = digits.substring(2, 4);
+    var yearStr = digits.substring(4, 8);
+
+    function clamp(num, min, max) {
+      return Math.max(min, Math.min(max, num));
+    }
+
+    if (monthStr.length === 2) {
+      var mm = parseInt(monthStr, 10);
+      if (Number.isNaN(mm)) mm = 1;
+      mm = clamp(mm, 1, 12);
+      monthStr = String(mm).padStart(2, "0");
+    }
+
+    if (dayStr.length === 2) {
+      var dd = parseInt(dayStr, 10);
+      if (Number.isNaN(dd)) dd = 1;
+      dd = clamp(dd, 1, 31);
+      dayStr = String(dd).padStart(2, "0");
+    }
+
+    if (yearStr.length === 4) {
+      var yyyy = parseInt(yearStr, 10);
+      var currentYear = new Date().getFullYear();
+      var minYear = currentYear - 150;
+      var maxYear = currentYear - 1;
+      if (Number.isNaN(yyyy)) yyyy = minYear;
+      yyyy = clamp(yyyy, minYear, maxYear);
+      yearStr = String(yyyy);
+    }
+
+    if (monthStr.length === 2 && dayStr.length === 2 && yearStr.length === 4) {
+      var mFull = parseInt(monthStr, 10);
+      var yFull = parseInt(yearStr, 10);
+      var maxDay = new Date(yFull, mFull, 0).getDate();
+      var dFull = parseInt(dayStr, 10);
+      dFull = clamp(dFull, 1, maxDay);
+      dayStr = String(dFull).padStart(2, "0");
+    }
+
+    var out = monthStr;
+    if (digits.length >= 2) out = monthStr + "/" + dayStr;
+    if (digits.length >= 4) out = monthStr + "/" + dayStr + "/" + yearStr;
+    return out;
+  }
+
+  function convertDOBForQuery(dobValue) {
+    if (!dobValue || dobValue.length !== 10) return null;
+    var match = dobValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (match) {
+      var month = match[1];
+      var day = match[2];
+      var year = match[3];
+      return year + "-" + month + "-" + day;
+    }
+    return null;
+  }
+
+  function getAllWidgets() {
+    var collected = [];
+    var seen = new Set();
+
+    for (var i = 0; i < widgetSelectors.length; i++) {
+      var selector = widgetSelectors[i];
+      $(selector).each(function () {
+        var node = this;
+        if (seen.has(node)) return;
+        var $node = $(node);
+        if (
+          $node.find("#home-filter-cta").length ||
+          $node.find("#insurance_filter").length ||
+          $node.find("#specialty_filter").length ||
+          $node.find("#state_filter").length
+        ) {
+          seen.add(node);
+          collected.push(node);
+        }
+      });
+    }
+
+    return $(collected);
+  }
+
+  function getWidgetState($widget) {
+    var state = $widget.data("heroFilterState");
+    if (!state) {
+      state = {
+        insurance: null,
+        state: null,
+        specialties: [],
+      };
+      $widget.data("heroFilterState", state);
+    }
+    return state;
+  }
+
+  function getSelectedInsurance($widget) {
+    var value = $widget
+      .find('input[type="radio"][data-name="Insurance"]:checked')
+      .val();
+    return value || null;
+  }
+
+  function getSelectedState($widget) {
+    var value = $widget
+      .find('input[type="radio"][data-name="States"]:checked')
+      .val();
+    return value || null;
+  }
+
+  function getSelectedSpecialties($widget) {
+    var results = [];
+    $widget
+      .find('.filter-list_component input[type="checkbox"]:checked')
+      .each(function () {
+        var label = $(this).closest("label").text().trim();
+        if (label) results.push(label);
+      });
+    return results;
+  }
+
+  function updateStateLabel($widget, value) {
+    var $label = $widget.find("#state-text").first();
+    if (!$label.length) return;
+    if (value) {
+      $label.text(value);
+    } else {
+      $label.text("State");
+    }
+  }
+
+  function updateInsuranceLabel($widget, value) {
+    var defaultText = "Insurance carrier";
+    var display = value || defaultText;
+    var $labels = $widget.find("#insurance-text");
+    if (!$labels.length) return;
+
+    var $toggle = $widget.find("#insurance_filter").first();
+    var maxWidth = $toggle.length ? $toggle.width() : null;
+    var $reference = $labels.first();
+    var truncated =
+      value && maxWidth
+        ? truncateTextToWidth(display, $reference, maxWidth)
+        : display;
+
+    $labels.each(function () {
+      var $label = $(this);
+      $label.text(value ? truncated : defaultText);
+      if (value) {
+        $label.css("color", "#191918");
+        $label.attr("data-full-value", value);
+      } else {
+        $label.css("color", "");
+        $label.removeAttr("data-full-value");
+      }
+    });
+
+    var $dropdownLabel = $widget
+      .find("#insurance_filter .provider-filter_dropdown-label.filter")
+      .first();
+    if ($dropdownLabel.length) {
+      $dropdownLabel.text(value ? truncated : defaultText);
+      if (value) {
+        $dropdownLabel.css("color", "#191918");
+      } else {
+        $dropdownLabel.css("color", "");
+      }
+    }
+  }
+
+  function updateSpecialtyLabel($widget, values) {
+    var defaultText = "Primary concern";
+    var listText = Array.isArray(values) ? values.join(", ") : "";
+    var $labels = $widget.find("#concern-text");
+    if ($labels.length) {
+      var $toggle = $widget.find("#specialty_filter").first();
+      var maxWidth = $toggle.length ? $toggle.width() : null;
+      var $reference = $labels.first();
+      var truncated =
+        listText && maxWidth
+          ? truncateTextToWidth(listText, $reference, maxWidth)
+          : listText;
+      var displayText = truncated || defaultText;
+
+      $labels.each(function () {
+        var $label = $(this);
+        $label.text(displayText);
+        if (displayText !== defaultText) {
+          $label.css("color", "#191918");
+          $label.attr("data-full-value", listText);
+        } else {
+          $label.css("color", "");
+          $label.removeAttr("data-full-value");
+        }
+      });
+    }
+
+    var countText = values && values.length ? "(" + values.length + ")" : "";
+    $widget.find(".drop-label-total").each(function () {
+      var $count = $(this);
+      if (countText) {
+        $count.text(countText).show();
+      } else {
+        $count.text("").hide();
+      }
+    });
+  }
+
+  function updateWidgetDisplay($widget) {
+    var state = getWidgetState($widget);
+    updateStateLabel($widget, state.state);
+    updateInsuranceLabel($widget, state.insurance);
+    updateSpecialtyLabel($widget, state.specialties);
+  }
+
+  function findWidgetCTA($widget) {
+    var $cta = $widget.find("#home-filter-cta").first();
+    if ($cta.length) return $cta;
+    return $widget.find('a[href*="signup.usenourish.com"]').first();
+  }
+
+  function getWidgetFormName($widget) {
+    var $form = $widget.find("form[data-name]").first();
+    return $form.length ? $form.attr("data-name") : "";
+  }
+
+  function selectRadioByValue($widget, dataName, targetValue) {
+    if (!targetValue) return false;
+
+    var normalizedTarget = normalizeValue(targetValue);
+    if (!normalizedTarget) return false;
+
+    var matched = false;
+
+    $widget
+      .find('input[type="radio"][data-name="' + dataName + '"]')
+      .each(function () {
+        var input = this;
+        var value = normalizeValue(input.value);
+        if (value === normalizedTarget) {
+          if (!input.checked) {
+            input.checked = true;
+            $(input).triggerHandler("change");
+          }
+          matched = true;
+          return false;
+        }
+        return true;
+      });
+
+    return matched;
+  }
+
+  function closeDropdownForElement($element) {
+    if (!$element || !$element.length) return;
+
+    var $dropdownList = $element.closest(
+      ".w-dropdown-list, .provider-filter_dropdown"
+    );
+    if (!$dropdownList.length) return;
+
+    var $dropdown = $dropdownList.closest(".w-dropdown");
+    if (!$dropdown.length) {
+      $dropdown = $dropdownList.closest(".provider-filter_dopdown");
+    }
+
+    var dropdownApi =
+      window.Webflow &&
+      window.Webflow.require &&
+      window.Webflow.require("dropdown");
+
+    if (dropdownApi) {
+      try {
+        dropdownApi.close($dropdown[0]);
+      } catch (e) {
+        // ignore dropdown API errors
+      }
+    }
+
+    $dropdownList.removeClass("open").slideUp(0);
+    $dropdown
+      .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
+      .attr("aria-expanded", "false")
+      .removeClass("w--open");
+  }
+
+  function updateWidgetCTA($widget) {
+    if (!$widget || !$widget.length) return;
+
+    var state = getWidgetState($widget);
+    var selectedInsurance =
+      state.insurance || getSelectedInsurance($widget) || null;
+    var formName = getWidgetFormName($widget);
+    var isInsuranceCheck = formName === "Insurance Check";
+
+    var baseUrl = "https://signup.usenourish.com/";
+    var params = new URLSearchParams();
+
+    var variation = variationFromPath(window.location.pathname);
+    if (variation) {
+      params.append("landingPageVariation", variation);
+    }
+
+    if (selectedInsurance) {
+      var normalized = normalizeValue(selectedInsurance);
+      if (normalized === "i'm paying for myself") {
+        params.append("nourishPayerId", -1);
+      } else if (normalized === "other") {
+        params.append("nourishPayerId", -2);
+      } else if (normalized === "i'll choose my insurance later") {
+        // do not send nourishPayerId
+      } else {
+        var payerId = findPayerId(selectedInsurance);
+        if (payerId) {
+          params.append("nourishPayerId", payerId);
+        }
+      }
+    }
+
+    if (isInsuranceCheck) {
+      window.InsuranceSearchInput = true;
+      var firstName = $widget.find("#first-name").val();
+      if (firstName) {
+        params.append("firstName", firstName);
+      }
+      var lastName = $widget.find("#last-name").val();
+      if (lastName) {
+        params.append("lastName", lastName);
+      }
+      var dob = $widget.find("#dob").val();
+      if (dob && dob.length === 10) {
+        var convertedDOB = convertDOBForQuery(dob);
+        if (convertedDOB) {
+          params.append("patientBirthday", convertedDOB);
+        }
+      }
+    } else {
+      window.InsuranceSearchInput = false;
+    }
+
+    appendUtmParams(params);
+    params.append("InsuranceSearchInput", isInsuranceCheck ? "true" : "false");
+
+    var $cta = findWidgetCTA($widget);
+    if ($cta && $cta.length) {
+      var finalUrl = baseUrl + "?" + params.toString();
+      $cta.attr("href", finalUrl);
+    }
+
+    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(
+      function () {
+        var $link = $(this);
+        var currentHref = $link.attr("href");
+        if (!currentHref) return;
+        var url;
+        try {
+          url = new URL(currentHref, window.location.origin);
+        } catch (e) {
+          return;
+        }
+        url.searchParams.set("InsuranceSearchInput", "false");
+        $link.attr("href", url.toString());
+      }
+    );
+  }
+
+  function bindDobHandlers($widget) {
+    var $dobInput = $widget.find("#dob");
+    if (!$dobInput.length || $dobInput.data("heroFilterDobBound")) return;
+    $dobInput.data("heroFilterDobBound", true);
 
     if (isMobileDevice()) {
-      // Set mobile-friendly attributes
       $dobInput.attr({
         inputmode: "numeric",
         pattern: "[0-9]*",
         autocomplete: "bday",
         placeholder: "MM/DD/YYYY",
       });
-
-      // Add mobile-specific styling
       $dobInput.css({
-        "font-size": "16px", // Prevents zoom on iOS
-        "min-height": "44px", // Minimum touch target size
-        padding: "12px 16px", // Better touch area
+        "font-size": "16px",
+        "min-height": "44px",
+        padding: "12px 16px",
       });
-
-      // Add mobile-friendly class for additional styling
       $dobInput.addClass("mobile-dob-input");
     }
-  }
 
-  // Initialize mobile DOB on page load
-  initializeMobileDOB();
+    $dobInput.on("input keydown keyup", function (e) {
+      var $input = $(this);
+      var value = $input.val();
+      var cursorPosition = $input[0].selectionStart;
 
-  // Enhanced DOB field handling with mobile support
-  $("#dob").on("input keydown keyup", function (e) {
-    var $input = $(this);
-    var value = $input.val();
-    var cursorPosition = $input[0].selectionStart;
+      if (e.type === "keydown") {
+        if (e.key === "Backspace") {
+          if (isMobileDevice()) {
+            e.preventDefault();
 
-    // Handle backspace/delete operations
-    if (e.type === "keydown") {
-      if (e.key === "Backspace") {
-        // On mobile, handle backspace more aggressively
-        if (isMobileDevice()) {
-          e.preventDefault(); // Prevent default to handle manually
+            var currentValue = $input.val();
+            var cursorPos = $input[0].selectionStart;
 
-          var currentValue = $input.val();
-          var cursorPos = $input[0].selectionStart;
-
-          // Remove the last character (digit or slash)
-          var newValue;
-          if (cursorPos >= currentValue.length) {
-            // Remove last character
-            newValue = currentValue.slice(0, -1);
-          } else {
-            // Remove character before cursor
-            newValue =
-              currentValue.slice(0, cursorPos - 1) +
-              currentValue.slice(cursorPos);
-          }
-
-          // If we removed a slash, also remove the digit before it to actually "go back"
-          if (
-            currentValue.length > 0 &&
-            currentValue[currentValue.length - 1] === "/"
-          ) {
-            // We're trying to delete a slash, so remove more content
-            var digitsOnly = newValue.replace(/\D/g, "");
-            if (digitsOnly.length >= 2) {
-              // Remove the last digit to actually go back past the slash
-              digitsOnly = digitsOnly.slice(0, -1);
-              newValue = digitsOnly;
+            var newValue;
+            if (cursorPos >= currentValue.length) {
+              newValue = currentValue.slice(0, -1);
+            } else {
+              newValue =
+                currentValue.slice(0, cursorPos - 1) +
+                currentValue.slice(cursorPos);
             }
-          }
 
-          // Format the new value
-          var formattedValue = formatDOBInput(newValue);
-          $input.val(formattedValue);
+            if (
+              currentValue.length > 0 &&
+              currentValue[currentValue.length - 1] === "/"
+            ) {
+              var digitsOnly = newValue.replace(/\D/g, "");
+              if (digitsOnly.length >= 2) {
+                digitsOnly = digitsOnly.slice(0, -1);
+                newValue = digitsOnly;
+              }
+            }
 
-          // Set cursor at the end for mobile
-          var newCursorPos = formattedValue.length;
-          $input[0].setSelectionRange(newCursorPos, newCursorPos);
-
-          updateCTAUrl();
-          return;
-        }
-
-        // Desktop: Check if cursor is right after a slash
-        if (cursorPosition > 0 && value[cursorPosition - 1] === "/") {
-          // Move cursor back one more position to delete the digit before the slash
-          setTimeout(function () {
-            var newValue =
-              value.substring(0, cursorPosition - 2) +
-              value.substring(cursorPosition);
             var formattedValue = formatDOBInput(newValue);
             $input.val(formattedValue);
 
-            // Position cursor after the slash that gets re-added
-            var newCursorPos = Math.max(0, cursorPosition - 2);
+            var newCursorPos = formattedValue.length;
             $input[0].setSelectionRange(newCursorPos, newCursorPos);
 
-            updateCTAUrl();
+            updateWidgetCTA($widget);
+            return;
+          }
+
+          if (cursorPosition > 0 && value[cursorPosition - 1] === "/") {
+            setTimeout(function () {
+              var newValue =
+                value.substring(0, cursorPosition - 2) +
+                value.substring(cursorPosition);
+              var formattedValue = formatDOBInput(newValue);
+              $input.val(formattedValue);
+
+              var newCursorPos = Math.max(0, cursorPosition - 2);
+              $input[0].setSelectionRange(newCursorPos, newCursorPos);
+
+              updateWidgetCTA($widget);
+            }, 0);
+            e.preventDefault();
+            return;
+          }
+
+          setTimeout(function () {
+            var newValue = $input.val();
+            var formattedValue = formatDOBInput(newValue);
+            $input.val(formattedValue);
+
+            var newCursorPos = Math.min(cursorPosition, formattedValue.length);
+            $input[0].setSelectionRange(newCursorPos, newCursorPos);
+
+            updateWidgetCTA($widget);
           }, 0);
-          e.preventDefault();
+          return;
+        } else if (e.key === "Delete") {
+          setTimeout(function () {
+            var newValue = $input.val();
+            var formattedValue = formatDOBInput(newValue);
+            $input.val(formattedValue);
+
+            var newCursorPos = Math.min(cursorPosition, formattedValue.length);
+            $input[0].setSelectionRange(newCursorPos, newCursorPos);
+
+            updateWidgetCTA($widget);
+          }, 0);
           return;
         }
-        // Allow normal backspace for other cases
-        setTimeout(function () {
-          var newValue = $input.val();
-          var formattedValue = formatDOBInput(newValue);
-          $input.val(formattedValue);
-
-          // Restore cursor position after formatting
-          var newCursorPos = Math.min(cursorPosition, formattedValue.length);
-          $input[0].setSelectionRange(newCursorPos, newCursorPos);
-
-          updateCTAUrl();
-        }, 0);
-        return;
-      } else if (e.key === "Delete") {
-        // Handle delete key similarly
-        setTimeout(function () {
-          var newValue = $input.val();
-          var formattedValue = formatDOBInput(newValue);
-          $input.val(formattedValue);
-
-          // Restore cursor position after formatting
-          var newCursorPos = Math.min(cursorPosition, formattedValue.length);
-          $input[0].setSelectionRange(newCursorPos, newCursorPos);
-
-          updateCTAUrl();
-        }, 0);
-        return;
       }
-    }
 
-    // Handle regular input
-    if (e.type === "input") {
-      // On mobile, detect if this was a deletion (shorter value)
-      var wasDeleted = false;
-      if (isMobileDevice()) {
-        var prevLength = $input.data("prevLength") || 0;
-        var currentLength = value.replace(/\D/g, "").length; // Count only digits
-        wasDeleted = currentLength < prevLength;
-        $input.data("prevLength", currentLength);
+      if (e.type === "keyup") {
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          return;
+        }
       }
 
       var formattedValue = formatDOBInput(value);
 
-      // Only update if the formatted value is different to avoid cursor jumping
       if (formattedValue !== value) {
         $input.val(formattedValue);
       }
 
-      // Different cursor positioning for mobile vs desktop
       if (isMobileDevice()) {
-        // On mobile, handle cursor positioning based on action
-        if (formattedValue !== value || wasDeleted) {
-          var newCursorPos = formattedValue.length;
-          $input[0].setSelectionRange(newCursorPos, newCursorPos);
+        if (formattedValue !== value) {
+          var newCursor = formattedValue.length;
+          $input[0].setSelectionRange(newCursor, newCursor);
         }
       } else {
-        // Desktop: Smart cursor positioning for new input
-        var digitsOnly = value.replace(/\D/g, "");
+        var digitsOnly = formattedValue.replace(/\D/g, "");
         var newCursorPos;
-
         if (digitsOnly.length <= 2) {
-          // For month: position after the digits
           newCursorPos = digitsOnly.length;
         } else if (digitsOnly.length <= 4) {
-          // For day: position after the day digits (accounting for slash)
           newCursorPos = digitsOnly.length + 1;
         } else {
-          // For year: position after the year digits (accounting for slashes)
           newCursorPos = digitsOnly.length + 2;
         }
-
-        // Ensure cursor doesn't go beyond the formatted string
         newCursorPos = Math.min(newCursorPos, formattedValue.length);
         $input[0].setSelectionRange(newCursorPos, newCursorPos);
       }
 
-      updateCTAUrl();
-    }
-  });
-
-  // Function to trigger click event on matching radio button
-  function clickMatchingRadioButton(paramName, dataName) {
-    var paramValue = getQueryParam(paramName);
-    if (paramValue) {
-      $('input[type="radio"][data-name="' + dataName + '"]').each(function () {
-        if ($(this).val() === paramValue) {
-          $(this).click();
-        }
-      });
-    }
-  }
-
-  // Call the function for the 'Insurance' query parameter
-  clickMatchingRadioButton("insurance", "Insurance");
-
-  $(".w-button, .w-radio, .provider-filter_close-box").on("click", function () {
-    // Trigger a custom event "w-close"
-    $(".w-dropdown").trigger("w-close");
-
-    // Create and dispatch a keydown event for the Escape key using vanilla JavaScript
-    var event = new KeyboardEvent("keydown", {
-      key: "Escape",
-      keyCode: 27,
-      code: "Escape",
-      which: 27,
-      bubbles: true,
-      cancelable: true,
+      updateWidgetCTA($widget);
     });
-
-    // Dispatch the event on the active element to mimic the actual Escape key behavior
-    document.activeElement.dispatchEvent(event);
-  });
-
-  var state, insurance, thisDropdown;
-
-  $(".filter-list_label").on("click", function () {
-    $(this).siblings(".radio-hide").trigger("click");
-  });
-
-  // Listen for click events on radio buttons with data-name="States"
-  $('input[type="radio"][data-name="States"]').on("click", function () {
-    var selected = $(this).val(); // Get the value of the clicked radio button
-    state = selected;
-
-    // Update the text of #state-text with the selected state
-    $("#state-text").text(selected);
-
-    updateCTAUrl();
-  });
-
-  function updateStatePlaceholder() {
-    if (typeof stateFilter !== "undefined" && stateFilter !== null) {
-      state = stateFilter;
-
-      // Update the text of #state-text with the selected state
-      $("#state-text").text(stateFilter);
-
-      updateCTAUrl();
-    }
   }
-  updateStatePlaceholder();
 
-  // Listen for click events on radio buttons with data-name="Insurance"
-  $('input[type="radio"][data-name="Insurance"]').on("click", function () {
-    var selected = $(this).val(); // Get the value of the clicked radio button
-    insurance = selected;
-    var $insuranceFilter = $("#insurance_filter");
-    var maxWidth = $insuranceFilter.width();
-
-    // Update the text of #insurance-text with the selected insurance
-    var $insuranceText = $("#insurance-text");
-    var newText = truncateText(insurance, maxWidth);
-
-    // Try multiple approaches to update the text
-    $insuranceText.text(newText);
-    $insuranceText.html(newText);
-
-    // Also try targeting by class but only within the insurance dropdown
-    $("#insurance_filter .provider-filter_dropdown-label.filter").text(newText);
-    $("#insurance_filter .provider-filter_dropdown-label.filter").html(newText);
-
-    // Try direct DOM manipulation
-    var insuranceTextElement = document.getElementById("insurance-text");
-    if (insuranceTextElement) {
-      insuranceTextElement.textContent = newText;
-      insuranceTextElement.innerHTML = newText;
-    }
-
-    // Update text color to #191918 when text is changed from default
-    if (newText !== "Insurance carrier") {
-      $insuranceText.css("color", "#191918");
-      $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-        "color",
-        "#191918"
-      );
-      if (insuranceTextElement) {
-        insuranceTextElement.style.color = "#191918";
-      }
-    }
-
-    // Also try updating with a slight delay to override any Webflow scripts
-    setTimeout(function () {
-      $insuranceText.text(newText);
-      $insuranceText.html(newText);
-      $("#insurance_filter .provider-filter_dropdown-label.filter").text(
-        newText
-      );
-      $("#insurance_filter .provider-filter_dropdown-label.filter").html(
-        newText
-      );
-      if (insuranceTextElement) {
-        insuranceTextElement.textContent = newText;
-        insuranceTextElement.innerHTML = newText;
-      }
-
-      // Update text color to #191918 when text is changed from default
-      if (newText !== "Insurance carrier") {
-        $insuranceText.css("color", "#191918");
-        $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-          "color",
-          "#191918"
-        );
-        if (insuranceTextElement) {
-          insuranceTextElement.style.color = "#191918";
-        }
-      }
-    }, 100);
-
-    updateCTAUrl();
-  });
-
-  // Also listen for clicks on insurance labels
-  $('label:has(input[type="radio"][data-name="Insurance"])').on(
-    "click",
-    function () {
-      var $radio = $(this).find('input[type="radio"]');
-      var selected = $radio.val();
-      insurance = selected;
-      var $insuranceFilter = $("#insurance_filter");
-      var maxWidth = $insuranceFilter.width();
-
-      // Update the text of #insurance-text with the selected insurance
-      var $insuranceText = $("#insurance-text");
-      var newText = truncateText(insurance, maxWidth);
-      $insuranceText.text(newText);
-      // Match color behavior of mouse selection
-      if (newText !== "Insurance carrier") {
-        $insuranceText.css("color", "#191918");
-        $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-          "color",
-          "#191918"
-        );
-        var insuranceTextElement = document.getElementById("insurance-text");
-        if (insuranceTextElement) {
-          insuranceTextElement.style.color = "#191918";
-        }
-      }
-
-      updateCTAUrl();
-    }
-  );
-
-  // Listen for change events on insurance radio buttons
-  $('input[type="radio"][data-name="Insurance"]').on("change", function () {
-    var selected = $(this).val();
-    insurance = selected;
-    var $insuranceFilter = $("#insurance_filter");
-    var maxWidth = $insuranceFilter.width();
-
-    // Update the text of #insurance-text with the selected insurance
-    var $insuranceText = $("#insurance-text");
-    var newText = truncateText(insurance, maxWidth);
-    $insuranceText.text(newText);
-    // Match color behavior
-    if (newText !== "Insurance carrier") {
-      $insuranceText.css("color", "#191918");
-      $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-        "color",
-        "#191918"
-      );
-      var insuranceTextElement = document.getElementById("insurance-text");
-      if (insuranceTextElement) {
-        insuranceTextElement.style.color = "#191918";
-      }
-    }
-
-    updateCTAUrl();
-  });
-
-  // Listen for clicks on insurance filter list labels
-  $('.filter-list_label:has(input[type="radio"][data-name="Insurance"])').on(
-    "click",
-    function () {
-      var $radio = $(this).find('input[type="radio"]');
-      var selected = $radio.val();
-      insurance = selected;
-      var $insuranceFilter = $("#insurance_filter");
-      var maxWidth = $insuranceFilter.width();
-
-      // Update the text of #insurance-text with the selected insurance
-      var $insuranceText = $("#insurance-text");
-      var newText = truncateText(insurance, maxWidth);
-      $insuranceText.text(newText);
-      // Match color behavior
-      if (newText !== "Insurance carrier") {
-        $insuranceText.css("color", "#191918");
-        $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-          "color",
-          "#191918"
-        );
-        var insuranceTextElement = document.getElementById("insurance-text");
-        if (insuranceTextElement) {
-          insuranceTextElement.style.color = "#191918";
-        }
-      }
-
-      updateCTAUrl();
-    }
-  );
-
-  function updateInsurancePlaceholder() {
-    if (typeof insFilter !== "undefined" && insFilter !== null) {
-      var $insuranceFilter = $("#insurance_filter");
-      var maxWidth = $insuranceFilter.width();
-
-      // Update the text of #insurance-text with the selected insurance
-      $("#insurance-text").text(truncateText(insFilter, maxWidth));
-      insurance = insFilter;
-
-      updateCTAUrl();
-    } else {
-      // Set default text for insurance
-      $("#insurance-text").text("Insurance carrier");
-    }
-  }
-  updateInsurancePlaceholder();
-
-  // Keyboard accessibility for dropdowns (insurance and primary concern)
-  function setupDropdownA11y(toggleSelector) {
-    var $toggle = $(toggleSelector);
-    if ($toggle.length === 0) return;
+  function setupToggleA11y($toggle) {
+    if (!$toggle || !$toggle.length || $toggle.data("heroFilterA11y")) return;
+    $toggle.data("heroFilterA11y", true);
 
     var $dropdown = $toggle.closest(".provider-filter_dopdown");
-    if ($dropdown.length === 0) return;
+    if (!$dropdown.length) {
+      $dropdown = $toggle.closest(".w-dropdown");
+    }
+    if (!$dropdown.length) return;
 
-    var $list = $dropdown.find(".w-dropdown-list");
+    var $list = $dropdown.find(".w-dropdown-list").first();
+    if (!$list.length) return;
 
     function getFocusableItems() {
-      // Make labels focusable to enable roving focus
       var $labels = $list.find(".filter-list_label.w-form-label");
       $labels.attr("tabindex", 0);
       return $labels.filter(":visible");
@@ -1245,7 +1227,6 @@ $(document).ready(function () {
       $items.eq(nextIdx).focus();
     }
 
-    // Toggle key handling: Enter/Space opens and focuses first item; ArrowDown opens + focuses first
     $toggle.on("keydown", function (e) {
       var key = e.key;
       if (key === "Enter" || key === " ") {
@@ -1262,7 +1243,6 @@ $(document).ready(function () {
       }
     });
 
-    // Roving focus and selection within list items (labels)
     $list.on("keydown", ".filter-list_label.w-form-label", function (e) {
       var key = e.key;
       if (key === "ArrowDown") {
@@ -1276,15 +1256,13 @@ $(document).ready(function () {
         var idx = $items.index(this);
         if (e.shiftKey) {
           if (idx <= 0) {
-            // Let focus move out of the dropdown naturally
             closeDropdown(false);
-            return; // do not preventDefault
+            return;
           }
           e.preventDefault();
           moveFocus($(this), -1);
         } else {
           if (idx >= $items.length - 1) {
-            // Let focus move out of the dropdown naturally
             closeDropdown(false);
             return;
           }
@@ -1293,37 +1271,18 @@ $(document).ready(function () {
         }
       } else if (key === "Home") {
         e.preventDefault();
-        var $items = getFocusableItems();
-        if ($items.length) $items.eq(0).focus();
+        var $itemsHome = getFocusableItems();
+        if ($itemsHome.length) $itemsHome.eq(0).focus();
       } else if (key === "End") {
         e.preventDefault();
         var $itemsEnd = getFocusableItems();
         if ($itemsEnd.length) $itemsEnd.eq($itemsEnd.length - 1).focus();
       } else if (key === "Enter" || key === " ") {
-        // Activate selection via label click
         e.preventDefault();
         $(this).click();
-        // Ensure color update when selecting via keyboard
-        var labelText = $(this).text().trim();
-        var $insuranceText = $("#insurance-text");
-        if ($insuranceText.length && labelText !== "Insurance carrier") {
-          $insuranceText.css("color", "#191918");
-          $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-            "color",
-            "#191918"
-          );
-          var insuranceTextElement = document.getElementById("insurance-text");
-          if (insuranceTextElement) {
-            insuranceTextElement.style.color = "#191918";
-          }
-        }
-        // Optionally close after selection; keep open for multi-select lists
-        // Close for any single-select radio menu (insurance and primary concern)
-        var isRadioMenu = $dropdown.find('input[type="radio"]').length > 0;
-        if (isRadioMenu) {
-          setTimeout(function () {
-            closeDropdown(true);
-          }, 0);
+        var $radio = $(this).find('input[type="radio"]');
+        if ($radio.length) {
+          closeDropdown(true);
         }
       } else if (key === "Escape") {
         e.preventDefault();
@@ -1331,12 +1290,9 @@ $(document).ready(function () {
       }
     });
 
-    // When dropdown opens via mouse, ensure first Tab goes into list
     $toggle.on("click", function () {
       setTimeout(function () {
         if ($toggle.attr("aria-expanded") === "true") {
-          // Do not steal focus if user used mouse and already focused something
-          // Only move focus if nothing inside has focus
           if (!$list.find(":focus").length) {
             focusFirstItem();
           }
@@ -1345,179 +1301,224 @@ $(document).ready(function () {
     });
   }
 
-  // Apply to insurance and primary concern dropdowns
-  setupDropdownA11y("#insurance_filter");
-  // Primary concern: target the visible toggle role button (multiple selectors to be safe)
-  setupDropdownA11y(
-    ".provider-filter_dopdown.specialty .provider-filter_dopdown-toggle"
-  );
-  setupDropdownA11y(".provider-filter_dopdown.specialty .w-dropdown-toggle");
-  setupDropdownA11y("#w-dropdown-toggle-0");
+  function setupDropdownA11y($widget) {
+    var selectors = [
+      "#insurance_filter",
+      ".provider-filter_dopdown.specialty .provider-filter_dopdown-toggle",
+      ".provider-filter_dopdown.specialty .w-dropdown-toggle",
+      "#w-dropdown-toggle-0",
+    ];
 
-  $(".filter-list_input-group").on("click", function (e) {
-    // Allow the default click behavior to occur
-    e.preventDefault();
-
-    const checkbox = $(this).find('input[type="checkbox"]');
-    const checkboxDiv = $(this).find(".w-checkbox-input");
-
-    // Toggle the checkbox checked state
-    const isChecked = !checkbox.prop("checked");
-    checkbox.prop("checked", isChecked);
-
-    // Toggle the custom class for styling
-    if (isChecked) {
-      checkboxDiv.addClass("w--redirected-checked");
-    } else {
-      checkboxDiv.removeClass("w--redirected-checked");
+    for (var i = 0; i < selectors.length; i++) {
+      $widget.find(selectors[i]).each(function () {
+        setupToggleA11y($(this));
+      });
     }
-
-    // Trigger the change event to apply the filter logic
-    checkbox.trigger("change");
-  });
-
-  // Speciality dropdown logic
-  $('.filter-list_component input[type="checkbox"]').change(function (e) {
-    var selectedItems = [];
-    // Gather all checked checkboxes
-    $('.filter-list_component input[type="checkbox"]:checked').each(
-      function () {
-        var label = $(this).closest("label").text().trim(); // Get the text from the label wrapping the checkbox
-        selectedItems.push(label);
-      }
-    );
-
-    specialties = selectedItems;
-    updateCTAUrl();
-
-    // Update the text inside #concern-text based on the selection
-    var fullText = selectedItems.join(", ");
-    var $specialtyFilter = $("#specialty_filter");
-    var maxWidth = $specialtyFilter.width();
-    var truncatedText = truncateText(fullText, maxWidth);
-
-    var finalText = truncatedText === "" ? "Primary concern" : truncatedText;
-    $("#concern-text").text(finalText);
-
-    // Update text color to #191918 when text is changed from default
-    if (finalText !== "Primary concern") {
-      $("#concern-text").css("color", "#191918");
-    }
-
-    var text = "(" + selectedItems.length + ")";
-    var $labelTotal = $(".drop-label-total");
-    thisDropdown = $(this).closest(".provider-filter_dropdown");
-
-    $labelTotal.text(text);
-    $labelTotal.toggle(selectedItems.length > 0);
-
-    thisDropdown
-      .siblings(".provider-filter_dopdown-toggle")
-      .find(".drop-label-total")
-      .text(text);
-    thisDropdown
-      .siblings(".provider-filter_dopdown-toggle")
-      .find(".drop-label-total");
-  });
-
-  function updateSpecialityPlaceholder() {
-    var selectedItems = [];
-    // Gather all checked checkboxes
-    $('.filter-list_component input[type="checkbox"]:checked').each(
-      function () {
-        var label = $(this).closest("label").text().trim(); // Get the text from the label wrapping the checkbox
-        selectedItems.push(label);
-      }
-    );
-
-    specialties = selectedItems;
-    updateCTAUrl();
-
-    // Update the text inside #concern-text based on the selection
-    var fullText = selectedItems.join(", ");
-    var $specialtyFilter = $("#specialty_filter");
-    var maxWidth = $specialtyFilter.width();
-    var truncatedText = truncateText(fullText, maxWidth);
-
-    var finalText = truncatedText === "" ? "Primary concern" : truncatedText;
-    $("#concern-text").text(finalText);
-
-    // Update text color to #191918 when text is changed from default
-    if (finalText !== "Primary concern") {
-      $("#concern-text").css("color", "#191918");
-    }
-
-    var text = "(" + selectedItems.length + ")";
-    var $labelTotal = $(".drop-label-total");
-    thisDropdown = $(this).closest(".provider-filter_dropdown");
-
-    $labelTotal.text(text);
-    $labelTotal.toggle(selectedItems.length > 0);
-
-    thisDropdown
-      .siblings(".provider-filter_dopdown-toggle")
-      .find(".drop-label-total")
-      .text(text);
-    thisDropdown
-      .siblings(".provider-filter_dopdown-toggle")
-      .find(".drop-label-total");
   }
 
-  updateSpecialityPlaceholder();
+  function applyPrefills($widget) {
+    var state = getWidgetState($widget);
 
-  // Function to truncate text based on the width of the #specialty_filter div
-  function truncateText(text, maxWidth) {
-    var truncatedText = text;
-    var ellipsis = "...";
+    if (
+      typeof stateFilter !== "undefined" &&
+      stateFilter !== null &&
+      !state.state
+    ) {
+      if (!selectRadioByValue($widget, "States", stateFilter)) {
+        state.state = stateFilter;
+        updateStateLabel($widget, state.state);
+      }
+    }
 
-    // Create a temporary element to measure text width
-    var $tempElement = $("<span>").css({
-      position: "absolute",
-      visibility: "hidden",
-      whiteSpace: "nowrap",
+    if (
+      typeof insFilter !== "undefined" &&
+      insFilter !== null &&
+      !state.insurance
+    ) {
+      if (!selectRadioByValue($widget, "Insurance", insFilter)) {
+        state.insurance = insFilter;
+        updateInsuranceLabel($widget, state.insurance);
+      }
+    }
+
+    var insuranceParam = getQueryParam("insurance");
+    if (insuranceParam) {
+      selectRadioByValue($widget, "Insurance", insuranceParam);
+      state.insurance = getSelectedInsurance($widget) || state.insurance;
+    }
+  }
+
+  function initWidget($widget) {
+    if (!$widget || !$widget.length) return;
+    if ($widget.data("heroFilterInitialized")) return;
+    $widget.data("heroFilterInitialized", true);
+
+    var state = getWidgetState($widget);
+    state.insurance = state.insurance || getSelectedInsurance($widget);
+    state.state = state.state || getSelectedState($widget);
+    state.specialties = getSelectedSpecialties($widget);
+
+    updateWidgetDisplay($widget);
+    applyPrefills($widget);
+
+    state.insurance = getSelectedInsurance($widget) || state.insurance;
+    state.state = getSelectedState($widget) || state.state;
+    state.specialties = getSelectedSpecialties($widget);
+
+    updateWidgetDisplay($widget);
+
+    $widget.on("click", ".filter-list_label", function () {
+      var $radio = $(this).siblings(".radio-hide");
+      if ($radio.length) {
+        $radio.trigger("click");
+      }
     });
 
-    $("body").append($tempElement);
-    var textWidth = $tempElement.text(text).width();
-
-    // Check if the text width exceeds the maxWidth
-    if (textWidth > maxWidth) {
-      var ellipsisWidth = $tempElement.text(ellipsis).width();
-      while (textWidth + ellipsisWidth > maxWidth && truncatedText.length > 0) {
-        truncatedText = truncatedText.slice(0, -1);
-        textWidth = $tempElement.text(truncatedText).width();
+    $widget.on(
+      "change",
+      'input[type="radio"][data-name="States"]',
+      function () {
+        var value = $(this).val();
+        state.state = value || null;
+        updateStateLabel($widget, state.state);
+        updateWidgetCTA($widget);
+        closeDropdownForElement($(this));
       }
-      truncatedText += ellipsis; // Add ellipsis only if truncation happened
-    }
+    );
 
-    $tempElement.remove(); // Clean up the temporary element
+    $widget.on(
+      "change",
+      'input[type="radio"][data-name="Insurance"]',
+      function () {
+        var value = $(this).val();
+        state.insurance = value || null;
+        updateInsuranceLabel($widget, state.insurance);
+        updateWidgetCTA($widget);
+        closeDropdownForElement($(this));
+      }
+    );
 
-    return truncatedText;
+    $widget.on("click", ".filter-list_input-group", function (e) {
+      e.preventDefault();
+      var $checkbox = $(this).find('input[type="checkbox"]');
+      var $box = $(this).find(".w-checkbox-input");
+      if (!$checkbox.length || !$box.length) return;
+
+      var isChecked = !$checkbox.prop("checked");
+      $checkbox.prop("checked", isChecked);
+      $box.toggleClass("w--redirected-checked", isChecked);
+      $checkbox.trigger("change");
+    });
+
+    $widget.on(
+      "change",
+      '.filter-list_component input[type="checkbox"]',
+      function () {
+        state.specialties = getSelectedSpecialties($widget);
+        updateSpecialtyLabel($widget, state.specialties);
+        updateWidgetCTA($widget);
+      }
+    );
+
+    $widget.on("input", "#first-name, #last-name", function () {
+      updateWidgetCTA($widget);
+    });
+
+    bindDobHandlers($widget);
+    setupDropdownA11y($widget);
+
+    $widget.on("click", ".provider-filter_close-box", function () {
+      var $dropdown = $(this).closest(
+        ".provider-filter_dropdown, .provider-filter_dopdown, .w-dropdown"
+      );
+      var $list = $dropdown.find("#dropdown-list-1").first();
+      if (!$list.length) {
+        $list = $widget.find("#dropdown-list-1").first();
+      }
+      if ($list.length) {
+        if ($list.hasClass("open")) {
+          $list.removeClass("open");
+          $(this).attr("aria-expanded", "false");
+        } else {
+          $list.addClass("open");
+          $(this).attr("aria-expanded", "true");
+        }
+      }
+    });
+
+    updateWidgetCTA($widget);
   }
-});
 
-$(document).ready(function () {
-  $(".provider-filter_close-box").click(function () {
-    var $dropdownList = $("#dropdown-list-1");
-    if ($dropdownList.hasClass("open")) {
-      $dropdownList.removeClass("open");
-      $(this).attr("aria-expanded", "false");
-    } else {
-      $dropdownList.addClass("open");
-      $(this).attr("aria-expanded", "true");
-    }
-  });
-
-  // Close the dropdown when clicking outside
-  $(document).click(function (event) {
-    if (
-      !$(event.target).closest("#state_filter").length &&
-      !$(event.target).closest("#dropdown-list-1").length
-    ) {
-      if ($("#dropdown-list-1").hasClass("open")) {
-        $("#dropdown-list-1").removeClass("open");
-        $("#state_filter").attr("aria-expanded", "false");
+  $(document).on(
+    "click.heroFilterClose",
+    ".w-button, .w-radio, .provider-filter_close-box",
+    function () {
+      $(".w-dropdown").trigger("w-close");
+      try {
+        var escapeEvent = new KeyboardEvent("keydown", {
+          key: "Escape",
+          keyCode: 27,
+          code: "Escape",
+          which: 27,
+          bubbles: true,
+          cancelable: true,
+        });
+        document.activeElement.dispatchEvent(escapeEvent);
+      } catch (e) {
+        // ignore keyboard dispatch issues
       }
     }
+  );
+
+  var $widgets = getAllWidgets();
+  $widgets.each(function (index) {
+    $(this).data("heroFilterInstance", index);
+    initWidget($(this));
   });
+
+  if ($widgets.length) {
+    $(document).on("click.heroFilterState", function (event) {
+      $widgets.each(function () {
+        var $widget = $(this);
+        var $toggle = $widget.find("#state_filter").first();
+        var $list = $widget.find("#dropdown-list-1").first();
+        if (!$toggle.length || !$list.length) return;
+
+        if (
+          $toggle.is(event.target) ||
+          $toggle.has(event.target).length ||
+          $list.is(event.target) ||
+          $list.has(event.target).length
+        ) {
+          return;
+        }
+
+        if ($list.hasClass("open")) {
+          $list.removeClass("open");
+          $toggle.attr("aria-expanded", "false");
+        }
+      });
+    });
+  }
+
+  setTimeout(function () {
+    $widgets.each(function () {
+      updateWidgetCTA($(this));
+    });
+  }, 100);
+
+  fetchPayersData()
+    .then(function () {
+      dataReady = true;
+      $widgets.each(function () {
+        updateWidgetCTA($(this));
+      });
+    })
+    .catch(function (error) {
+      console.error("Error loading provider search payers:", error);
+      dataReady = true;
+      $widgets.each(function () {
+        updateWidgetCTA($(this));
+      });
+    });
 });

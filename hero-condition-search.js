@@ -749,6 +749,49 @@ $(function () {
     document.head.appendChild(style);
   }
 
+  function ensurePlacesOverlay() {
+    var overlay = document.getElementById("nourish-places-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "nourish-places-overlay";
+      overlay.style.cssText =
+        "position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;" +
+        "background:transparent;display:none;pointer-events:auto;";
+
+      overlay.addEventListener(
+        "mousedown",
+        function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        true
+      );
+      overlay.addEventListener(
+        "click",
+        function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        true
+      );
+
+      document.body.appendChild(overlay);
+    }
+    return overlay;
+  }
+
+  function showPlacesOverlay() {
+    var overlay = ensurePlacesOverlay();
+    overlay.style.display = "block";
+  }
+
+  function hidePlacesOverlay() {
+    var overlay = document.getElementById("nourish-places-overlay");
+    if (overlay) {
+      overlay.style.display = "none";
+    }
+  }
+
   function attachPlacesAutocomplete($widget) {
     var widgetState = getWidgetState($widget);
     if (widgetState.placesAttached) return;
@@ -777,6 +820,7 @@ $(function () {
     try {
       ensurePlacesStyle();
       inputEl.setAttribute("autocomplete", "off");
+      ensurePlacesOverlay();
 
       var autocomplete = new google.maps.places.Autocomplete(inputEl, {
         fields: ["address_components", "formatted_address", "name"],
@@ -823,12 +867,21 @@ $(function () {
         }
 
         updateWidgetCTA($widget);
+        hidePlacesOverlay();
       });
 
       google.maps.event.addDomListener(inputEl, "keydown", function (e) {
         if (e.keyCode === 13) {
           e.preventDefault();
         }
+      });
+
+      inputEl.addEventListener("focus", function () {
+        showPlacesOverlay();
+      });
+
+      inputEl.addEventListener("blur", function () {
+        setTimeout(hidePlacesOverlay, 200);
       });
 
       widgetState.placesAttached = true;
