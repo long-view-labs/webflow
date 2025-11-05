@@ -215,7 +215,10 @@ $(".menu_slug").each(function () {
         normalizedKey.startsWith("utm_")
       ) {
         params[normalizedKey] = value;
-        if (!SUPPORTED_PARAMS.has(normalizedKey) && normalizedKey.startsWith("utm_")) {
+        if (
+          !SUPPORTED_PARAMS.has(normalizedKey) &&
+          normalizedKey.startsWith("utm_")
+        ) {
           SUPPORTED_PARAMS.add(normalizedKey);
           window.NOURISH_UTM_PARAMS = Array.from(SUPPORTED_PARAMS);
         }
@@ -664,7 +667,10 @@ function nourishBasePageProps() {
 function nourishQueueViewedPageEvent() {
   var pageProps = nourishMergeUtmsIntoProps(nourishBasePageProps());
 
-  if (window.rudderanalytics && typeof window.rudderanalytics.track === "function") {
+  if (
+    window.rudderanalytics &&
+    typeof window.rudderanalytics.track === "function"
+  ) {
     window.rudderanalytics.track("Viewed Page", pageProps);
   } else if (window.rudderanalytics && Array.isArray(window.rudderanalytics)) {
     window.rudderanalytics.push(["track", "Viewed Page", pageProps]);
@@ -675,7 +681,10 @@ function nourishQueueViewedPageEvent() {
   if (window.__nourishViewedPageQueued) return;
   window.__nourishViewedPageQueued = true;
 
-  if (document.readyState === "complete" || document.readyState === "interactive") {
+  if (
+    document.readyState === "complete" ||
+    document.readyState === "interactive"
+  ) {
     setTimeout(nourishQueueViewedPageEvent, 0);
   } else {
     document.addEventListener("DOMContentLoaded", function () {
@@ -724,6 +733,7 @@ function nourishQueueViewedPageEvent() {
     if (path.indexOf("/insurance-dietitians") === 0)
       return "insurance-dietitians";
     if (path.indexOf("/paid") === 0) return "Paid_Homepage";
+    if (path.indexOf("/quiz-a") === 0) return "quiz";
     if (path.indexOf("/does-my-insurance-cover-nutrition") === 0)
       return "Am_I_Covered";
     return null;

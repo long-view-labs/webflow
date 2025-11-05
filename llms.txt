@@ -1,0 +1,21 @@
+# llms.txt - AI Crawler Access Policy for usenourish.com
+# Last updated: 2025-11-03
+# This file defines how AI systems may access and use content from usenourish.com.
+
+User-Agent: *
+Allow: /
+Training: allow
+Inference: allow
+Cache-delay: 86400        # 24 hours
+Cache-expire: 2592000     # 30 days
+Crawl-delay: 5
+
+#########################################
+# Notes
+#########################################
+# - All pages are accessible to AI crawlers.
+# - Both training and inference are allowed.
+# - Cache and crawl timing parameters guide responsible access.
+# - Intended for GPTBot, ClaudeBot, PerplexityBot, Gemini, and other compliant LLM crawlers.
+
+Sitemap: https://www.usenourish.com/sitemap.xml

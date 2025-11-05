@@ -8,6 +8,7 @@
   // optional caching
   const CACHE_KEY = `gh_schema_${JOB_ID}`;
   const TTL = 6 * 60 * 60 * 1e3; // 6h
+  const STORAGE_KEY = `dietitian_application_${JOB_ID}`;
 
   // match your Webflow input look
   const INPUT_CLASSES = ["provider-filter_input", "hero", "no-icon", "w-input"];
@@ -206,6 +207,9 @@
       input.value = "";
       input.setCustomValidity("");
       render();
+      shell.dispatchEvent(
+        new CustomEvent("tagpickerchange", { bubbles: true })
+      );
     };
 
     const remove = (v) => {
@@ -224,6 +228,9 @@
       render();
       if (required && selected.size === 0)
         input.setCustomValidity("Please select at least one option.");
+      shell.dispatchEvent(
+        new CustomEvent("tagpickerchange", { bubbles: true })
+      );
     };
 
     input.addEventListener("focus", render);
@@ -235,6 +242,7 @@
 
     shell.append(input, hidden, pop);
     shell.getSelectedCount = () => selected.size;
+    shell.dataset.fieldName = name;
     shell.checkValidity = () => {
       if (required && selected.size === 0) {
         input.setCustomValidity("Please select at least one option.");
@@ -243,6 +251,17 @@
       }
       input.setCustomValidity("");
       return true;
+    };
+    shell.getSelectedValues = () => Array.from(selected.keys());
+    shell.setSelectedValues = (values = []) => {
+      const desired = new Set(values.map((v) => String(v)));
+      [...selected.keys()].forEach((v) => {
+        if (!desired.has(v)) remove(v);
+      });
+      values.forEach((v) => {
+        const match = options.find((o) => String(o.value) === String(v));
+        if (match) add(String(match.value), match.label);
+      });
     };
     return shell;
   }
@@ -432,6 +451,137 @@
         label: v.label,
       }));
       return tagPicker(field.name, opts, required);
+    }
+  }
+
+  let isRestoringFromStorage = false;
+
+  function getStorage() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        return window.localStorage;
+      }
+    } catch (err) {
+      console.warn("localStorage unavailable", err);
+    }
+    return null;
+  }
+
+  function saveFormData(form) {
+    if (isRestoringFromStorage) return;
+    const storage = getStorage();
+    if (!storage) return;
+    const grouped = {};
+    Array.from(form.elements).forEach((el) => {
+      if (!el.name || el.disabled || el.type === "file") return;
+      const name = el.name;
+      if (!grouped[name]) grouped[name] = [];
+      grouped[name].push(el);
+    });
+
+    const payload = { fields: {} };
+    Object.entries(grouped).forEach(([name, elements]) => {
+      const first = elements[0];
+      if (elements.every((el) => el.type === "hidden")) {
+        const vals = elements.map((el) => el.value).filter((v) => v !== "");
+        payload.fields[name] = vals;
+      } else if (first.type === "checkbox") {
+        const vals = elements
+          .filter((el) => el.checked)
+          .map((el) => el.value);
+        payload.fields[name] = vals;
+      } else if (first.type === "radio") {
+        const checked = elements.find((el) => el.checked);
+        if (checked) payload.fields[name] = checked.value;
+      } else if (first.tagName === "SELECT" && first.multiple) {
+        payload.fields[name] = Array.from(first.selectedOptions).map(
+          (opt) => opt.value
+        );
+      } else {
+        payload.fields[name] = first.value;
+      }
+    });
+
+    try {
+      storage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.warn("Unable to persist form data", err);
+    }
+  }
+
+  function restoreFormData(form) {
+    const storage = getStorage();
+    if (!storage) return;
+    const raw = storage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      console.warn("Unable to parse saved form data", err);
+      return;
+    }
+    const fields = parsed?.fields;
+    if (!fields) return;
+
+    isRestoringFromStorage = true;
+    try {
+      Object.entries(fields).forEach(([name, value]) => {
+        const inputs = form.querySelectorAll(`[name="${CSS.escape(name)}"]`);
+        if (!inputs.length) return;
+        const first = inputs[0];
+        if (inputs.length > 1 && first.type === "checkbox") {
+          const vals = Array.isArray(value) ? value : [value];
+          inputs.forEach((input) => {
+            input.checked = vals.includes(input.value);
+          });
+          return;
+        }
+        if (inputs.length > 1 && first.type === "radio") {
+          inputs.forEach((input) => {
+            input.checked = input.value === value;
+          });
+          return;
+        }
+        if (first.tagName === "SELECT") {
+          if (first.multiple && Array.isArray(value)) {
+            Array.from(first.options).forEach((opt) => {
+              opt.selected = value.includes(opt.value);
+            });
+          } else if (typeof value === "string") {
+            first.value = value;
+          }
+          return;
+        }
+        if (first.type === "hidden") {
+          return;
+        }
+        if (typeof first.value === "string" && typeof value === "string") {
+          first.value = value;
+        }
+      });
+
+      form.querySelectorAll(".tagpicker").forEach((picker) => {
+        const hiddenInput = picker.querySelector('input[type="hidden"]');
+        const name = picker.dataset.fieldName || hiddenInput?.name;
+        if (!name) return;
+        const saved = fields[name];
+        if (!saved) return;
+        const values = Array.isArray(saved) ? saved : [saved];
+        if (picker.setSelectedValues) picker.setSelectedValues(values);
+      });
+    } finally {
+      isRestoringFromStorage = false;
+    }
+  }
+
+  function clearSavedFormData() {
+    const storage = getStorage();
+    if (!storage) return;
+    try {
+      storage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.warn("Unable to clear saved form data", err);
     }
   }
 
@@ -704,6 +854,7 @@
         if (resp.ok) {
           // Application submitted successfully - track event then redirect
           console.log("Application submitted successfully:", JSON.parse(text));
+          clearSavedFormData();
 
           const submittedEmail =
             form.querySelector('input[name="email"]')?.value?.trim() || "";
@@ -775,13 +926,14 @@
       });
 
       // Track Application Completed on any field change
-      input.addEventListener("input", () => {
+      const handleValueChange = () => {
         checkApplicationCompleted(form);
-      });
+        saveFormData(form);
+      };
 
-      input.addEventListener("change", () => {
-        checkApplicationCompleted(form);
-      });
+      input.addEventListener("input", handleValueChange);
+
+      input.addEventListener("change", handleValueChange);
     });
 
     // Special handling for resume upload
@@ -805,16 +957,19 @@
         });
       }
 
-      // Listen for changes in tag picker selections
-      const observer = new MutationObserver(() => {
-        checkApplicationCompleted(form);
+      tagPicker.addEventListener("tagpickerchange", () => {
+        if (!isRestoringFromStorage) {
+          checkApplicationCompleted(form);
+        }
+        saveFormData(form);
       });
-      observer.observe(tagPicker, { childList: true, subtree: true });
     });
 
     const mount = document.getElementById("gh-app");
     mount.innerHTML = "";
     mount.appendChild(form);
+
+    restoreFormData(form);
   }
 
   // ---------- UTM CAPTURE ----------
