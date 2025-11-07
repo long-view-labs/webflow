@@ -124,7 +124,7 @@ $(".menu_slug").each(function () {
  * Comprehensive UTM parameter tracking system
  * - Tracks UTM parameters across page navigation within 30-minute sessions
  * - Sets cookies for backward compatibility
- * - Automatically injects UTM parameters into outbound signup links and iframes
+ * - Automatically injects UTM parameters into all outbound links and signup iframes
  * - Clears old UTMs when coming from external referrers
  * - Supports all tracking parameters (utm_*, gclid, fbclid, msclkid, ttclid, im_ref)
  */
@@ -308,8 +308,22 @@ $(".menu_slug").each(function () {
    */
   function applyParamsToLink(link, params) {
     try {
+      const rawHref = link.getAttribute("href");
+      if (!rawHref) return;
+
+      const href = rawHref.trim();
+      if (
+        href === "" ||
+        href.startsWith("#") ||
+        /^javascript:/i.test(href) ||
+        /^mailto:/i.test(href) ||
+        /^tel:/i.test(href)
+      ) {
+        return;
+      }
+
       const u = new URL(link.href, location.origin);
-      if (u.host !== TARGET_HOST) return;
+      if (u.protocol !== "http:" && u.protocol !== "https:") return;
 
       // Don't overwrite if the link already has that param
       for (const [k, v] of Object.entries(params)) {
