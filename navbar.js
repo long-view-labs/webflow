@@ -386,8 +386,13 @@ function animateMenu(clickClass, animateClass) {
   $(".nav_container-2").on("click", function (event) {
     // Check if the mobile menu is open
     if ($(".w-nav-overlay").css("display") === "block") {
-      event.preventDefault();
-      event.stopPropagation();
+      const isNavCTA = $(event.target).closest(
+        ".mobile-nav-getstarted, .button-12.mobile-nav"
+      ).length;
+      if (!isNavCTA) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
     }
   });
 
