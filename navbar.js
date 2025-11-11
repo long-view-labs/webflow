@@ -364,7 +364,9 @@ $(".w-nav-button").on("click", function () {
 });
 
 function animateMenu(clickClass, animateClass) {
-  $(clickClass).on("click", function () {
+  $(clickClass).on("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
     // Toggle the 'active' class
     $(animateClass).toggleClass("active");
     $(".logo").hide();
@@ -381,19 +383,6 @@ function animateMenu(clickClass, animateClass) {
       { x: "100%" },
       { x: "0%", duration: 0.4, ease: "power2.out" }
     );
-  });
-
-  $(".nav_container-2").on("click", function (event) {
-    // Check if the mobile menu is open
-    if ($(".w-nav-overlay").css("display") === "block") {
-      const isNavCTA = $(event.target).closest(
-        ".mobile-nav-getstarted, .button-12.mobile-nav"
-      ).length;
-      if (!isNavCTA) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
   });
 
   // Back link click
