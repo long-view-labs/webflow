@@ -33,6 +33,12 @@ var greenhouse_worker_default = {
         json({ ok: false, message, ...(extra ? { extra } : {}) }, status),
       "fail"
     );
+    const logEvent = /* @__PURE__ */ __name((level, message, data) => {
+      try {
+        const payload = data ? JSON.stringify(data) : "";
+        console[level || "log"]?.(`[leads] ${message}${payload ? ` ${payload}` : ""}`);
+      } catch {}
+    }, "logEvent");
     try {
       const url = new URL(req.url);
       // Webhook endpoint for Greenhouse → verifies secret and patches UTM fields
@@ -182,6 +188,15 @@ var greenhouse_worker_default = {
           !env.AIRTABLE_BASE_ID ||
           !env.AIRTABLE_TABLE_NAME
         ) {
+          logEvent(
+            "error",
+            "Airtable configuration missing",
+            {
+              hasToken: Boolean(env.AIRTABLE_TOKEN),
+              hasBase: Boolean(env.AIRTABLE_BASE_ID),
+              hasTable: Boolean(env.AIRTABLE_TABLE_NAME),
+            }
+          );
           return fail("Airtable configuration missing", 500);
         }
         const body = await req.json().catch(() => ({}));
@@ -236,6 +251,11 @@ var greenhouse_worker_default = {
           });
           if (!lookResp.ok) {
             const errTxt = await lookResp.text();
+            logEvent("error", "Airtable lookup failed", {
+              status: lookResp.status,
+              filterFormula,
+              response: errTxt?.slice(0, 500),
+            });
             return fail("Airtable lookup failed", lookResp.status, errTxt);
           }
           const lookupJson = await lookResp.json().catch(() => ({}));
@@ -286,9 +306,21 @@ var greenhouse_worker_default = {
         }
         if (!apiResp.ok) {
           const txt = await apiResp.text();
+          logEvent("error", "Airtable write failed", {
+            status: apiResp.status,
+            recordId,
+            fields,
+            response: txt?.slice(0, 500),
+          });
           return fail("Airtable write failed", apiResp.status, txt);
         }
         const result = await apiResp.json().catch(() => ({}));
+        logEvent("log", "Airtable lead synced", {
+          action: recordId ? "updated" : "created",
+          recordId: result.id || recordId || null,
+          status,
+          email: rawEmail || undefined,
+        });
         return json({
           ok: true,
           action: recordId ? "updated" : "created",

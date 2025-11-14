@@ -597,6 +597,9 @@
   const leadSyncState = {
     inProgressTimer: null,
     lastSignature: {},
+    inProgressInFlight: false,
+    inProgressNeedsRun: false,
+    pendingForm: null,
   };
 
   function getLeadPayload(form) {
@@ -658,12 +661,33 @@
     if (!payload || (!payload.email && !payload.phone)) {
       clearTimeout(leadSyncState.inProgressTimer);
       leadSyncState.inProgressTimer = null;
+      leadSyncState.pendingForm = null;
       return;
     }
+    leadSyncState.pendingForm = form;
     clearTimeout(leadSyncState.inProgressTimer);
     leadSyncState.inProgressTimer = setTimeout(() => {
-      syncLeadStatus(form, LEAD_STATUS.IN_PROGRESS);
+      leadSyncState.inProgressTimer = null;
+      triggerQueuedLeadSync();
     }, 400);
+  }
+
+  function triggerQueuedLeadSync() {
+    if (leadSyncState.inProgressInFlight) {
+      leadSyncState.inProgressNeedsRun = true;
+      return;
+    }
+    if (!leadSyncState.pendingForm) return;
+    leadSyncState.inProgressInFlight = true;
+    syncLeadStatus(leadSyncState.pendingForm, LEAD_STATUS.IN_PROGRESS)
+      .catch(() => {})
+      .finally(() => {
+        leadSyncState.inProgressInFlight = false;
+        if (leadSyncState.inProgressNeedsRun) {
+          leadSyncState.inProgressNeedsRun = false;
+          triggerQueuedLeadSync();
+        }
+      });
   }
 
   async function syncLeadStatus(form, status) {
