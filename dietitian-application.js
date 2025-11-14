@@ -628,11 +628,22 @@
       if (anyNameInput) name = anyNameInput.value.trim();
     }
 
-    const email =
+    const rawEmail =
       form.querySelector('input[name="email"]')?.value?.trim().toLowerCase() ||
       "";
-    const phone = form.querySelector('input[name="phone"]')?.value?.trim() ||
+    const email =
+      rawEmail &&
+      !hasInvalidEmailChars(rawEmail) &&
+      validateEmail(rawEmail)
+        ? rawEmail
+        : "";
+
+    const rawPhone = form.querySelector('input[name="phone"]')?.value?.trim() ||
       "";
+    const phone =
+      rawPhone && validateUSPhone(rawPhone)
+        ? rawPhone
+        : "";
 
     return {
       name: name || undefined,
@@ -643,6 +654,12 @@
 
   function queueLeadSyncInProgress(form) {
     if (!form || !LEAD_ENDPOINT) return;
+    const payload = getLeadPayload(form);
+    if (!payload || (!payload.email && !payload.phone)) {
+      clearTimeout(leadSyncState.inProgressTimer);
+      leadSyncState.inProgressTimer = null;
+      return;
+    }
     clearTimeout(leadSyncState.inProgressTimer);
     leadSyncState.inProgressTimer = setTimeout(() => {
       syncLeadStatus(form, LEAD_STATUS.IN_PROGRESS);
