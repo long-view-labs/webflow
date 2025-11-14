@@ -66,6 +66,10 @@
     return emailRegex.test(email.trim());
   }
 
+  function hasInvalidEmailChars(email) {
+    return /[\s/]/.test(email);
+  }
+
   /**
    * Formats a phone number to +15555555555 -- E.164 format https://www.twilio.com/docs/glossary/what-e164
    */
@@ -817,7 +821,12 @@
     if (emailInput) {
       emailInput.addEventListener("blur", function () {
         if (this.value.trim()) {
-          if (!validateEmail(this.value)) {
+          if (hasInvalidEmailChars(this.value)) {
+            showValidationError(
+              this,
+              'Email addresses cannot include spaces or "/" characters'
+            );
+          } else if (!validateEmail(this.value)) {
             showValidationError(this, "Please enter a valid email address");
           } else {
             clearValidationError(this);
@@ -829,7 +838,17 @@
 
       emailInput.addEventListener("input", function () {
         // Clear error on input to give immediate feedback when they start typing correctly
-        if (this.value.trim() && validateEmail(this.value)) {
+        const trimmed = this.value.trim();
+        if (trimmed && hasInvalidEmailChars(trimmed)) {
+          showValidationError(
+            this,
+            'Email addresses cannot include spaces or "/" characters'
+          );
+          return;
+        }
+        if (trimmed && validateEmail(trimmed)) {
+          clearValidationError(this);
+        } else if (!trimmed) {
           clearValidationError(this);
         }
       });
