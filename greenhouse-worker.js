@@ -176,6 +176,125 @@ var greenhouse_worker_default = {
           patched,
         });
       }
+      if (url.pathname === "/leads") {
+        if (
+          !env.AIRTABLE_TOKEN ||
+          !env.AIRTABLE_BASE_ID ||
+          !env.AIRTABLE_TABLE_NAME
+        ) {
+          return fail("Airtable configuration missing", 500);
+        }
+        const body = await req.json().catch(() => ({}));
+        const rawName = String(body.name || "").trim();
+        const rawEmail = String(body.email || "").trim().toLowerCase();
+        const rawPhone = String(body.phone || "").trim();
+        const rawStatus = String(body.status || "").trim();
+        const allowedStatuses = new Set([
+          "In progress",
+          "Application Submitted",
+        ]);
+        const status = allowedStatuses.has(rawStatus)
+          ? rawStatus
+          : "In progress";
+        if (!rawEmail && !rawPhone)
+          return fail("Email or phone required for lead tracking");
+
+        const normalizedPhone = rawPhone.replace(/\D/g, "");
+        const escapeFormulaValue = (val = "") => val.replace(/'/g, "''");
+        const filters = [];
+        if (rawEmail) {
+          filters.push(
+            `LOWER({Email})='${escapeFormulaValue(rawEmail.toLowerCase())}'`
+          );
+        }
+        if (normalizedPhone) {
+          filters.push(
+            `REGEX_REPLACE({Phone}, '[^0-9]', '')='${escapeFormulaValue(
+              normalizedPhone
+            )}'`
+          );
+        }
+
+        let recordId = null;
+        let existingStatus = "";
+        if (filters.length > 0) {
+          const filterFormula =
+            filters.length === 1
+              ? filters[0]
+              : `OR(${filters.join(",")})`;
+          const searchUrl = new URL(
+            `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${encodeURIComponent(
+              env.AIRTABLE_TABLE_NAME
+            )}`
+          );
+          searchUrl.searchParams.set("filterByFormula", filterFormula);
+          searchUrl.searchParams.set("maxRecords", "1");
+          const lookResp = await fetch(searchUrl, {
+            headers: {
+              Authorization: `Bearer ${env.AIRTABLE_TOKEN}`,
+            },
+          });
+          if (!lookResp.ok) {
+            const errTxt = await lookResp.text();
+            return fail("Airtable lookup failed", lookResp.status, errTxt);
+          }
+          const lookupJson = await lookResp.json().catch(() => ({}));
+          const firstRecord = Array.isArray(lookupJson.records)
+            ? lookupJson.records[0]
+            : null;
+          if (firstRecord) {
+            recordId = firstRecord.id;
+            existingStatus = String(firstRecord.fields?.Status || "");
+          }
+        }
+
+        const fields = {};
+        if (rawName) fields["Name"] = rawName;
+        if (rawEmail) fields["Email"] = rawEmail;
+        if (rawPhone) fields["Phone"] = rawPhone;
+        if (
+          status === "Application Submitted" ||
+          existingStatus !== "Application Submitted"
+        ) {
+          fields["Status"] = status;
+        }
+
+        if (Object.keys(fields).length === 0) {
+          return json({ ok: true, skipped: true, reason: "No fields to sync" });
+        }
+
+        const airtableUrlBase = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${encodeURIComponent(
+          env.AIRTABLE_TABLE_NAME
+        )}`;
+        const headers = {
+          Authorization: `Bearer ${env.AIRTABLE_TOKEN}`,
+          "Content-Type": "application/json",
+        };
+        let apiResp;
+        if (recordId) {
+          apiResp = await fetch(`${airtableUrlBase}/${recordId}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ fields }),
+          });
+        } else {
+          apiResp = await fetch(airtableUrlBase, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ fields }),
+          });
+        }
+        if (!apiResp.ok) {
+          const txt = await apiResp.text();
+          return fail("Airtable write failed", apiResp.status, txt);
+        }
+        const result = await apiResp.json().catch(() => ({}));
+        return json({
+          ok: true,
+          action: recordId ? "updated" : "created",
+          recordId: result.id || recordId || null,
+        });
+      }
       if (url.pathname === "/patchByAppId") {
         const body = await req.json().catch(() => ({}));
         const applicationId = String(body.applicationId || "").trim();

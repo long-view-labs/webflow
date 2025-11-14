@@ -9,6 +9,11 @@
   const CACHE_KEY = `gh_schema_${JOB_ID}`;
   const TTL = 6 * 60 * 60 * 1e3; // 6h
   const STORAGE_KEY = `dietitian_application_${JOB_ID}`;
+  const LEAD_ENDPOINT = `${PROXY}/leads`;
+  const LEAD_STATUS = {
+    IN_PROGRESS: "In progress",
+    SUBMITTED: "Application Submitted",
+  };
 
   // match your Webflow input look
   const INPUT_CLASSES = ["provider-filter_input", "hero", "no-icon", "w-input"];
@@ -585,6 +590,94 @@
     }
   }
 
+  const leadSyncState = {
+    inProgressTimer: null,
+    lastSignature: {},
+  };
+
+  function getLeadPayload(form) {
+    if (!form) return null;
+    const firstName =
+      form.querySelector('input[name="first_name"]')?.value?.trim() || "";
+    const lastName =
+      form.querySelector('input[name="last_name"]')?.value?.trim() || "";
+    let name = [firstName, lastName].filter(Boolean).join(" ").trim();
+    if (!name) {
+      const fallbackSelectors = [
+        'input[name="name"]',
+        'input[name="full_name"]',
+        'input[name="applicant_name"]',
+        'input[name="preferred_name"]',
+      ];
+      for (const selector of fallbackSelectors) {
+        const val = form.querySelector(selector)?.value?.trim();
+        if (val) {
+          name = val;
+          break;
+        }
+      }
+    }
+    if (!name) {
+      const anyNameInput = Array.from(form.querySelectorAll("input[name]"))
+        .filter((el) => /name/i.test(el.name || ""))
+        .find((el) => el.value?.trim());
+      if (anyNameInput) name = anyNameInput.value.trim();
+    }
+
+    const email =
+      form.querySelector('input[name="email"]')?.value?.trim().toLowerCase() ||
+      "";
+    const phone = form.querySelector('input[name="phone"]')?.value?.trim() ||
+      "";
+
+    return {
+      name: name || undefined,
+      email: email || undefined,
+      phone: phone || undefined,
+    };
+  }
+
+  function queueLeadSyncInProgress(form) {
+    if (!form || !LEAD_ENDPOINT) return;
+    clearTimeout(leadSyncState.inProgressTimer);
+    leadSyncState.inProgressTimer = setTimeout(() => {
+      syncLeadStatus(form, LEAD_STATUS.IN_PROGRESS);
+    }, 400);
+  }
+
+  async function syncLeadStatus(form, status) {
+    if (!form || !LEAD_ENDPOINT) return false;
+    const payload = getLeadPayload(form);
+    if (!payload) return false;
+    const body = { status };
+    if (payload.name) body.name = payload.name;
+    if (payload.email) body.email = payload.email;
+    if (payload.phone) body.phone = payload.phone;
+    if (!body.email && !body.phone) return false;
+
+    const signature = JSON.stringify(body);
+    if (leadSyncState.lastSignature[status] === signature) return false;
+
+    try {
+      const resp = await fetch(LEAD_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        keepalive: status === LEAD_STATUS.SUBMITTED,
+      });
+      if (!resp.ok) {
+        const errTxt = await resp.text().catch(() => "");
+        console.warn("Lead sync failed", errTxt || resp.status);
+        return false;
+      }
+      leadSyncState.lastSignature[status] = signature;
+      return true;
+    } catch (err) {
+      console.warn("Lead sync error", err);
+      return false;
+    }
+  }
+
   // ---------- BUILD FORM ----------
   function buildForm(schema) {
     const form = document.createElement("form");
@@ -767,6 +860,26 @@
       });
     });
 
+    const leadSyncInputs = [
+      'input[name="first_name"]',
+      'input[name="last_name"]',
+      'input[name="name"]',
+      'input[name="full_name"]',
+      'input[name="preferred_name"]',
+      'input[name="email"]',
+      'input[name="phone"]',
+    ]
+      .map((selector) => form.querySelector(selector))
+      .filter(Boolean);
+    if (leadSyncInputs.length) {
+      const handleLeadFieldChange = () => queueLeadSyncInProgress(form);
+      leadSyncInputs.forEach((input) => {
+        input.addEventListener("input", handleLeadFieldChange);
+        input.addEventListener("change", handleLeadFieldChange);
+        input.addEventListener("blur", handleLeadFieldChange);
+      });
+    }
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -855,6 +968,7 @@
           // Application submitted successfully - track event then redirect
           console.log("Application submitted successfully:", JSON.parse(text));
           clearSavedFormData();
+          await syncLeadStatus(form, LEAD_STATUS.SUBMITTED);
 
           const submittedEmail =
             form.querySelector('input[name="email"]')?.value?.trim() || "";
@@ -970,6 +1084,7 @@
     mount.appendChild(form);
 
     restoreFormData(form);
+    queueLeadSyncInProgress(form);
   }
 
   // ---------- UTM CAPTURE ----------
