@@ -14,6 +14,9 @@
     IN_PROGRESS: "In progress",
     SUBMITTED: "Application Submitted",
   };
+  const JOB_DETAILS_TITLE = "Learn more about being an RD at Nourish";
+  const JOB_DETAILS_SUBTITLE =
+    "Our Mission, Clinical Philosophy, Values, and Benefits";
 
   // match your Webflow input look
   const INPUT_CLASSES = ["provider-filter_input", "hero", "no-icon", "w-input"];
@@ -146,9 +149,146 @@
         a.target = "_blank";
         a.rel = "noopener noreferrer";
       });
+      const nodes = Array.from(tmp.childNodes);
       c.innerHTML = "";
-      c.append(...tmp.childNodes);
+      if (nodes.length) {
+        c.append(buildJobDetailsAccordion(nodes));
+      }
     }
+  }
+
+  function ensureJobAccordionStyles() {
+    if (document.getElementById("gh-job-accordion-styles")) return;
+    const style = document.createElement("style");
+    style.id = "gh-job-accordion-styles";
+    style.textContent = `
+      .gh-job-accordion{
+        border:1px solid rgba(16,24,40,0.12);
+        border-radius:16px;
+        background:#fff;
+        transition:border-color .2s ease;
+      }
+      .gh-job-accordion:hover,
+      .gh-job-accordion.open{
+        border-color:#ff5c3580;
+      }
+      .gh-job-accordion-toggle{
+        width:100%;
+        border:0;
+        background:transparent;
+        padding:24px 32px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        cursor:pointer;
+        gap:16px;
+        text-align:left;
+        font:inherit;
+      }
+      .gh-job-accordion-toggle:focus-visible{
+        outline:2px solid #ff5c35;
+        outline-offset:4px;
+      }
+      .gh-job-accordion-text{
+        flex:1;
+      }
+      .gh-job-accordion-title{
+        font-size:1.25rem;
+        font-weight:600;
+        color:#2f2418;
+        margin-bottom:4px;
+      }
+      .gh-job-accordion-subtitle{
+        font-size:1rem;
+        color:#5f4c39;
+        opacity:0.8;
+      }
+      .gh-job-accordion-caret{
+        width:32px;
+        height:32px;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        transition:transform .2s ease;
+      }
+      .gh-job-accordion.open .gh-job-accordion-caret{
+        transform:rotate(180deg);
+      }
+      .gh-job-accordion-caret svg{
+        width:18px;
+        height:18px;
+        stroke:#ff5c35;
+      }
+      .gh-job-accordion-body{
+        overflow:hidden;
+        max-height:0;
+        border-top:1px solid rgba(47,36,24,0.1);
+        transition:max-height .35s ease;
+      }
+      .gh-job-accordion-inner{
+        padding:24px 32px 32px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function buildJobDetailsAccordion(contentNodes) {
+    ensureJobAccordionStyles();
+    const wrapper = document.createElement("div");
+    wrapper.className = "gh-job-accordion";
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "gh-job-accordion-toggle";
+    trigger.setAttribute("aria-expanded", "false");
+
+    const textWrap = document.createElement("div");
+    textWrap.className = "gh-job-accordion-text";
+
+    const title = document.createElement("div");
+    title.className = "gh-job-accordion-title";
+    title.textContent = JOB_DETAILS_TITLE;
+
+    const subtitle = document.createElement("div");
+    subtitle.className = "gh-job-accordion-subtitle";
+    subtitle.textContent = JOB_DETAILS_SUBTITLE;
+
+    textWrap.append(title, subtitle);
+
+    const caret = document.createElement("span");
+    caret.className = "gh-job-accordion-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.innerHTML =
+      '<svg viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1.5L6 6.5L11 1.5" stroke="#ff5c35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    trigger.append(textWrap, caret);
+
+    const body = document.createElement("div");
+    body.className = "gh-job-accordion-body";
+    body.style.maxHeight = "0px";
+
+    const inner = document.createElement("div");
+    inner.className = "gh-job-accordion-inner";
+    contentNodes.forEach((node) => inner.appendChild(node));
+    body.appendChild(inner);
+
+    const syncMaxHeight = () => {
+      if (wrapper.classList.contains("open")) {
+        body.style.maxHeight = `${inner.scrollHeight}px`;
+      }
+    };
+
+    trigger.addEventListener("click", (event) => {
+      event.preventDefault();
+      const open = wrapper.classList.toggle("open");
+      trigger.setAttribute("aria-expanded", open ? "true" : "false");
+      body.style.maxHeight = open ? `${inner.scrollHeight}px` : "0px";
+    });
+
+    window.addEventListener("resize", syncMaxHeight);
+
+    wrapper.append(trigger, body);
+    return wrapper;
   }
 
   // ---------- TAG PICKER ----------
