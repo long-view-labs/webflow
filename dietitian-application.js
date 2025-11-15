@@ -167,9 +167,9 @@
         border-radius:16px;
         background:#fff;
         transition:border-color .2s ease;
+        margin:40px 0;
       }
-      .gh-job-accordion:hover,
-      .gh-job-accordion.open{
+      .gh-job-accordion:hover{
         border-color:#ff5c3580;
       }
       .gh-job-accordion-toggle{
