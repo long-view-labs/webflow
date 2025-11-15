@@ -162,6 +162,9 @@
     const style = document.createElement("style");
     style.id = "gh-job-accordion-styles";
     style.textContent = `
+      .gh-app{
+        margin-top:40px;
+      }
       .gh-job-accordion{
         border:1px solid rgba(16,24,40,0.12);
         border-radius:16px;
