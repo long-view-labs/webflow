@@ -167,7 +167,7 @@
         border-radius:16px;
         background:#fff;
         transition:border-color .2s ease;
-        margin:40px 0;
+        margin:40px 0 !important;
       }
       .gh-job-accordion:hover{
         border-color:#ff5c3580;
@@ -222,11 +222,11 @@
       .gh-job-accordion-body{
         overflow:hidden;
         max-height:0;
-        border-top:1px solid rgba(47,36,24,0.1);
         transition:max-height .35s ease;
       }
       .gh-job-accordion-inner{
         padding:24px 32px 32px;
+        border-top:1px solid rgba(47,36,24,0.1);
       }
     `;
     document.head.appendChild(style);
