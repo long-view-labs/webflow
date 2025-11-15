@@ -162,7 +162,7 @@
     const style = document.createElement("style");
     style.id = "gh-job-accordion-styles";
     style.textContent = `
-      .gh-app{
+      #gh-app{
         margin-top:40px;
       }
       .gh-job-accordion{
