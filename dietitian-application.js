@@ -607,6 +607,33 @@
   }
 
   let isRestoringFromStorage = false;
+  let savedFormPayloadCache = null;
+
+  function getSavedFormPayload(storage) {
+    if (savedFormPayloadCache) return savedFormPayloadCache;
+    const store = storage || getStorage();
+    if (!store) return null;
+    const raw = store.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    try {
+      savedFormPayloadCache = JSON.parse(raw);
+      return savedFormPayloadCache;
+    } catch (err) {
+      console.warn("Unable to parse saved form data", err);
+      return null;
+    }
+  }
+
+  function persistFormPayload(payload, storage) {
+    const store = storage || getStorage();
+    if (!store) return;
+    try {
+      store.setItem(STORAGE_KEY, JSON.stringify(payload));
+      savedFormPayloadCache = payload;
+    } catch (err) {
+      console.warn("Unable to persist form data", err);
+    }
+  }
 
   function getStorage() {
     try {
@@ -624,6 +651,8 @@
     const storage = getStorage();
     if (!storage) return;
     const grouped = {};
+    const payload = getSavedFormPayload(storage) || {};
+    payload.fields = {};
     Array.from(form.elements).forEach((el) => {
       if (!el.name || el.disabled || el.type === "file") return;
       const name = el.name;
@@ -631,7 +660,6 @@
       grouped[name].push(el);
     });
 
-    const payload = { fields: {} };
     Object.entries(grouped).forEach(([name, elements]) => {
       const first = elements[0];
       if (elements.every((el) => el.type === "hidden")) {
@@ -654,27 +682,20 @@
       }
     });
 
-    try {
-      storage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    } catch (err) {
-      console.warn("Unable to persist form data", err);
-    }
+    persistFormPayload(payload, storage);
   }
 
   function restoreFormData(form) {
     const storage = getStorage();
     if (!storage) return;
-    const raw = storage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (err) {
-      console.warn("Unable to parse saved form data", err);
-      return;
-    }
-    const fields = parsed?.fields;
+    const payload = getSavedFormPayload(storage);
+    if (!payload) return;
+    const fields = payload.fields;
     if (!fields) return;
+
+    if (payload.leadRecordId) {
+      leadSyncState.recordId = payload.leadRecordId;
+    }
 
     isRestoringFromStorage = true;
     try {
@@ -729,12 +750,16 @@
 
   function clearSavedFormData() {
     const storage = getStorage();
-    if (!storage) return;
-    try {
-      storage.removeItem(STORAGE_KEY);
-    } catch (err) {
-      console.warn("Unable to clear saved form data", err);
+    if (storage) {
+      try {
+        storage.removeItem(STORAGE_KEY);
+      } catch (err) {
+        console.warn("Unable to clear saved form data", err);
+      }
     }
+    savedFormPayloadCache = null;
+    leadSyncState.recordId = null;
+    leadSyncState.lastSignature = {};
   }
 
   const leadSyncState = {
@@ -743,7 +768,22 @@
     inProgressInFlight: false,
     inProgressNeedsRun: false,
     pendingForm: null,
+    recordId: null,
   };
+
+  function updateLeadRecordId(recordId) {
+    leadSyncState.recordId = recordId || null;
+    const storage = getStorage();
+    if (!storage) return;
+    const payload = getSavedFormPayload(storage) || {};
+    if (!payload.fields) payload.fields = {};
+    if (recordId) {
+      payload.leadRecordId = recordId;
+    } else {
+      delete payload.leadRecordId;
+    }
+    persistFormPayload(payload, storage);
+  }
 
   function getLeadPayload(form) {
     if (!form) return null;
@@ -801,7 +841,9 @@
   function queueLeadSyncInProgress(form) {
     if (!form || !LEAD_ENDPOINT) return;
     const payload = getLeadPayload(form);
-    if (!payload || (!payload.email && !payload.phone)) {
+    const hasContact = payload && (payload.email || payload.phone);
+    const canSync = hasContact || Boolean(leadSyncState.recordId);
+    if (!payload || !canSync) {
       clearTimeout(leadSyncState.inProgressTimer);
       leadSyncState.inProgressTimer = null;
       leadSyncState.pendingForm = null;
@@ -838,10 +880,11 @@
     const payload = getLeadPayload(form);
     if (!payload) return false;
     const body = { status };
+    if (leadSyncState.recordId) body.recordId = leadSyncState.recordId;
     if (payload.name) body.name = payload.name;
     if (payload.email) body.email = payload.email;
     if (payload.phone) body.phone = payload.phone;
-    if (!body.email && !body.phone) return false;
+    if (!body.email && !body.phone && !body.recordId) return false;
 
     const signature = JSON.stringify(body);
     if (leadSyncState.lastSignature[status] === signature) return false;
@@ -857,6 +900,10 @@
         const errTxt = await resp.text().catch(() => "");
         console.warn("Lead sync failed", errTxt || resp.status);
         return false;
+      }
+      const data = await resp.json().catch(() => null);
+      if (data?.recordId) {
+        updateLeadRecordId(data.recordId);
       }
       leadSyncState.lastSignature[status] = signature;
       return true;
@@ -1170,8 +1217,8 @@
         if (resp.ok) {
           // Application submitted successfully - track event then redirect
           console.log("Application submitted successfully:", JSON.parse(text));
-          clearSavedFormData();
           await syncLeadStatus(form, LEAD_STATUS.SUBMITTED);
+          clearSavedFormData();
 
           const submittedEmail =
             form.querySelector('input[name="email"]')?.value?.trim() || "";

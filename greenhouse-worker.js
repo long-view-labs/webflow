@@ -204,6 +204,7 @@ var greenhouse_worker_default = {
         const rawEmail = String(body.email || "").trim().toLowerCase();
         const rawPhone = String(body.phone || "").trim();
         const rawStatus = String(body.status || "").trim();
+        const requestedRecordId = String(body.recordId || "").trim();
         const allowedStatuses = new Set([
           "In progress",
           "Application Submitted",
@@ -211,7 +212,7 @@ var greenhouse_worker_default = {
         const status = allowedStatuses.has(rawStatus)
           ? rawStatus
           : "In progress";
-        if (!rawEmail && !rawPhone)
+        if (!requestedRecordId && !rawEmail && !rawPhone)
           return fail("Email or phone required for lead tracking");
 
         const normalizedPhone = rawPhone.replace(/\D/g, "");
@@ -230,24 +231,47 @@ var greenhouse_worker_default = {
           );
         }
 
-        let recordId = null;
+        const airtableUrlBase = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${encodeURIComponent(
+          env.AIRTABLE_TABLE_NAME
+        )}`;
+        const authHeaders = {
+          Authorization: `Bearer ${env.AIRTABLE_TOKEN}`,
+        };
+
+        let recordId = requestedRecordId || null;
         let existingStatus = "";
-        if (filters.length > 0) {
+        if (recordId) {
+          const recordResp = await fetch(`${airtableUrlBase}/${recordId}`, {
+            headers: authHeaders,
+          });
+          if (recordResp.ok) {
+            const recordJson = await recordResp.json().catch(() => ({}));
+            existingStatus = String(recordJson.fields?.Status || "");
+          } else if (recordResp.status === 404) {
+            recordId = null;
+          } else {
+            const errTxt = await recordResp.text();
+            logEvent("error", "Airtable record lookup failed", {
+              status: recordResp.status,
+              recordId,
+              response: errTxt?.slice(0, 500),
+            });
+            return fail("Airtable lookup failed", recordResp.status, errTxt);
+          }
+        }
+
+        if (!recordId && filters.length > 0) {
           const filterFormula =
             filters.length === 1
               ? filters[0]
               : `OR(${filters.join(",")})`;
           const searchUrl = new URL(
-            `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${encodeURIComponent(
-              env.AIRTABLE_TABLE_NAME
-            )}`
+            airtableUrlBase
           );
           searchUrl.searchParams.set("filterByFormula", filterFormula);
           searchUrl.searchParams.set("maxRecords", "1");
           const lookResp = await fetch(searchUrl, {
-            headers: {
-              Authorization: `Bearer ${env.AIRTABLE_TOKEN}`,
-            },
+            headers: authHeaders,
           });
           if (!lookResp.ok) {
             const errTxt = await lookResp.text();
@@ -283,11 +307,8 @@ var greenhouse_worker_default = {
           return json({ ok: true, skipped: true, reason: "No fields to sync" });
         }
 
-        const airtableUrlBase = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${encodeURIComponent(
-          env.AIRTABLE_TABLE_NAME
-        )}`;
         const headers = {
-          Authorization: `Bearer ${env.AIRTABLE_TOKEN}`,
+          ...authHeaders,
           "Content-Type": "application/json",
         };
         let apiResp;
