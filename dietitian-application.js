@@ -149,10 +149,27 @@
         a.target = "_blank";
         a.rel = "noopener noreferrer";
       });
-      const nodes = Array.from(tmp.childNodes);
+      const sanitizedHTML = tmp.innerHTML;
       c.innerHTML = "";
-      if (nodes.length) {
-        c.append(buildJobDetailsAccordion(nodes));
+      if (sanitizedHTML.trim()) {
+        const staticVariant = document.createElement("div");
+        staticVariant.className =
+          "gh-content-variant gh-content-variant--static";
+        staticVariant.id = "gh-content-static";
+        staticVariant.innerHTML = sanitizedHTML;
+
+        const accordionVariant = document.createElement("div");
+        accordionVariant.className =
+          "gh-content-variant gh-content-variant--accordion";
+        accordionVariant.id = "gh-content-accordion";
+        const accordionTmp = document.createElement("div");
+        accordionTmp.innerHTML = sanitizedHTML;
+        const nodes = Array.from(accordionTmp.childNodes);
+        if (nodes.length) {
+          accordionVariant.append(buildJobDetailsAccordion(nodes));
+        }
+
+        c.append(staticVariant, accordionVariant);
       }
     }
   }
@@ -164,6 +181,12 @@
     style.textContent = `
       #gh-app{
         margin-top:40px;
+      }
+      .gh-content-variant{
+        width:100%;
+      }
+      .gh-content-variant--static{
+        display:none;
       }
       .gh-job-accordion{
         border:1px solid rgba(16,24,40,0.12);
