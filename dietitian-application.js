@@ -179,13 +179,10 @@
     const style = document.createElement("style");
     style.id = "gh-job-accordion-styles";
     style.textContent = `
-      #gh-app{
-        margin-top:40px;
-      }
       .gh-content-variant{
         width:100%;
       }
-      .gh-content-variant--static{
+      .gh-content-variant--accordion{
         display:none;
       }
       .gh-job-accordion{
