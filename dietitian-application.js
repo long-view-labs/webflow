@@ -14,9 +14,9 @@
     IN_PROGRESS: "In progress",
     SUBMITTED: "Application Submitted",
   };
-  const JOB_DETAILS_TITLE = "Learn more about being an RD at Nourish";
+  const JOB_DETAILS_TITLE = "Learn More About Being an RD at Nourish";
   const JOB_DETAILS_SUBTITLE =
-    "Our Mission, Clinical Philosophy, Values, and Benefits";
+    "About Nourish, our Clinical Philosophy, and Job Description";
 
   // match your Webflow input look
   const INPUT_CLASSES = ["provider-filter_input", "hero", "no-icon", "w-input"];
