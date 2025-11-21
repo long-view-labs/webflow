@@ -1283,8 +1283,35 @@
             window.location.href = "/dietitian-application/thank-you";
           }
         } else {
-          console.error(text);
-          alert("Submit error. Please try again.");
+          let parsedError = null;
+          try {
+            parsedError = JSON.parse(text);
+          } catch {
+            parsedError = null;
+          }
+          const requestId = parsedError?.requestId;
+          const stage = parsedError?.stage;
+          const upstreamStatus = parsedError?.status || resp.status;
+          const upstreamBody =
+            parsedError?.extra?.body ||
+            parsedError?.body ||
+            parsedError?.error ||
+            text;
+          const fallbackMessage = "Submit error. Please try again.";
+          let alertMessage =
+            stage === "job_board_submit"
+              ? "Greenhouse rejected the submission. Please review required fields and file uploads, then try again."
+              : parsedError?.message || fallbackMessage;
+          if (requestId) {
+            alertMessage = `${alertMessage} (Reference ID: ${requestId})`;
+          }
+          console.error("Dietitian application submit failed", {
+            status: upstreamStatus,
+            stage,
+            requestId,
+            body: upstreamBody?.slice?.(0, 500) || upstreamBody,
+          });
+          alert(alertMessage);
           resetSubmitButton();
         }
       } catch (err) {

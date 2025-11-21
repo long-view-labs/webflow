@@ -3,6 +3,7 @@ var __name = (target, value) =>
   __defProp(target, "name", { value, configurable: true });
 
 // greenhouse-worker.js
+// Cloudflare Worker that proxies application submissions + auxiliary endpoints
 var greenhouse_worker_default = {
   async fetch(req, env) {
     const origin = req.headers.get("Origin") || "*";
@@ -13,6 +14,10 @@ var greenhouse_worker_default = {
       "Access-Control-Allow-Headers": "Content-Type,Authorization",
       "Access-Control-Max-Age": "86400",
     };
+    const requestId =
+      (typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2)) + "";
     if (req.method === "OPTIONS")
       return new Response(null, { status: 204, headers: cors });
     if (req.method !== "POST")
@@ -21,16 +26,29 @@ var greenhouse_worker_default = {
     const hvAuth = "Basic " + btoa((env.GH_HARVEST_API_KEY || "") + ":");
     const obo = env.GH_ON_BEHALF_USER_ID;
     const json = /* @__PURE__ */ __name(
-      (data, status = 200) =>
-        new Response(JSON.stringify(data), {
+      (data, status = 200) => {
+        const payload =
+          data && typeof data === "object"
+            ? { requestId, ...data }
+            : { requestId, data };
+        return new Response(JSON.stringify(payload), {
           status,
           headers: { ...cors, "Content-Type": "application/json" },
-        }),
+        });
+      },
       "json"
     );
     const fail = /* @__PURE__ */ __name(
-      (message, status = 400, extra = void 0) =>
-        json({ ok: false, message, ...(extra ? { extra } : {}) }, status),
+      (message, status = 400, extra = void 0) => {
+        console.error(
+          `[gh-apply][${requestId}] ${message}`,
+          extra ? { status, extra } : { status }
+        );
+        return json(
+          { ok: false, message, ...(extra ? { extra } : {}) },
+          status
+        );
+      },
       "fail"
     );
     const logEvent = /* @__PURE__ */ __name((level, message, data) => {
@@ -41,7 +59,8 @@ var greenhouse_worker_default = {
     }, "logEvent");
     try {
       const url = new URL(req.url);
-      // Webhook endpoint for Greenhouse → verifies secret and patches UTM fields
+      // --- /gh-webhook ---
+      // Validates webhook authenticity, then reads KV-stored UTM fields and patches them onto the Greenhouse application.
       if (url.pathname === "/gh-webhook") {
         const token =
           req.headers.get("X-Greenhouse-Token") ||
@@ -182,6 +201,8 @@ var greenhouse_worker_default = {
           patched,
         });
       }
+      // --- /leads ---
+      // Upserts lead info into Airtable using recordId (if available) or by matching email/phone.
       if (url.pathname === "/leads") {
         if (
           !env.AIRTABLE_TOKEN ||
@@ -348,6 +369,8 @@ var greenhouse_worker_default = {
           recordId: result.id || recordId || null,
         });
       }
+      // --- /patchByAppId ---
+      // Utility endpoint that PATCHes custom fields for a known application id via Harvest.
       if (url.pathname === "/patchByAppId") {
         const body = await req.json().catch(() => ({}));
         const applicationId = String(body.applicationId || "").trim();
@@ -369,6 +392,8 @@ var greenhouse_worker_default = {
         const resTxt = await r.text();
         return json({ ok: r.ok, status: r.status, body: resTxt });
       }
+      // --- /patchByEmail ---
+      // Finds applications for a given email and patches custom fields against the matching job.
       if (url.pathname === "/patchByEmail") {
         const body = await req.json().catch(() => ({}));
         const targetEmail = String(body.email || "").trim();
@@ -430,6 +455,8 @@ var greenhouse_worker_default = {
           404
         );
       }
+      // --- default /apply ---
+      // Proxies Webflow form submission to the Greenhouse Job Board API, storing UTM data for later patching.
       const inForm = await req.formData();
       const outForm = new FormData();
       for (const [k, v] of inForm.entries()) outForm.append(k, v);
@@ -503,6 +530,13 @@ var greenhouse_worker_default = {
         submitTxt
       );
       if (!submitResp.ok) {
+        console.error(
+          `[gh-apply][${requestId}] Job board submission failed`,
+          {
+            status: submitResp.status,
+            bodySample: submitTxt?.slice(0, 500),
+          }
+        );
         return json(
           {
             ok: false,
@@ -589,6 +623,7 @@ var greenhouse_worker_default = {
       }
       return immediateResponse;
     } catch (err) {
+      console.error(`[gh-apply][${requestId}] Worker error`, err);
       return json(
         {
           ok: false,
@@ -599,7 +634,7 @@ var greenhouse_worker_default = {
       );
     }
   },
-  // Scheduled worker for UTM patching - now runs less frequently as backup
+  // Scheduled worker fires periodically to patch any leftover UTM data.
   async scheduled(event, env, ctx) {
     console.log("SCHEDULED WORKER TRIGGERED!");
 
@@ -615,6 +650,7 @@ var greenhouse_worker_default = {
     ctx.waitUntil(handleScheduledUTMPatching(env));
   },
 };
+// Walk through every KV entry and try patching associated UTMs.
 async function handleScheduledUTMPatching(env) {
   console.log("Running scheduled UTM patching...");
   const hvAuth = "Basic " + btoa((env.GH_HARVEST_API_KEY || "") + ":");
@@ -657,6 +693,7 @@ async function handleScheduledUTMPatching(env) {
   );
 }
 __name(handleScheduledUTMPatching, "handleScheduledUTMPatching");
+// Attempts a one-off UTM patch by email via Harvest APIs.
 async function tryPatchByEmailOnce(env, email, fields) {
   const hvAuth = "Basic " + btoa((env.GH_HARVEST_API_KEY || "") + ":");
   const obo = env.GH_ON_BEHALF_USER_ID;
@@ -702,7 +739,7 @@ async function tryPatchByEmailOnce(env, email, fields) {
 }
 __name(tryPatchByEmailOnce, "tryPatchByEmailOnce");
 
-// Function to schedule UTM retry using KV storage
+// Schedules a retry by writing a short-lived KV entry. Another worker watches for these.
 async function scheduleUTMRetry(env, email, delaySeconds) {
   if (!env.UTM_STORAGE) return;
 
