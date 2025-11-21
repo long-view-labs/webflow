@@ -33,6 +33,9 @@
   };
 
   // Validation functions
+  /**
+   * Returns true when the supplied string contains a valid 10-digit US number.
+   */
   function validateUSPhone(phone) {
     // Remove all non-digits
     const digits = phone.replace(/\D/g, "");
@@ -44,6 +47,9 @@
     return false;
   }
 
+  /**
+   * Formats a phone string into the dash-separated mask used in the UI.
+   */
   function formatPhoneNumber(value) {
     // Remove all non-digits
     const digits = value.replace(/\D/g, "");
@@ -63,12 +69,18 @@
     }
   }
 
+  /**
+   * Performs a lightweight sanity check for the email input field.
+   */
   function validateEmail(email) {
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email.trim());
   }
 
+  /**
+   * Flags obvious invalid characters that the email regex will not catch.
+   */
   function hasInvalidEmailChars(email) {
     return /[\s/]/.test(email);
   }
@@ -81,6 +93,9 @@
     return `+1${phoneNumber.replace(/\D/g, "")}`;
   }
 
+  /**
+   * Renders an inline validation error element for a given input control.
+   */
   function showValidationError(input, message) {
     // Remove existing error
     const existingError = input.parentNode.querySelector(".validation-error");
@@ -101,6 +116,9 @@
     input.style.borderColor = "#e74c3c";
   }
 
+  /**
+   * Removes the validation error block + styling from an input control.
+   */
   function clearValidationError(input) {
     const existingError = input.parentNode.querySelector(".validation-error");
     if (existingError) {
@@ -109,6 +127,9 @@
     input.style.borderColor = "";
   }
 
+  /**
+   * Fetches the Greenhouse job schema with a short-lived session cache.
+   */
   async function getSchema() {
     const c = sessionStorage.getItem(CACHE_KEY);
     if (c) {
@@ -125,6 +146,9 @@
   }
 
   // ---------- RENDER HEADER ----------
+  /**
+   * Populates the hero content with the job details fetched from Greenhouse.
+   */
   function renderHeader(schema) {
     const t = document.getElementById("gh-title");
     const m = document.getElementById("gh-meta");
@@ -174,6 +198,9 @@
     }
   }
 
+  /**
+   * Injects the accordion CSS once so we can reuse the DOM fragment.
+   */
   function ensureJobAccordionStyles() {
     if (document.getElementById("gh-job-accordion-styles")) return;
     const style = document.createElement("style");
@@ -255,6 +282,9 @@
     document.head.appendChild(style);
   }
 
+  /**
+   * Wraps the job description HTML inside an accessible accordion UI.
+   */
   function buildJobDetailsAccordion(contentNodes) {
     ensureJobAccordionStyles();
     const wrapper = document.createElement("div");
@@ -315,6 +345,9 @@
   }
 
   // ---------- TAG PICKER ----------
+  /**
+   * Builds the multi-select tag picker used for location/specialty fields.
+   */
   function tagPicker(name, options, required) {
     const shell = document.createElement("div");
     shell.className = "tagpicker";
@@ -439,6 +472,9 @@
   }
 
   // ---------- FIELD FACTORY ----------
+  /**
+   * Converts a Greenhouse question schema entry into DOM inputs.
+   */
   function control(field, required, label) {
     if (field.type === "input_text") {
       // Check if this is a state field and convert to dropdown
@@ -629,6 +665,9 @@
   let isRestoringFromStorage = false;
   let savedFormPayloadCache = null;
 
+  /**
+   * Reads any persisted form state from storage, caching it for reuse.
+   */
   function getSavedFormPayload(storage) {
     if (savedFormPayloadCache) return savedFormPayloadCache;
     const store = storage || getStorage();
@@ -644,6 +683,9 @@
     }
   }
 
+  /**
+   * Writes the provided payload into localStorage (when available).
+   */
   function persistFormPayload(payload, storage) {
     const store = storage || getStorage();
     if (!store) return;
@@ -655,6 +697,9 @@
     }
   }
 
+  /**
+   * Safely returns localStorage, accounting for private-mode failures.
+   */
   function getStorage() {
     try {
       if (typeof window !== "undefined" && window.localStorage) {
@@ -666,6 +711,9 @@
     return null;
   }
 
+  /**
+   * Serializes current form values so users can resume later.
+   */
   function saveFormData(form) {
     if (isRestoringFromStorage) return;
     const storage = getStorage();
@@ -705,6 +753,9 @@
     persistFormPayload(payload, storage);
   }
 
+  /**
+   * Rehydrates the form fields using whatever was persisted previously.
+   */
   function restoreFormData(form) {
     const storage = getStorage();
     if (!storage) return;
@@ -768,6 +819,9 @@
     }
   }
 
+  /**
+   * Clears all persisted form + lead metadata after a successful submit.
+   */
   function clearSavedFormData() {
     const storage = getStorage();
     if (storage) {
@@ -791,6 +845,9 @@
     recordId: null,
   };
 
+  /**
+   * Stores the Airtable record id locally so future syncs can PATCH.
+   */
   function updateLeadRecordId(recordId) {
     leadSyncState.recordId = recordId || null;
     const storage = getStorage();
@@ -805,6 +862,9 @@
     persistFormPayload(payload, storage);
   }
 
+  /**
+   * Extracts the name/email/phone fields that drive Airtable upserts.
+   */
   function getLeadPayload(form) {
     if (!form) return null;
     const firstName =
@@ -858,6 +918,9 @@
     };
   }
 
+  /**
+   * Debounces in-progress lead syncs so typing does not spam the worker.
+   */
   function queueLeadSyncInProgress(form) {
     if (!form || !LEAD_ENDPOINT) return;
     const payload = getLeadPayload(form);
@@ -877,6 +940,9 @@
     }, 400);
   }
 
+  /**
+   * Runs the queued in-progress sync if the prior request has finished.
+   */
   function triggerQueuedLeadSync() {
     if (leadSyncState.inProgressInFlight) {
       leadSyncState.inProgressNeedsRun = true;
@@ -895,6 +961,9 @@
       });
   }
 
+  /**
+   * Posts the current lead status to the worker, returning success/failure.
+   */
   async function syncLeadStatus(form, status) {
     if (!form || !LEAD_ENDPOINT) return false;
     const payload = getLeadPayload(form);
@@ -934,6 +1003,9 @@
   }
 
   // ---------- BUILD FORM ----------
+  /**
+   * Generates the application form DOM tree from the job schema payload.
+   */
   function buildForm(schema) {
     const form = document.createElement("form");
     form.id = "gh-form";
@@ -1320,6 +1392,7 @@
         resetSubmitButton();
       }
 
+      /** Restores the primary submit button text/state after errors. */
       function resetSubmitButton() {
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -1385,6 +1458,9 @@
   }
 
   // ---------- UTM CAPTURE ----------
+  /**
+   * Parses UTM parameters from the current URL for analytics + form.
+   */
   function captureUTMParams() {
     const utmParams = {};
     const utmKeys = [
@@ -1414,6 +1490,9 @@
   let resumeUploadedTracked = false;
   let applicationCompletedTracked = false;
 
+  /**
+   * Thin wrapper around RudderStack track with safety guards.
+   */
   function trackEvent(eventName, properties = {}) {
     if (
       window.rudderanalytics &&
@@ -1423,6 +1502,9 @@
     }
   }
 
+  /**
+   * Ensures the "Application Started" event is only fired once.
+   */
   function trackApplicationStarted() {
     if (!applicationStartedTracked) {
       trackEvent("Application Started");
@@ -1430,6 +1512,9 @@
     }
   }
 
+  /**
+   * Fires when users attach a resume, guarding against duplicate sends.
+   */
   function trackResumeUploaded() {
     if (!resumeUploadedTracked) {
       trackEvent("Resume Uploaded");
@@ -1437,6 +1522,9 @@
     }
   }
 
+  /**
+   * Monitors form completion to emit a single "Application Completed" event.
+   */
   function checkApplicationCompleted(form) {
     if (applicationCompletedTracked) return;
 
