@@ -864,3 +864,122 @@ function nourishQueueViewedPageEvent() {
     if (u.toString() !== before) a.setAttribute("href", u.toString());
   });
 })();
+
+/**
+ * Statsig + Rudder identify bridge
+ * Ensures we keep a stable anonymous ID when identifying so sessions are preserved.
+ */
+(function () {
+  if (window.__nourishStatsigBridgeInitialized) return;
+  window.__nourishStatsigBridgeInitialized = true;
+
+  var READY_INTERVAL = 100;
+  var READY_TIMEOUT = 6000;
+
+  function whenRudderReady(callback) {
+    if (typeof callback !== "function") return;
+
+    var ra = window.rudderanalytics;
+    if (ra && typeof ra.ready === "function") {
+      try {
+        ra.ready(callback);
+        return;
+      } catch (err) {
+        // fall through to polling
+      }
+    }
+
+    var elapsed = 0;
+    var timer = setInterval(function () {
+      elapsed += READY_INTERVAL;
+      var current = window.rudderanalytics;
+      if (current && typeof current.ready === "function") {
+        clearInterval(timer);
+        try {
+          current.ready(callback);
+        } catch (e) {
+          callback();
+        }
+        return;
+      }
+      if (elapsed >= READY_TIMEOUT) {
+        clearInterval(timer);
+        callback();
+      }
+    }, READY_INTERVAL);
+  }
+
+  function getAnonId() {
+    try {
+      if (
+        window.rudderanalytics &&
+        typeof window.rudderanalytics.getAnonymousId === "function"
+      ) {
+        var id = window.rudderanalytics.getAnonymousId();
+        if (id) return id;
+      }
+    } catch (e) {}
+
+    try {
+      if (window.Statsig && typeof window.Statsig.getStableID === "function") {
+        var stable = window.Statsig.getStableID();
+        if (stable) return stable;
+      }
+    } catch (err) {}
+
+    return "fallback_" + Math.random().toString(36).slice(2);
+  }
+
+  function getUtmSource() {
+    try {
+      var params = new URLSearchParams(window.location.search || "");
+      return params.get("utm_source") || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function buildStatsigUser(anonId) {
+    return {
+      userID: anonId,
+      userAgent: navigator.userAgent,
+      locale: navigator.language || null,
+      custom: {
+        lp: window.location ? window.location.pathname : null,
+        utm_source: getUtmSource(),
+      },
+    };
+  }
+
+  function buildIdentifyTraits() {
+    return {
+      statsig_userAgent: navigator.userAgent,
+      locale: navigator.language || null,
+      lp: window.location ? window.location.pathname : null,
+      utm_source: getUtmSource(),
+    };
+  }
+
+  function identifyWithRudder(userId, traits) {
+    if (
+      !window.rudderanalytics ||
+      typeof window.rudderanalytics.identify !== "function"
+    ) {
+      return;
+    }
+
+    try {
+      if (userId) {
+        window.rudderanalytics.identify(userId, traits);
+      } else {
+        window.rudderanalytics.identify(traits);
+      }
+    } catch (e) {}
+  }
+
+  whenRudderReady(function () {
+    var anonId = getAnonId();
+    window.statsigUser = buildStatsigUser(anonId);
+    identifyWithRudder(anonId, buildIdentifyTraits());
+  });
+})();
