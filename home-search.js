@@ -887,6 +887,38 @@ $(document).ready(function () {
   }
   updateStatePlaceholder();
 
+  function dispatchDesktopClick(target) {
+    if (!target) return;
+    try {
+      var event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      });
+      target.dispatchEvent(event);
+    } catch (e) {
+      $(target).trigger("click");
+    }
+  }
+
+  function bindTouchSelectionBridge(selector) {
+    if (!isMobileDevice()) return;
+    $(document).on("touchend", selector, function (event) {
+      var $current = $(event.currentTarget);
+      var $radio = $current.is('input[type="radio"]')
+        ? $current
+        : $current.find('input[type="radio"]');
+      if (!$radio.length) return;
+
+      event.preventDefault();
+      dispatchDesktopClick($radio[0]);
+    });
+  }
+
+  bindTouchSelectionBridge(
+    '#insurance_filter .filter-list_radio-field, #insurance_filter .filter-list_label'
+  );
+
   function updateInsuranceTextDisplay(value) {
     var defaultText = "Insurance carrier";
     var $insuranceFilter = $("#insurance_filter");
