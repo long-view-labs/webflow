@@ -562,59 +562,6 @@ $(document).ready(function () {
     // Insert everything inside the container after the divider
     $container.append(allHtml);
 
-    // Use event delegation to prevent double binding and allow natural event flow
-    $(document)
-      .off("click.dynamicInsurance")
-      .on(
-        "click.dynamicInsurance",
-        ".dynamic-insurance-option",
-        function (event) {
-          // Prevent double execution
-          if ($(this).hasClass("processing")) {
-            return false;
-          }
-          $(this).addClass("processing");
-
-          // Store reference to clicked element
-          var $clickedElement = $(this);
-
-          // Get the selected insurance value
-          var selected = $clickedElement.find('input[type="radio"]').val();
-
-          insurance = selected;
-          insFilter = selected; // Also set insFilter to prevent updateInsurancePlaceholder from overriding
-          var $insuranceFilter = $("#insurance_filter");
-          var maxWidth = $insuranceFilter.width();
-
-          // Update the text of #insurance-text with the selected insurance
-          var $insuranceText = $("#insurance-text");
-
-          var newText = truncateText(insurance, maxWidth);
-
-          $insuranceText.text(newText);
-
-          // Update color
-          $insuranceText.css("color", "#191918");
-          $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-            "color",
-            "#191918"
-          );
-          var insuranceTextElement = document.getElementById("insurance-text");
-          if (insuranceTextElement) {
-            insuranceTextElement.style.color = "#191918";
-          }
-
-          updateCTAUrl();
-          closeDropdownForElement($clickedElement);
-
-          // Remove processing flag after a delay
-          setTimeout(function () {
-            $container
-              .find(".dynamic-insurance-option")
-              .removeClass("processing");
-          }, 500);
-        }
-      );
   }
 
   // Load API data on page load
@@ -940,52 +887,55 @@ $(document).ready(function () {
   }
   updateStatePlaceholder();
 
-  // Handle clicks on hardcoded insurance labels only (exclude dynamic options)
-  $(
-    'label:has(input[type="radio"][data-name="Insurance"]:not(.dynamic-insurance-radio):not([value=""]))'
-  ).on("click", function () {
-    var $radio = $(this).find('input[type="radio"]');
-    var selected = $radio.val();
-    insurance = selected;
-    insFilter = selected;
+  function updateInsuranceTextDisplay(value) {
+    var defaultText = "Insurance carrier";
     var $insuranceFilter = $("#insurance_filter");
-    var maxWidth = $insuranceFilter.width();
+    var maxWidth = $insuranceFilter.length ? $insuranceFilter.width() : null;
+    var displayText = value ? truncateText(value, maxWidth) : defaultText;
 
-    // Update the text of #insurance-text with the selected insurance
-    var $insuranceText = $("#insurance-text");
-    var newText = truncateText(insurance, maxWidth);
-    $insuranceText.text(newText);
-
-    // Update color
-    if (newText !== "Insurance carrier") {
-      $insuranceText.css("color", "#191918");
-      $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-        "color",
-        "#191918"
-      );
-      var insuranceTextElement = document.getElementById("insurance-text");
-      if (insuranceTextElement) {
-        insuranceTextElement.style.color = "#191918";
+    $("#insurance-text").each(function () {
+      var $text = $(this);
+      $text.text(displayText);
+      if (value) {
+        $text.css("color", "#191918");
+      } else {
+        $text.css("color", "");
       }
+    });
+
+    var $dropdownLabel = $(
+      "#insurance_filter .provider-filter_dropdown-label.filter"
+    );
+    if ($dropdownLabel.length) {
+      $dropdownLabel.css("color", value ? "#191918" : "");
     }
 
-    updateCTAUrl();
-    closeDropdownForElement($(this));
-  });
+    var insuranceTextElement = document.getElementById("insurance-text");
+    if (insuranceTextElement) {
+      insuranceTextElement.style.color = value ? "#191918" : "";
+    }
+  }
+
+  $(document).on(
+    "change",
+    'input[type="radio"][data-name="Insurance"]',
+    function () {
+      var selectedValue = $(this).val() || null;
+      insurance = selectedValue;
+      insFilter = selectedValue;
+      updateInsuranceTextDisplay(selectedValue);
+      updateCTAUrl();
+      closeDropdownForElement($(this));
+    }
+  );
 
   function updateInsurancePlaceholder() {
     if (typeof insFilter !== "undefined" && insFilter !== null) {
-      var $insuranceFilter = $("#insurance_filter");
-      var maxWidth = $insuranceFilter.width();
-
-      // Update the text of #insurance-text with the selected insurance
-      $("#insurance-text").text(truncateText(insFilter, maxWidth));
       insurance = insFilter;
-
+      updateInsuranceTextDisplay(insFilter);
       updateCTAUrl();
     } else {
-      // Set default text for insurance
-      $("#insurance-text").text("Insurance carrier");
+      updateInsuranceTextDisplay(null);
     }
   }
   updateInsurancePlaceholder();
@@ -1099,20 +1049,6 @@ $(document).ready(function () {
         // Activate selection via label click
         e.preventDefault();
         $(this).click();
-        // Ensure color update when selecting via keyboard
-        var labelText = $(this).text().trim();
-        var $insuranceText = $("#insurance-text");
-        if ($insuranceText.length && labelText !== "Insurance carrier") {
-          $insuranceText.css("color", "#191918");
-          $("#insurance_filter .provider-filter_dropdown-label.filter").css(
-            "color",
-            "#191918"
-          );
-          var insuranceTextElement = document.getElementById("insurance-text");
-          if (insuranceTextElement) {
-            insuranceTextElement.style.color = "#191918";
-          }
-        }
         // Optionally close after selection; keep open for multi-select lists
         // Close for any single-select radio menu (insurance and primary concern)
         var isRadioMenu = $dropdown.find('input[type="radio"]').length > 0;
