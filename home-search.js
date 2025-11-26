@@ -605,6 +605,7 @@ $(document).ready(function () {
           }
 
           updateCTAUrl();
+          closeDropdownForElement($clickedElement);
 
           // Remove processing flag after a delay
           setTimeout(function () {
@@ -856,6 +857,39 @@ $(document).ready(function () {
   // Call the function for the 'Insurance' query parameter
   clickMatchingRadioButton("insurance", "Insurance");
 
+  function closeDropdownForElement($element) {
+    if (!$element || !$element.length) return;
+
+    var $dropdownList = $element.closest(
+      ".w-dropdown-list, .provider-filter_dropdown"
+    );
+    if (!$dropdownList.length) return;
+
+    var $dropdown = $dropdownList.closest(".w-dropdown");
+    if (!$dropdown.length) {
+      $dropdown = $dropdownList.closest(".provider-filter_dopdown");
+    }
+
+    var dropdownApi =
+      window.Webflow &&
+      window.Webflow.require &&
+      window.Webflow.require("dropdown");
+
+    if (dropdownApi) {
+      try {
+        dropdownApi.close($dropdown[0]);
+      } catch (e) {
+        // ignore dropdown API errors
+      }
+    }
+
+    $dropdownList.removeClass("open").slideUp(0);
+    $dropdown
+      .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
+      .attr("aria-expanded", "false")
+      .removeClass("w--open");
+  }
+
   $(document)
     .off("click.dropdownClose")
     .on(
@@ -891,6 +925,7 @@ $(document).ready(function () {
     $("#state-text").text(selected);
 
     updateCTAUrl();
+    closeDropdownForElement($(this));
   });
 
   function updateStatePlaceholder() {
@@ -935,6 +970,7 @@ $(document).ready(function () {
     }
 
     updateCTAUrl();
+    closeDropdownForElement($(this));
   });
 
   function updateInsurancePlaceholder() {

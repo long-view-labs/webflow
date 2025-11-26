@@ -216,7 +216,11 @@ async function handleLeadUpsert({ req, env, json, fail }) {
     if (recordResp.ok) {
       const recordJson = await recordResp.json().catch(() => ({}));
       existingStatus = String(recordJson.fields?.Status || "");
-    } else if (recordResp.status === 404) {
+    } else if (recordResp.status === 404 || recordResp.status === 403) {
+      logEvent("warn", "Airtable record id invalid, falling back", {
+        status: recordResp.status,
+        recordId,
+      });
       recordId = null;
     } else {
       const errTxt = await recordResp.text();

@@ -17,6 +17,16 @@
   const JOB_DETAILS_TITLE = "Learn More About Being an RD at Nourish";
   const JOB_DETAILS_SUBTITLE =
     "About Nourish, our Clinical Philosophy, and Job Description";
+  const EMAIL_INPUT_SELECTOR = [
+    'input[name="email"]',
+    'input[name="job_application[email]"]',
+    'input[name="job_application[email_address]"]',
+  ].join(", ");
+  const PHONE_INPUT_SELECTOR = [
+    'input[name="phone"]',
+    'input[name="job_application[phone]"]',
+    'input[name="job_application[phone_number]"]',
+  ].join(", ");
 
   // match your Webflow input look
   const INPUT_CLASSES = ["provider-filter_input", "hero", "no-icon", "w-input"];
@@ -31,6 +41,11 @@
     t.innerHTML = s;
     return t.value;
   };
+
+  /** Returns the primary email input element in the generated form. */
+  const getEmailInput = (form) => form?.querySelector(EMAIL_INPUT_SELECTOR) || null;
+  /** Returns the primary phone input element in the generated form. */
+  const getPhoneInput = (form) => form?.querySelector(PHONE_INPUT_SELECTOR) || null;
 
   // Validation functions
   /**
@@ -83,6 +98,13 @@
    */
   function hasInvalidEmailChars(email) {
     return /[\s/]/.test(email);
+  }
+
+  /**
+   * Normalizes user-provided email addresses before validation/submission.
+   */
+  function normalizeEmailValue(value = "") {
+    return value.trim().toLowerCase();
   }
 
   /**
@@ -894,9 +916,8 @@
       if (anyNameInput) name = anyNameInput.value.trim();
     }
 
-    const rawEmail =
-      form.querySelector('input[name="email"]')?.value?.trim().toLowerCase() ||
-      "";
+    const emailField = getEmailInput(form);
+    const rawEmail = normalizeEmailValue(emailField?.value || "");
     const email =
       rawEmail &&
       !hasInvalidEmailChars(rawEmail) &&
@@ -904,8 +925,8 @@
         ? rawEmail
         : "";
 
-    const rawPhone = form.querySelector('input[name="phone"]')?.value?.trim() ||
-      "";
+    const phoneField = getPhoneInput(form);
+    const rawPhone = phoneField?.value?.trim() || "";
     const phone =
       rawPhone && validateUSPhone(rawPhone)
         ? rawPhone
@@ -1069,7 +1090,7 @@
     if (f) f.required = true;
 
     // Add real-time validation and formatting for phone and email
-    const phoneInput = form.querySelector('input[name="phone"]');
+    const phoneInput = getPhoneInput(form);
     if (phoneInput) {
       // Set placeholder
       phoneInput.placeholder = "555-123-4567";
@@ -1140,16 +1161,20 @@
       });
     }
 
-    const emailInput = form.querySelector('input[name="email"]');
+    const emailInput = getEmailInput(form);
     if (emailInput) {
       emailInput.addEventListener("blur", function () {
-        if (this.value.trim()) {
-          if (hasInvalidEmailChars(this.value)) {
+        if (this.value) {
+          const normalized = normalizeEmailValue(this.value);
+          if (normalized !== this.value) {
+            this.value = normalized;
+          }
+          if (hasInvalidEmailChars(normalized)) {
             showValidationError(
               this,
               'Email addresses cannot include spaces or "/" characters'
             );
-          } else if (!validateEmail(this.value)) {
+          } else if (!validateEmail(normalized)) {
             showValidationError(this, "Please enter a valid email address");
           } else {
             clearValidationError(this);
@@ -1160,6 +1185,14 @@
       });
 
       emailInput.addEventListener("input", function () {
+        const cursorPos = this.selectionStart;
+        const normalized = normalizeEmailValue(this.value);
+        if (normalized !== this.value) {
+          this.value = normalized;
+          if (typeof cursorPos === "number") {
+            this.setSelectionRange(cursorPos, cursorPos);
+          }
+        }
         // Clear error on input to give immediate feedback when they start typing correctly
         const trimmed = this.value.trim();
         if (trimmed && hasInvalidEmailChars(trimmed)) {
@@ -1203,16 +1236,14 @@
     });
 
     const leadSyncInputs = [
-      'input[name="first_name"]',
-      'input[name="last_name"]',
-      'input[name="name"]',
-      'input[name="full_name"]',
-      'input[name="preferred_name"]',
-      'input[name="email"]',
-      'input[name="phone"]',
-    ]
-      .map((selector) => form.querySelector(selector))
-      .filter(Boolean);
+      ...form.querySelectorAll('input[name="first_name"]'),
+      ...form.querySelectorAll('input[name="last_name"]'),
+      ...form.querySelectorAll('input[name="name"]'),
+      ...form.querySelectorAll('input[name="full_name"]'),
+      ...form.querySelectorAll('input[name="preferred_name"]'),
+      ...form.querySelectorAll(EMAIL_INPUT_SELECTOR),
+      ...form.querySelectorAll(PHONE_INPUT_SELECTOR),
+    ].filter(Boolean);
     if (leadSyncInputs.length) {
       const handleLeadFieldChange = () => queueLeadSyncInProgress(form);
       leadSyncInputs.forEach((input) => {
@@ -1251,7 +1282,7 @@
       let hasValidationErrors = false;
 
       // Phone validation
-      const phoneInput = form.querySelector('input[name="phone"]');
+      const phoneInput = getPhoneInput(form);
       if (phoneInput && phoneInput.value.trim()) {
         if (!validateUSPhone(phoneInput.value)) {
           showValidationError(
@@ -1265,9 +1296,19 @@
       }
 
       // Email validation
-      const emailInput = form.querySelector('input[name="email"]');
+      const emailInput = getEmailInput(form);
       if (emailInput && emailInput.value.trim()) {
-        if (!validateEmail(emailInput.value)) {
+        const normalizedEmail = normalizeEmailValue(emailInput.value);
+        if (normalizedEmail !== emailInput.value) {
+          emailInput.value = normalizedEmail;
+        }
+        if (hasInvalidEmailChars(normalizedEmail)) {
+          showValidationError(
+            emailInput,
+            'Email addresses cannot include spaces or "/" characters'
+          );
+          hasValidationErrors = true;
+        } else if (!validateEmail(normalizedEmail)) {
           showValidationError(emailInput, "Please enter a valid email address");
           hasValidationErrors = true;
         } else {
@@ -1312,10 +1353,10 @@
           await syncLeadStatus(form, LEAD_STATUS.SUBMITTED);
           clearSavedFormData();
 
-          const submittedEmail =
-            form.querySelector('input[name="email"]')?.value?.trim() || "";
-          const submittedPhone =
-            form.querySelector('input[name="phone"]')?.value?.trim() || "";
+          const submittedEmail = normalizeEmailValue(
+            getEmailInput(form)?.value || ""
+          );
+          const submittedPhone = getPhoneInput(form)?.value?.trim() || "";
           const e164Phone = formatPhoneNumberForRudderstack(submittedPhone);
 
           if (
