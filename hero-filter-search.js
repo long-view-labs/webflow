@@ -446,31 +446,6 @@ $(function () {
     );
   }
 
-  function dispatchDesktopClick(target) {
-    if (!target) return;
-    try {
-      var event = new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      });
-      target.dispatchEvent(event);
-    } catch (e) {
-      $(target).trigger("click");
-    }
-  }
-
-  function bindTouchClick(selector, $scope) {
-    if (!isMobileDevice()) return;
-    var $context = $scope && $scope.length ? $scope : $(document);
-    $context.off("touchend.heroFilterTouch", selector);
-    $context.on("touchend.heroFilterTouch", selector, function (event) {
-      var target = event.currentTarget;
-      event.preventDefault();
-      dispatchDesktopClick(target);
-    });
-  }
-
   function formatDOBInput(value) {
     if (!value) return "";
 
@@ -1275,6 +1250,18 @@ $(function () {
         updateInsuranceLabel($widget, state.insurance);
         updateWidgetCTA($widget);
         closeDropdownForElement($(this));
+        if (isMobileDevice()) {
+          try {
+            var evt = new MouseEvent("click", {
+              bubbles: true,
+              cancelable: true,
+              view: window,
+            });
+            document.body.dispatchEvent(evt);
+          } catch (e) {
+            $(document.body).trigger("click");
+          }
+        }
       }
     );
 
@@ -1306,7 +1293,6 @@ $(function () {
 
     bindDobHandlers($widget);
     setupDropdownA11y($widget);
-    bindTouchClick("#insurance_filter", $widget);
 
     $widget.on("click", ".provider-filter_close-box", function () {
       var $dropdown = $(this).closest(
