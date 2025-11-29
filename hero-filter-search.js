@@ -808,6 +808,34 @@ $(function () {
     }
   }
 
+  function resetDropdownState($element) {
+    if (!$element || !$element.length) return;
+
+    var $dropdownList = $element.closest(
+      ".w-dropdown-list, .provider-filter_dropdown"
+    );
+    if (!$dropdownList.length) return;
+
+    var $dropdown = $dropdownList.closest(".w-dropdown");
+    if (!$dropdown.length) {
+      $dropdown = $dropdownList.closest(".provider-filter_dopdown");
+    }
+    var $toggle = $dropdown
+      .find(".w-dropdown-toggle, .provider-filter_dopdown-toggle")
+      .first();
+
+    $dropdown.removeClass("w--open");
+    $dropdownList.removeClass("w--open open").hide().attr("aria-hidden", "true");
+    if ($toggle.length) {
+      $toggle.removeClass("w--open").attr("aria-expanded", "false");
+    }
+
+    setTimeout(function () {
+      $(document).trigger("mouseup");
+      $(document).trigger("touchend");
+    }, 0);
+  }
+
   function updateWidgetCTA($widget) {
     if (!$widget || !$widget.length) return;
 
@@ -1250,18 +1278,7 @@ $(function () {
         updateInsuranceLabel($widget, state.insurance);
         updateWidgetCTA($widget);
         closeDropdownForElement($(this));
-        if (isMobileDevice()) {
-          try {
-            var evt = new MouseEvent("click", {
-              bubbles: true,
-              cancelable: true,
-              view: window,
-            });
-            document.body.dispatchEvent(evt);
-          } catch (e) {
-            $(document.body).trigger("click");
-          }
-        }
+        resetDropdownState($(this));
       }
     );
 
