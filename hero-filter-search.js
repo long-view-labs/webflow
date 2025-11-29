@@ -903,6 +903,70 @@ $(function () {
     return $widget.find('a[href*="signup.usenourish.com"]').first();
   }
 
+  function injectInsuranceOptions($widget) {
+    if (!payersData || !payersData.length) return;
+    if (!$widget || !$widget.length) return;
+
+    var $container = $widget.find(
+      ".filter-list_list-wrapper.filter-page.filter"
+    );
+    if (!$container.length) return;
+    if ($container.data("heroPayersInjected")) return;
+
+    var $dividerRow = $container.find(".filter-divider").first();
+    var $insertAfter = $dividerRow.closest(".filter-list_radio-field");
+    var fragment = document.createDocumentFragment();
+
+    var sorted = payersData
+      .slice()
+      .filter(function (payer) {
+        return payer && payer.payerName;
+      })
+      .sort(function (a, b) {
+        return a.payerName.localeCompare(b.payerName);
+      });
+
+    sorted.forEach(function (payer) {
+      var id = payer.payerName.replace(/[^a-zA-Z0-9]/g, "-");
+      var label = document.createElement("label");
+      label.className = "filter-list_radio-field w-radio dynamic-insurance";
+
+      var radioDiv = document.createElement("div");
+      radioDiv.className =
+        "w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input";
+
+      var input = document.createElement("input");
+      input.type = "radio";
+      input.name = "Insurance";
+      input.id = id;
+      input.setAttribute("data-name", "Insurance");
+      input.style.opacity = "0";
+      input.style.position = "absolute";
+      input.style.zIndex = "-1";
+      input.value = payer.payerName;
+
+      var span = document.createElement("span");
+      span.setAttribute("fs-cmsfilter-field", "insurance");
+      span.className = "filter-list_label state w-form-label";
+      span.setAttribute("for", id);
+      span.setAttribute("tabindex", "0");
+      span.textContent = payer.payerName;
+
+      label.appendChild(radioDiv);
+      label.appendChild(input);
+      label.appendChild(span);
+      fragment.appendChild(label);
+    });
+
+    if ($insertAfter && $insertAfter.length) {
+      $insertAfter.after(fragment);
+    } else {
+      $container.append(fragment);
+    }
+
+    $container.data("heroPayersInjected", true);
+  }
+
   function getWidgetFormName($widget) {
     var $form = $widget.find("form[data-name]").first();
     return $form.length ? $form.attr("data-name") : "";
@@ -1526,6 +1590,7 @@ $(function () {
     .then(function () {
       dataReady = true;
       $widgets.each(function () {
+        injectInsuranceOptions($(this));
         updateWidgetCTA($(this));
       });
     })
@@ -1533,6 +1598,7 @@ $(function () {
       console.error("Error loading provider search payers:", error);
       dataReady = true;
       $widgets.each(function () {
+        injectInsuranceOptions($(this));
         updateWidgetCTA($(this));
       });
     });
