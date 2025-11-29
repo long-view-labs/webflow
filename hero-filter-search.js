@@ -44,8 +44,19 @@ $(function () {
       .toLowerCase();
   }
 
+  function getPayersSourceParam() {
+    // Homepage uses the sign-up feed; everywhere else keeps the homepage feed.
+    var path = (window.location && window.location.pathname) || "/";
+    path = String(path).toLowerCase();
+    if (path.length > 1 && path.endsWith("/")) {
+      path = path.slice(0, -1);
+    }
+    return path === "/" ? "sign-up" : "homepage";
+  }
+
   function fetchPayersData() {
-    var cacheKey = "nourishHeroPayersData";
+    var sourceParam = getPayersSourceParam();
+    var cacheKey = "nourishHeroPayersData:" + sourceParam;
     var cacheTTL = 24 * 60 * 60 * 1000;
     var now = Date.now();
 
@@ -69,7 +80,11 @@ $(function () {
       // ignore storage issues
     }
 
-    return fetch("https://app.usenourish.com/api/payers?source=homepage", {
+    var url =
+      "https://app.usenourish.com/api/payers?source=" +
+      encodeURIComponent(sourceParam);
+
+    return fetch(url, {
       method: "GET",
       headers: {
         Accept: "application/json",
