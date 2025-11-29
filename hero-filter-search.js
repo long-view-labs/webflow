@@ -335,20 +335,18 @@ $(function () {
 
   function appendUtmParams(params) {
     try {
-      var utmKeys =
-        window.NOURISH_UTM_PARAMS ||
-        [
-          "utm_source",
-          "utm_medium",
-          "utm_campaign",
-          "utm_content",
-          "utm_term",
-          "gclid",
-          "fbclid",
-          "msclkid",
-          "ttclid",
-          "im_ref",
-        ];
+      var utmKeys = window.NOURISH_UTM_PARAMS || [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_term",
+        "gclid",
+        "fbclid",
+        "msclkid",
+        "ttclid",
+        "im_ref",
+      ];
 
       var utmSnapshot = {};
       try {
@@ -899,7 +897,7 @@ $(function () {
       });
       $dobInput.css({
         "font-size": "16px",
-        "min-height": "44px",
+        "min-height": "60px",
         padding: "12px 16px",
       });
       $dobInput.addClass("mobile-dob-input");
