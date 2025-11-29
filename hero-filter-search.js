@@ -335,20 +335,18 @@ $(function () {
 
   function appendUtmParams(params) {
     try {
-      var utmKeys =
-        window.NOURISH_UTM_PARAMS ||
-        [
-          "utm_source",
-          "utm_medium",
-          "utm_campaign",
-          "utm_content",
-          "utm_term",
-          "gclid",
-          "fbclid",
-          "msclkid",
-          "ttclid",
-          "im_ref",
-        ];
+      var utmKeys = window.NOURISH_UTM_PARAMS || [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_term",
+        "gclid",
+        "fbclid",
+        "msclkid",
+        "ttclid",
+        "im_ref",
+      ];
 
       var utmSnapshot = {};
       try {
@@ -790,19 +788,24 @@ $(function () {
       window.Webflow.require &&
       window.Webflow.require("dropdown");
 
+    var closedViaApi = false;
     if (dropdownApi) {
       try {
         dropdownApi.close($dropdown[0]);
+        closedViaApi = true;
       } catch (e) {
         // ignore dropdown API errors
       }
     }
 
-    $dropdownList.removeClass("open").slideUp(0);
-    $dropdown
-      .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
-      .attr("aria-expanded", "false")
-      .removeClass("w--open");
+    if (!closedViaApi) {
+      $dropdownList.removeClass("open w--open").slideUp(0);
+      $dropdown.removeClass("w--open");
+      $dropdown
+        .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
+        .attr("aria-expanded", "false")
+        .removeClass("w--open");
+    }
   }
 
   function updateWidgetCTA($widget) {
@@ -899,7 +902,7 @@ $(function () {
       });
       $dobInput.css({
         "font-size": "16px",
-        "min-height": "44px",
+        "min-height": "60px",
         padding: "12px 16px",
       });
       $dobInput.addClass("mobile-dob-input");
@@ -1303,7 +1306,7 @@ $(function () {
 
   $(document).on(
     "click.heroFilterClose",
-    ".w-button, .w-radio, .provider-filter_close-box",
+    ".w-button, .provider-filter_close-box",
     function () {
       $(".w-dropdown").trigger("w-close");
       try {
