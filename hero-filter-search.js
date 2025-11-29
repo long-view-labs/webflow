@@ -1250,6 +1250,30 @@ $(function () {
       }
     );
 
+    // If the user taps the already-selected insurance option on mobile, also close.
+    $widget.on(
+      "click",
+      'input[type="radio"][data-name="Insurance"], .filter-list_label[for]',
+      function () {
+        var $radio = $(this);
+        if (!$radio.is('input[type="radio"]')) {
+          var targetId = $radio.attr("for");
+          if (targetId) {
+            var $target = $("#" + targetId);
+            if ($target.is('input[type="radio"][data-name="Insurance"]')) {
+              $radio = $target;
+            }
+          }
+        }
+        if (!$radio.length || !$radio.is('input[type="radio"]')) return;
+        if ($radio.prop("checked")) {
+          setTimeout(function () {
+            closeDropdownForElement($radio);
+          }, 0);
+        }
+      }
+    );
+
     $widget.on("click", ".filter-list_input-group", function (e) {
       e.preventDefault();
       var $checkbox = $(this).find('input[type="checkbox"]');
