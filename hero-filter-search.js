@@ -335,18 +335,20 @@ $(function () {
 
   function appendUtmParams(params) {
     try {
-      var utmKeys = window.NOURISH_UTM_PARAMS || [
-        "utm_source",
-        "utm_medium",
-        "utm_campaign",
-        "utm_content",
-        "utm_term",
-        "gclid",
-        "fbclid",
-        "msclkid",
-        "ttclid",
-        "im_ref",
-      ];
+      var utmKeys =
+        window.NOURISH_UTM_PARAMS ||
+        [
+          "utm_source",
+          "utm_medium",
+          "utm_campaign",
+          "utm_content",
+          "utm_term",
+          "gclid",
+          "fbclid",
+          "msclkid",
+          "ttclid",
+          "im_ref",
+        ];
 
       var utmSnapshot = {};
       try {
@@ -788,52 +790,19 @@ $(function () {
       window.Webflow.require &&
       window.Webflow.require("dropdown");
 
-    var closedViaApi = false;
     if (dropdownApi) {
       try {
         dropdownApi.close($dropdown[0]);
-        closedViaApi = true;
       } catch (e) {
         // ignore dropdown API errors
       }
     }
 
-    if (!closedViaApi) {
-      $dropdownList.removeClass("open w--open").slideUp(0);
-      $dropdown.removeClass("w--open");
-      $dropdown
-        .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
-        .attr("aria-expanded", "false")
-        .removeClass("w--open");
-    }
-  }
-
-  function resetDropdownState($element) {
-    if (!$element || !$element.length) return;
-
-    var $dropdownList = $element.closest(
-      ".w-dropdown-list, .provider-filter_dropdown"
-    );
-    if (!$dropdownList.length) return;
-
-    var $dropdown = $dropdownList.closest(".w-dropdown");
-    if (!$dropdown.length) {
-      $dropdown = $dropdownList.closest(".provider-filter_dopdown");
-    }
-    var $toggle = $dropdown
-      .find(".w-dropdown-toggle, .provider-filter_dopdown-toggle")
-      .first();
-
-    $dropdown.removeClass("w--open");
-    $dropdownList.removeClass("w--open open").hide().attr("aria-hidden", "true");
-    if ($toggle.length) {
-      $toggle.removeClass("w--open").attr("aria-expanded", "false");
-    }
-
-    setTimeout(function () {
-      $(document).trigger("mouseup");
-      $(document).trigger("touchend");
-    }, 0);
+    $dropdownList.removeClass("open").slideUp(0);
+    $dropdown
+      .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
+      .attr("aria-expanded", "false")
+      .removeClass("w--open");
   }
 
   function updateWidgetCTA($widget) {
@@ -930,7 +899,7 @@ $(function () {
       });
       $dobInput.css({
         "font-size": "16px",
-        "min-height": "60px",
+        "min-height": "44px",
         padding: "12px 16px",
       });
       $dobInput.addClass("mobile-dob-input");
@@ -1278,7 +1247,6 @@ $(function () {
         updateInsuranceLabel($widget, state.insurance);
         updateWidgetCTA($widget);
         closeDropdownForElement($(this));
-        resetDropdownState($(this));
       }
     );
 
@@ -1335,7 +1303,7 @@ $(function () {
 
   $(document).on(
     "click.heroFilterClose",
-    ".w-button, .provider-filter_close-box",
+    ".w-button, .w-radio, .provider-filter_close-box",
     function () {
       $(".w-dropdown").trigger("w-close");
       try {
