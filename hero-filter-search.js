@@ -1323,32 +1323,37 @@ $(function () {
     updateWidgetCTA($widget);
   }
 
-  $(document).on(
-    "click.heroFilterClose",
-    ".w-button, .w-radio, .provider-filter_close-box",
-    function () {
-      $(".w-dropdown").trigger("w-close");
-      try {
-        var escapeEvent = new KeyboardEvent("keydown", {
-          key: "Escape",
-          keyCode: 27,
-          code: "Escape",
-          which: 27,
-          bubbles: true,
-          cancelable: true,
-        });
-        document.activeElement.dispatchEvent(escapeEvent);
-      } catch (e) {
-        // ignore keyboard dispatch issues
-      }
-    }
-  );
-
   var $widgets = getAllWidgets();
   $widgets.each(function (index) {
     $(this).data("heroFilterInstance", index);
     initWidget($(this));
   });
+
+  if ($widgets.length) {
+    $widgets.on(
+      "click.heroFilterClose",
+      ".w-button, .w-radio, .provider-filter_close-box",
+      function () {
+        var $widget = $(this).closest(widgetSelectors.join(","));
+        if (!$widget.length) return;
+
+        $widget.find(".w-dropdown").trigger("w-close");
+        try {
+          var escapeEvent = new KeyboardEvent("keydown", {
+            key: "Escape",
+            keyCode: 27,
+            code: "Escape",
+            which: 27,
+            bubbles: true,
+            cancelable: true,
+          });
+          document.activeElement.dispatchEvent(escapeEvent);
+        } catch (e) {
+          // ignore keyboard dispatch issues
+        }
+      }
+    );
+  }
 
   if ($widgets.length) {
     $(document).on("click.heroFilterState", function (event) {
