@@ -1,4 +1,7 @@
 $(function () {
+  // Remove legacy global click handler that closed dropdowns on every click
+  $(document).off("click.heroFilterClose");
+
   var payersData = [];
   var dataReady = false;
 
