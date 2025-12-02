@@ -51,7 +51,7 @@ $(function () {
     if (path.length > 1 && path.endsWith("/")) {
       path = path.slice(0, -1);
     }
-    return path === "/" ? "sign-up" : "homepage";
+    return path === "/" || path === "/paid" ? "sign-up" : "homepage";
   }
 
   function fetchPayersData() {
