@@ -739,7 +739,10 @@ $(function () {
   }
 
   function getWidgetFormName($widget) {
-    var $form = $widget.find("form[data-name]").first();
+    var $form = $widget.closest("form[data-name]").first();
+    if (!$form.length) {
+      $form = $widget.find("form[data-name]").first();
+    }
     return $form.length ? $form.attr("data-name") : "";
   }
 
