@@ -913,9 +913,6 @@ $(function () {
         autocomplete: "bday",
         placeholder: "MM/DD/YYYY",
       });
-      $dobInput.css({
-        "min-height": "60px",
-      });
       $dobInput.addClass("mobile-dob-input");
     }
 
