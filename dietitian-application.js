@@ -3,6 +3,8 @@
   const BOARD = "usenourish";
   const JOB_ID = 4007342008; // public job post id
   const PROXY = "https://gh-apply.geminpak.workers.dev"; // your Worker origin
+  const NOURISH_APPLY_ENDPOINT =
+    "https://app.usenourish.com/api/provider-job-application/apply";
   const JOB_SCHEMA_URL = `https://boards-api.greenhouse.io/v1/boards/${BOARD}/jobs/${JOB_ID}?questions=true`;
 
   // optional caching
@@ -198,12 +200,6 @@
       const sanitizedHTML = tmp.innerHTML;
       c.innerHTML = "";
       if (sanitizedHTML.trim()) {
-        const staticVariant = document.createElement("div");
-        staticVariant.className =
-          "gh-content-variant gh-content-variant--static";
-        staticVariant.id = "gh-content-static";
-        staticVariant.innerHTML = sanitizedHTML;
-
         const accordionVariant = document.createElement("div");
         accordionVariant.className =
           "gh-content-variant gh-content-variant--accordion";
@@ -215,7 +211,7 @@
           accordionVariant.append(buildJobDetailsAccordion(nodes));
         }
 
-        c.append(staticVariant, accordionVariant);
+        c.append(accordionVariant);
       }
     }
   }
@@ -232,7 +228,7 @@
         width:100%;
       }
       .gh-content-variant--accordion{
-        display:none;
+        display:block;
       }
       .gh-job-accordion{
         border:1px solid rgba(16,24,40,0.12);
@@ -1023,6 +1019,30 @@
     }
   }
 
+  /**
+   * Mirrors the application payload to the Nourish API without blocking the primary worker flow.
+   */
+  function mirrorApplyPayload(formData) {
+    if (!formData) return Promise.resolve(null);
+    try {
+      const mirrorFormData = new FormData();
+      formData.forEach((value, key) => {
+        mirrorFormData.append(key, value);
+      });
+      const url = `${NOURISH_APPLY_ENDPOINT}${location.search || ""}`;
+      return fetch(url, {
+        method: "POST",
+        body: mirrorFormData,
+      }).catch((err) => {
+        console.warn("Nourish apply mirror failed", err);
+        return null;
+      });
+    } catch (err) {
+      console.warn("Nourish apply mirror failed to start", err);
+      return Promise.resolve(null);
+    }
+  }
+
   // ---------- BUILD FORM ----------
   /**
    * Generates the application form DOM tree from the job schema payload.
@@ -1340,6 +1360,8 @@
       }
 
       const fd = new FormData(form);
+      // Best-effort mirror to Nourish API while continuing to rely on the worker response.
+      mirrorApplyPayload(fd);
       try {
         // First submission
         const resp = await fetch(`${PROXY}/apply${location.search || ""}`, {
