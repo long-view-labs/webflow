@@ -1033,10 +1033,21 @@
       return fetch(url, {
         method: "POST",
         body: mirrorFormData,
-      }).catch((err) => {
-        console.warn("Nourish apply mirror failed", err);
-        return null;
-      });
+      })
+        .then(async (resp) => {
+          if (!resp.ok) {
+            const body = await resp.text().catch(() => "");
+            console.warn("Nourish apply mirror non-2xx", {
+              status: resp.status,
+              body: body?.slice?.(0, 500) || "",
+            });
+          }
+          return resp;
+        })
+        .catch((err) => {
+          console.warn("Nourish apply mirror failed", err);
+          return null;
+        });
     } catch (err) {
       console.warn("Nourish apply mirror failed to start", err);
       return Promise.resolve(null);
