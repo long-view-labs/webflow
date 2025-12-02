@@ -788,7 +788,7 @@ $(function () {
       window.Webflow.require &&
       window.Webflow.require("dropdown");
 
-    if (dropdownApi) {
+    if (dropdownApi && typeof dropdownApi.close === "function") {
       try {
         dropdownApi.close($dropdown[0]);
       } catch (e) {
@@ -796,11 +796,29 @@ $(function () {
       }
     }
 
-    $dropdownList.removeClass("open").slideUp(0);
-    $dropdown
+    // Hard reset dropdown state so it can reopen reliably even if the Webflow API is unavailable.
+    $dropdown.removeClass("w--open").attr("data-open", "false");
+
+    var $toggle = $dropdown
       .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
-      .attr("aria-expanded", "false")
-      .removeClass("w--open");
+      .first();
+    if ($toggle.length) {
+      $toggle.attr("aria-expanded", "false").removeClass("w--open");
+    }
+
+    $dropdownList
+      .removeClass("open w--open")
+      .attr("aria-hidden", "true")
+      .stop(true, true)
+      .css({
+        display: "none",
+        height: "",
+        paddingTop: "",
+        paddingBottom: "",
+        marginTop: "",
+        marginBottom: "",
+        overflow: "",
+      });
   }
 
   function updateWidgetCTA($widget) {
@@ -896,9 +914,7 @@ $(function () {
         placeholder: "MM/DD/YYYY",
       });
       $dobInput.css({
-        "font-size": "16px",
         "min-height": "60px",
-        padding: "12px 16px",
       });
       $dobInput.addClass("mobile-dob-input");
     }
@@ -1322,6 +1338,27 @@ $(function () {
 
     updateWidgetCTA($widget);
   }
+
+  $(document).on(
+    "click.heroFilterClose",
+    ".w-button, .w-radio, .provider-filter_close-box",
+    function () {
+      $(".w-dropdown").trigger("w-close");
+      try {
+        var escapeEvent = new KeyboardEvent("keydown", {
+          key: "Escape",
+          keyCode: 27,
+          code: "Escape",
+          which: 27,
+          bubbles: true,
+          cancelable: true,
+        });
+        document.activeElement.dispatchEvent(escapeEvent);
+      } catch (e) {
+        // ignore keyboard dispatch issues
+      }
+    }
+  );
 
   var $widgets = getAllWidgets();
   $widgets.each(function (index) {

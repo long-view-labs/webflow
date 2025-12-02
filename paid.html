@@ -1,0 +1,290 @@
+<script
+  async
+  src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.610.14/hero-filter-search.js"
+></script>
+
+<script src="https://cdn.jsdelivr.net/gh/videsigns/webflow-tools@latest/multi-step.js"></script>
+
+<script>
+  /*
+document.addEventListener("DOMContentLoaded", () => {
+  window.rudderanalytics?.ready(async () => {
+    const user = window.statsigUser;
+    const { StatsigClient } = window.Statsig;
+    const client = new StatsigClient(
+      "client-WQtYDbXSKdHeLKM7WlavcbKXn19ve6OlMdFhQUfxtcH",
+      user                       // <-- pass entire object, not userID
+    );
+
+    await client.initializeAsync();
+
+    const exp = client.getExperiment("quiz-insurance-form");
+    const variant = exp.get("variant");
+    
+    console.log("StatsigUser:", user);
+    console.log("Experiment variant:", variant);
+    
+    window.rudderanalytics?.track("Experiment Viewed", {
+      experiment_name: "quiz-insurance-form",
+      variation: variant
+    });
+    
+    if (variant === "test") {
+      $("#quiz-control").hide();
+      $("#quiz-variant").show();
+    } else {
+      $("#quiz-control").show();
+      $("#quiz-variant").hide();
+    }
+  });
+});
+*/
+</script>
+
+<script>
+  $(document).ready(function () {
+    function checkForLastStep() {
+      const $lastStep = $('[data-form="step"]').last();
+      if ($lastStep.is(":visible")) {
+        $(".f-progress-wrapper-copy-element").hide();
+      }
+    }
+
+    // Watch for step changes after radio clicks
+    $(document).on(
+      "change",
+      '[data-form="step"] input[type="radio"]',
+      function () {
+        setTimeout(checkForLastStep, 500);
+      }
+    );
+
+    // Run on load too (in case page reloads mid-step)
+    checkForLastStep();
+  });
+</script>
+
+<script>
+  $(document).ready(function () {
+    $(".f-form-radio-wrapper").attr("data-radio-skip", "true");
+    $(".f-form-radio-wrapper").attr("data-radio-delay", "500");
+  });
+</script>
+
+<script>
+  // Function to load Swiper script
+  function loadSwiperScript() {
+    return new Promise((resolve, reject) => {
+      // Check if Swiper is already loaded
+      if (typeof Swiper !== "undefined") {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js";
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  // Function to initialize all Swiper instances
+  function initializeSwipers() {
+    // TrustPilot Swiper
+    $(".trust-pilot-component").each(function (index) {
+      const swiper = new Swiper($(this).find(".swiper")[0], {
+        slidesPerView: 4,
+        speed: 600,
+        spaceBetween: 20,
+        initialSlide: 0,
+        slideToClickedSlide: true,
+        centeredSlides: false,
+        loop: false,
+        slideClass: "swiper-slide",
+        slideActiveClass: "is-active",
+        slideDuplicateActiveClass: "is-active",
+        keyboard: false,
+        disableOnInteraction: false,
+        pagination: {
+          el: ".stat-cards_mobile-slider .swiper_pagination-wrapper-home",
+          bulletElement: "div",
+          bulletClass: "swiper_pagination-bullet",
+          bulletActiveClass: "is-active",
+          clickable: true,
+        },
+        breakpoints: {
+          0: { slidesPerView: 1.1 },
+          480: { slidesPerView: 1.1 },
+          767: { slidesPerView: 2 },
+          992: { slidesPerView: 3 },
+        },
+        mousewheel: {
+          forceToAxis: false,
+          sensitivity: 1,
+        },
+      });
+    });
+
+    // Condition Stories Swiper
+    $(".condition_stories-component").each(function (index) {
+      const swiper = new Swiper($(this).find(".swiper")[0], {
+        slidesPerView: 1,
+        speed: 600,
+        spaceBetween: 24,
+        initialSlide: 0,
+        slideClass: "swiper-slide-home",
+        slideToClickedSlide: true,
+        centeredSlides: false,
+        loop: false,
+        slideActiveClass: "is-active",
+        slideDuplicateActiveClass: "is-active",
+        keyboard: false,
+        disableOnInteraction: false,
+        pagination: {
+          el: ".condition_stories-component .swiper_pagination-wrapper-home",
+          bulletElement: "div",
+          bulletClass: "swiper_pagination-bullet",
+          bulletActiveClass: "is-active",
+          bulletSize: 8,
+          clickable: true,
+        },
+        breakpoints: {
+          0: {},
+          480: { spaceBetween: 12 },
+          481: { spaceBetween: 24 },
+          767: { spaceBetween: 24 },
+          992: { spaceBetween: 24 },
+        },
+      });
+    });
+
+    // Stats Cards Mobile Slider
+    $(".stat-cards_mobile-slider").each(function (index) {
+      const statsSwiper = new Swiper($(this).find(".swiper")[0], {
+        slidesPerView: 1,
+        speed: 600,
+        spaceBetween: 24,
+        initialSlide: 0,
+        slideToClickedSlide: true,
+        centeredSlides: false,
+        loop: true,
+        slideClass: "swiper-slide-home",
+        slideActiveClass: "is-active",
+        slideDuplicateActiveClass: "is-active",
+        keyboard: false,
+        disableOnInteraction: false,
+        pagination: {
+          el: ".stat-cards_mobile-slider .swiper_pagination-wrapper-home",
+          bulletElement: "div",
+          bulletClass: "swiper_pagination-bullet",
+          bulletActiveClass: "is-active",
+          clickable: true,
+        },
+        breakpoints: {
+          0: {},
+          480: {},
+          767: {},
+          992: {},
+        },
+      });
+    });
+  }
+
+  // Function to handle lazy loading and initialization
+  async function initializeLazySwiper() {
+    try {
+      await loadSwiperScript();
+      initializeSwipers();
+    } catch (error) {
+      console.error("Error loading Swiper:", error);
+    }
+  }
+
+  // Set Tolstoy app key
+  window.tolstoyAppKey = "ce55c09a-8b56-4f5f-b0be-edb10469b54b";
+
+  // Function to load Tolstoy script
+  function initializeTolstoy() {
+    if (window.tolstoyScriptLoaded) return;
+
+    window.tolstoyScriptLoaded = true;
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.async = true;
+    script.src = "https://widget.gotolstoy.com/widget/widget.js";
+    document.head.appendChild(script);
+  }
+  // Set up the interaction observer
+  $(window).one("scroll touchstart mousemove", function () {
+    initializeLazySwiper();
+    initializeTolstoy();
+    intercomLoader();
+  });
+
+  // Optional: Initialize if the user hasn't interacted after a certain time
+  setTimeout(function () {
+    if (typeof Swiper === "undefined") {
+      initializeLazySwiper();
+    }
+  }, 5000); // 5 second fallback
+
+  //Load intercom on scroll
+  var intercomLoader = function () {
+    (function () {
+      var w = window;
+      var ic = w.Intercom;
+      if (typeof ic === "function") {
+        ic("reattach_activator");
+        ic("update", w.intercomSettings);
+      } else {
+        var d = document;
+        var i = function () {
+          i.c(arguments);
+        };
+        i.q = [];
+        i.c = function (args) {
+          i.q.push(args);
+        };
+        w.Intercom = i;
+        var l = function () {
+          var s = d.createElement("script");
+          s.type = "text/javascript";
+          s.async = true;
+          s.src = "https://widget.intercom.io/widget/y593cjou";
+          var x = d.getElementsByTagName("script")[0];
+          x.parentNode.insertBefore(s, x);
+        };
+        if (document.readyState === "complete") {
+          l();
+        } else if (w.attachEvent) {
+          w.attachEvent("onload", l);
+        } else {
+          w.addEventListener("load", l, false);
+        }
+      }
+    })();
+    window.Intercom("boot", {
+      app_id: "y593cjou",
+    });
+  };
+  /*
+  window.intercomSettings = {
+      api_base: "https://api-iam.intercom.io",
+      app_id: "y593cjou"
+    };*/
+</script>
+
+<script>
+  $(document).ready(function () {
+    $("#see-more").on("click", function () {
+      $(".see-more-faq").hide();
+      $(".see-less-faq").css("display", "flex");
+    });
+    $("#see-less").on("click", function () {
+      $(".see-more-faq").css("display", "flex");
+      $(".see-less-faq").hide();
+    });
+  });
+</script>
