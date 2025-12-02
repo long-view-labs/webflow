@@ -316,21 +316,49 @@ $(function () {
     var target = normalizeValue(payerName);
     if (!target) return null;
 
+    // Prefer exact payerName matches, then group/display with stable ordering.
+    var bestMatchId = null;
+    var bestRank = Infinity;
+    var bestOrder = Infinity;
+
     for (var i = 0; i < payersData.length; i++) {
       var payer = payersData[i] || {};
-      var names = [
-        normalizeValue(payer.payerName),
-        normalizeValue(payer.groupNameDeprecated),
-        normalizeValue(payer.displayGroup),
-      ];
-      if (names.indexOf(target) !== -1) {
-        if (typeof payer.id !== "undefined" && payer.id !== null) {
-          return payer.id;
+      var payerId =
+        typeof payer.id === "number" || typeof payer.id === "string"
+          ? payer.id
+          : null;
+      if (payerId === null) continue;
+
+      var payerNameNorm = normalizeValue(payer.payerName);
+      var groupNameNorm = normalizeValue(payer.groupNameDeprecated);
+      var displayGroupNorm = normalizeValue(payer.displayGroup);
+
+      var rank = null;
+      if (payerNameNorm && payerNameNorm === target) {
+        rank = 1;
+      } else if (groupNameNorm && groupNameNorm === target) {
+        rank = 2;
+      } else if (displayGroupNorm && displayGroupNorm === target) {
+        rank = 3;
+      }
+
+      if (rank !== null) {
+        var sortOrder =
+          typeof payer.signUpFlowSortOrder === "number"
+            ? payer.signUpFlowSortOrder
+            : Number.MAX_SAFE_INTEGER;
+
+        if (rank < bestRank || (rank === bestRank && sortOrder < bestOrder)) {
+          bestRank = rank;
+          bestOrder = sortOrder;
+          bestMatchId = payerId;
+
+          if (rank === 1) break;
         }
       }
     }
 
-    return null;
+    return bestMatchId;
   }
 
   function appendUtmParams(params) {

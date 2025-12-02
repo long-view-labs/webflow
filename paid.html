@@ -1,13 +1,18 @@
 <script
   async
-  src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.610.21/hero-filter-search.js"
+  src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.610.23/hero-filter-search.js"
 ></script>
 <script src="https://cdn.jsdelivr.net/gh/videsigns/webflow-tools@latest/multi-step.js"></script>
 
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     window.rudderanalytics?.ready(async () => {
-      const user = window.statsigUser;
+      const u = window.statsigUser;
+      try {
+        JSON.stringify(u); // should not throw
+      } catch (err) {
+        console.error("user not JSON-safe", u, err);
+      }
       const { StatsigClient } = window.Statsig;
       const client = new StatsigClient(
         "client-WQtYDbXSKdHeLKM7WlavcbKXn19ve6OlMdFhQUfxtcH",
@@ -16,7 +21,7 @@
 
       await client.initializeAsync();
 
-      const exp = client.getExperiment("quiz-insurance-form");
+      const exp = client.getExperiment("quiz-insurance-form-2");
       const variant = exp.get("variant");
 
       console.log("StatsigUser:", user);
