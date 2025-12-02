@@ -49,7 +49,7 @@ class DeployManager {
     }
   }
 
-  generateCommitMessage() {
+  async generateCommitMessage() {
     const stagedFiles = this.getStagedFiles();
     const unstagedChanges = this.checkGitStatus();
 
@@ -61,7 +61,7 @@ class DeployManager {
       console.log(chalk.yellow("No staged files found. Available changes:"));
       console.log(chalk.gray(unstagedChanges));
 
-      const { addAll } = inquirer.prompt([
+      const { addAll } = await inquirer.prompt([
         {
           type: "confirm",
           name: "addAll",
@@ -102,7 +102,7 @@ class DeployManager {
   }
 
   async getCommitMessage() {
-    const suggestedMessage = this.generateCommitMessage();
+    const suggestedMessage = await this.generateCommitMessage();
 
     const { message } = await inquirer.prompt([
       {
@@ -198,19 +198,30 @@ class DeployManager {
     try {
       // Check git status
       const gitStatus = this.checkGitStatus();
-      if (!gitStatus) {
-        console.log(chalk.yellow("No changes to commit."));
-        return;
+      const hasChanges = !!(gitStatus && gitStatus.trim().length);
+
+      if (!hasChanges) {
+        console.log(
+          chalk.yellow(
+            "No uncommitted changes detected. Skipping code commit and continuing to release."
+          )
+        );
       }
 
-      // Stage all changes
-      await this.stageChanges();
+      let commitMessage = null;
+      if (hasChanges) {
+        // Stage all changes
+        await this.stageChanges();
 
-      // Get commit message
-      const commitMessage = await this.getCommitMessage();
+        // Get commit message
+        commitMessage = await this.getCommitMessage();
 
-      // Commit changes
-      await this.commit(commitMessage);
+        // Commit changes
+        await this.commit(commitMessage);
+
+        // Push changes
+        await this.push();
+      }
 
       // Get release type
       const releaseType = await this.getReleaseType();
@@ -218,16 +229,17 @@ class DeployManager {
       // Get release notes
       const releaseNotes = await this.getReleaseNotes();
 
-      // Push changes
-      await this.push();
-
       // Run release
       await this.release(releaseType, releaseNotes);
 
       console.log(chalk.green("\n🎉 Deploy completed successfully!"));
       console.log(chalk.blue(`\nSummary:`));
-      console.log(chalk.gray(`- Committed: ${commitMessage}`));
-      console.log(chalk.gray(`- Pushed to remote`));
+      if (commitMessage) {
+        console.log(chalk.gray(`- Committed: ${commitMessage}`));
+        console.log(chalk.gray(`- Pushed code changes to remote`));
+      } else {
+        console.log(chalk.gray(`- No code changes committed before release`));
+      }
       console.log(chalk.gray(`- Released: ${releaseType}`));
     } catch (error) {
       console.error(chalk.red("\n❌ Deploy failed:", error.message));
