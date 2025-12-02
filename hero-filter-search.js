@@ -788,7 +788,7 @@ $(function () {
       window.Webflow.require &&
       window.Webflow.require("dropdown");
 
-    if (dropdownApi && typeof dropdownApi.close === "function") {
+    if (dropdownApi) {
       try {
         dropdownApi.close($dropdown[0]);
       } catch (e) {
@@ -796,29 +796,11 @@ $(function () {
       }
     }
 
-    // Hard reset dropdown state so it can reopen reliably even if the Webflow API is unavailable.
-    $dropdown.removeClass("w--open").attr("data-open", "false");
-
-    var $toggle = $dropdown
+    $dropdownList.removeClass("open").slideUp(0);
+    $dropdown
       .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
-      .first();
-    if ($toggle.length) {
-      $toggle.attr("aria-expanded", "false").removeClass("w--open");
-    }
-
-    $dropdownList
-      .removeClass("open w--open")
-      .attr("aria-hidden", "true")
-      .stop(true, true)
-      .css({
-        display: "none",
-        height: "",
-        paddingTop: "",
-        paddingBottom: "",
-        marginTop: "",
-        marginBottom: "",
-        overflow: "",
-      });
+      .attr("aria-expanded", "false")
+      .removeClass("w--open");
   }
 
   function updateWidgetCTA($widget) {
