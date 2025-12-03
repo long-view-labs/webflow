@@ -5,6 +5,8 @@
   const PROXY = "https://gh-apply.geminpak.workers.dev"; // your Worker origin
   const NOURISH_APPLY_ENDPOINT =
     "https://app.usenourish.com/api/provider-job-application/apply";
+  const NOURISH_LEAD_ENDPOINT =
+    "https://app.usenourish.com/api/provider-job-application/sync-leads";
   const JOB_SCHEMA_URL = `https://boards-api.greenhouse.io/v1/boards/${BOARD}/jobs/${JOB_ID}?questions=true`;
 
   // optional caching
@@ -979,6 +981,35 @@
   }
 
   /**
+   * Mirrors lead syncs to Nourish's API without blocking the worker flow.
+   */
+  function mirrorLeadStatus(bodyJson, status) {
+    if (!bodyJson || !NOURISH_LEAD_ENDPOINT) return Promise.resolve(null);
+    try {
+      return fetch(NOURISH_LEAD_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: bodyJson,
+        keepalive: status === LEAD_STATUS.SUBMITTED,
+      })
+        .then(async (resp) => {
+          if (!resp.ok) {
+            const errTxt = await resp.text().catch(() => "");
+            console.warn("Nourish lead sync non-2xx", errTxt || resp.status);
+          }
+          return resp;
+        })
+        .catch((err) => {
+          console.warn("Nourish lead sync failed", err);
+          return null;
+        });
+    } catch (err) {
+      console.warn("Nourish lead sync failed to start", err);
+      return Promise.resolve(null);
+    }
+  }
+
+  /**
    * Posts the current lead status to the worker, returning success/failure.
    */
   async function syncLeadStatus(form, status) {
@@ -992,14 +1023,15 @@
     if (payload.phone) body.phone = payload.phone;
     if (!body.email && !body.phone && !body.recordId) return false;
 
-    const signature = JSON.stringify(body);
-    if (leadSyncState.lastSignature[status] === signature) return false;
+    const bodyJson = JSON.stringify(body);
+    if (leadSyncState.lastSignature[status] === bodyJson) return false;
+    const nourishMirror = mirrorLeadStatus(bodyJson, status);
 
     try {
       const resp = await fetch(LEAD_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: bodyJson,
         keepalive: status === LEAD_STATUS.SUBMITTED,
       });
       if (!resp.ok) {
@@ -1011,11 +1043,13 @@
       if (data?.recordId) {
         updateLeadRecordId(data.recordId);
       }
-      leadSyncState.lastSignature[status] = signature;
+      leadSyncState.lastSignature[status] = bodyJson;
       return true;
     } catch (err) {
       console.warn("Lead sync error", err);
       return false;
+    } finally {
+      await nourishMirror;
     }
   }
 
