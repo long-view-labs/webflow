@@ -932,6 +932,8 @@
 
     return {
       name: name || undefined,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
       email: email || undefined,
       phone: phone || undefined,
     };
@@ -1019,6 +1021,8 @@
     const body = { status };
     if (leadSyncState.recordId) body.recordId = leadSyncState.recordId;
     if (payload.name) body.name = payload.name;
+    if (payload.firstName) body.firstName = payload.firstName;
+    if (payload.lastName) body.lastName = payload.lastName;
     if (payload.email) body.email = payload.email;
     if (payload.phone) body.phone = payload.phone;
     if (!body.email && !body.phone && !body.recordId) return false;
