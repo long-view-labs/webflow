@@ -998,6 +998,11 @@
           if (!resp.ok) {
             const errTxt = await resp.text().catch(() => "");
             console.warn("Nourish lead sync non-2xx", errTxt || resp.status);
+            return resp;
+          }
+          const data = await resp.json().catch(() => null);
+          if (data?.recordId) {
+            updateLeadRecordId(data.recordId);
           }
           return resp;
         })
