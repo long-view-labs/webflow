@@ -788,6 +788,10 @@
       leadSyncState.recordId = payload.leadRecordId;
     }
 
+    if (payload.nourishRecordId) {
+      leadSyncState.nourishRecordId = payload.nourishRecordId;
+    }
+
     isRestoringFromStorage = true;
     try {
       Object.entries(fields).forEach(([name, value]) => {
@@ -853,6 +857,7 @@
     }
     savedFormPayloadCache = null;
     leadSyncState.recordId = null;
+    leadSyncState.nourishRecordId = null;
     leadSyncState.lastSignature = {};
   }
 
@@ -863,6 +868,7 @@
     inProgressNeedsRun: false,
     pendingForm: null,
     recordId: null,
+    nourishRecordId: null,
   };
 
   /**
@@ -878,6 +884,23 @@
       payload.leadRecordId = recordId;
     } else {
       delete payload.leadRecordId;
+    }
+    persistFormPayload(payload, storage);
+  }
+
+  /**
+   * Stores the Nourish internal record id (numeric) separately from Airtable.
+   */
+  function updateNourishRecordId(recordId) {
+    leadSyncState.nourishRecordId = recordId || null;
+    const storage = getStorage();
+    if (!storage) return;
+    const payload = getSavedFormPayload(storage) || {};
+    if (!payload.fields) payload.fields = {};
+    if (recordId) {
+      payload.nourishRecordId = recordId;
+    } else {
+      delete payload.nourishRecordId;
     }
     persistFormPayload(payload, storage);
   }
@@ -1002,7 +1025,7 @@
           }
           const data = await resp.json().catch(() => null);
           if (data?.recordId) {
-            updateLeadRecordId(data.recordId);
+            updateNourishRecordId(data.recordId);
           }
           return resp;
         })
@@ -1023,24 +1046,33 @@
     if (!form || !LEAD_ENDPOINT) return false;
     const payload = getLeadPayload(form);
     if (!payload) return false;
-    const body = { status };
-    if (leadSyncState.recordId) body.recordId = leadSyncState.recordId;
-    if (payload.name) body.name = payload.name;
-    if (payload.firstName) body.firstName = payload.firstName;
-    if (payload.lastName) body.lastName = payload.lastName;
-    if (payload.email) body.email = payload.email;
-    if (payload.phone) body.phone = payload.phone;
-    if (!body.email && !body.phone && !body.recordId) return false;
+    const baseBody = { status };
+    if (payload.name) baseBody.name = payload.name;
+    if (payload.firstName) baseBody.firstName = payload.firstName;
+    if (payload.lastName) baseBody.lastName = payload.lastName;
+    if (payload.email) baseBody.email = payload.email;
+    if (payload.phone) baseBody.phone = payload.phone;
 
-    const bodyJson = JSON.stringify(body);
-    if (leadSyncState.lastSignature[status] === bodyJson) return false;
-    const nourishMirror = mirrorLeadStatus(bodyJson, status);
+    const workerBody = { ...baseBody };
+    if (leadSyncState.recordId) workerBody.recordId = leadSyncState.recordId;
+    if (!workerBody.email && !workerBody.phone && !workerBody.recordId)
+      return false;
+
+    const workerBodyJson = JSON.stringify(workerBody);
+    if (leadSyncState.lastSignature[status] === workerBodyJson) return false;
+
+    const nourishBody = { ...baseBody };
+    if (leadSyncState.nourishRecordId) {
+      nourishBody.recordId = leadSyncState.nourishRecordId;
+    }
+    const nourishBodyJson = JSON.stringify(nourishBody);
+    const nourishMirror = mirrorLeadStatus(nourishBodyJson, status);
 
     try {
       const resp = await fetch(LEAD_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: bodyJson,
+        body: workerBodyJson,
         keepalive: status === LEAD_STATUS.SUBMITTED,
       });
       if (!resp.ok) {
@@ -1052,7 +1084,7 @@
       if (data?.recordId) {
         updateLeadRecordId(data.recordId);
       }
-      leadSyncState.lastSignature[status] = bodyJson;
+      leadSyncState.lastSignature[status] = workerBodyJson;
       return true;
     } catch (err) {
       console.warn("Lead sync error", err);
