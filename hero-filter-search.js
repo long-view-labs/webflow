@@ -45,13 +45,8 @@ $(function () {
   }
 
   function getPayersSourceParam() {
-    // Homepage uses the sign-up feed; everywhere else keeps the homepage feed.
-    var path = (window.location && window.location.pathname) || "/";
-    path = String(path).toLowerCase();
-    if (path.length > 1 && path.endsWith("/")) {
-      path = path.slice(0, -1);
-    }
-    return path === "/" || path === "/paid" ? "sign-up" : "homepage";
+    // Always use the sign-up feed for payers.
+    return "sign-up";
   }
 
   function fetchPayersData() {
