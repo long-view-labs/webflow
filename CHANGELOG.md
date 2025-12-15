@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.614.3] - 2025-12-15
+
+Added tiktok landing page testing
+
+
 ## [2.614.2] - 2025-12-12
 
 No release notes provided.
