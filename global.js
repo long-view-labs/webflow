@@ -746,6 +746,7 @@ function nourishQueueViewedPageEvent() {
     if (path.indexOf("/local-dietitians") === 0) return "local-dietitians";
     if (path.indexOf("/insurance-dietitians") === 0)
       return "insurance-dietitians";
+    if (path.indexOf("/paid-tt") === 0) return "Paid_TT_Homepage";
     if (path.indexOf("/paid") === 0) return "Paid_Homepage";
     if (path.indexOf("/quiz-a") === 0) return "quiz";
     if (path.indexOf("/does-my-insurance-cover-nutrition") === 0)
