@@ -179,6 +179,7 @@ $(".menu_slug").each(function () {
 
   const now = Date.now();
   const url = new URL(window.location.href);
+  normalizeTrackingParamsInUrl(url);
   const currentParams = extractUtmParams(url.searchParams);
   const stored = readStored();
 
@@ -245,6 +246,58 @@ $(".menu_slug").each(function () {
     }
 
     return params;
+  }
+
+  function normalizeTrackingParamsInUrl(url) {
+    if (!url || !url.searchParams) return;
+    const entries = Array.from(url.searchParams.entries());
+    if (!entries.length) return;
+
+    const trackingKeys = new Set(
+      Array.from(SUPPORTED_PARAMS).map((key) => normalizeParamKey(key))
+    );
+    const counts = new Map();
+
+    entries.forEach(([key]) => {
+      const normalizedKey = normalizeParamKey(key);
+      if (normalizedKey.startsWith("utm_") || trackingKeys.has(normalizedKey)) {
+        counts.set(normalizedKey, (counts.get(normalizedKey) || 0) + 1);
+      }
+    });
+
+    const hasDuplicates = Array.from(counts.values()).some(
+      (count) => count > 1
+    );
+    if (!hasDuplicates) return;
+
+    const lastIndex = new Map();
+    entries.forEach(([key], index) => {
+      const normalizedKey = normalizeParamKey(key);
+      if (normalizedKey.startsWith("utm_") || trackingKeys.has(normalizedKey)) {
+        lastIndex.set(normalizedKey, index);
+      }
+    });
+
+    const normalized = new URLSearchParams();
+    entries.forEach(([key, value], index) => {
+      const normalizedKey = normalizeParamKey(key);
+      const isTracking =
+        normalizedKey.startsWith("utm_") || trackingKeys.has(normalizedKey);
+      if (!isTracking) {
+        normalized.append(key, value);
+        return;
+      }
+      if (lastIndex.get(normalizedKey) !== index) return;
+      if (!value) return;
+      normalized.append(normalizedKey, value);
+    });
+
+    const normalizedQuery = normalized.toString();
+    if (normalizedQuery === url.searchParams.toString()) return;
+    url.search = normalizedQuery;
+    if (window.history && typeof window.history.replaceState === "function") {
+      window.history.replaceState(null, "", url.toString());
+    }
   }
 
   /**

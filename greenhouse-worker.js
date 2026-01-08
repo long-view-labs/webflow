@@ -758,7 +758,14 @@ function cloneFormData(source) {
  */
 function extractUtmCustomFields(searchParams) {
   return UTM_KEYS.map((key) => {
-    const value = searchParams.get(key);
+    const values = searchParams.getAll(key);
+    let value = "";
+    for (let i = values.length - 1; i >= 0; i -= 1) {
+      if (values[i]) {
+        value = values[i];
+        break;
+      }
+    }
     if (!value) return null;
     const sanitized = value.trim().substring(0, 255);
     if (sanitized.length === 0) return null;
