@@ -147,8 +147,19 @@ $(".menu_slug").each(function () {
   };
   const COOKIE_DOMAIN = getCookieDomain();
 
+  const DEFAULT_UTM_KEYS = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "utm_creative",
+    "utm_page",
+  ];
+
   // All supported UTM and tracking parameters
   const SUPPORTED_PARAMS = new Set([
+    ...DEFAULT_UTM_KEYS,
     "gclid",
     "fbclid",
     "msclkid",
@@ -167,6 +178,7 @@ $(".menu_slug").each(function () {
   // Handle UTM parameter detection and storage
   if (Object.keys(currentParams).length > 0) {
     // Fresh UTMs present → start/refresh session and set cookies
+    clearUtmCookies(stored && stored.params ? stored.params : null);
     saveStored({ params: currentParams, startedAt: now, lastTouch: now });
     setUtmCookies(currentParams);
   } else if (stored) {
@@ -178,7 +190,7 @@ $(".menu_slug").each(function () {
 
     if (expired || externalEntry) {
       clearStored();
-      clearUtmCookies();
+      clearUtmCookies(stored && stored.params ? stored.params : null);
     } else {
       // Refresh lastTouch inside the same session
       stored.lastTouch = now;
@@ -295,8 +307,14 @@ $(".menu_slug").each(function () {
   /**
    * Clear UTM cookies
    */
-  function clearUtmCookies() {
-    for (const param of SUPPORTED_PARAMS) {
+  function clearUtmCookies(params) {
+    const keys = new Set(SUPPORTED_PARAMS);
+    if (params && typeof params === "object") {
+      Object.keys(params).forEach((key) => {
+        keys.add(normalizeParamKey(key));
+      });
+    }
+    for (const param of keys) {
       document.cookie = `${param}=; path=/; domain=${COOKIE_DOMAIN}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     }
   }
@@ -436,7 +454,10 @@ $(".menu_slug").each(function () {
     for (const [key, value] of Object.entries(source)) {
       if (!value) continue;
       const normalizedKey = normalizeParamKey(key);
-      if (SUPPORTED_PARAMS.has(normalizedKey)) {
+      if (
+        SUPPORTED_PARAMS.has(normalizedKey) ||
+        normalizedKey.startsWith("utm_")
+      ) {
         snapshot[normalizedKey] = String(value);
       }
     }

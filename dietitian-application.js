@@ -1612,6 +1612,7 @@
    */
   function captureUTMParams() {
     const utmParams = {};
+    const searchParams = new URLSearchParams(location.search);
     const utmKeys = [
       "utm_source",
       "utm_medium",
@@ -1623,8 +1624,13 @@
     ];
 
     utmKeys.forEach((key) => {
-      const value = new URLSearchParams(location.search).get(key);
-      if (value) utmParams[key] = value;
+      const values = searchParams.getAll(key);
+      for (let i = values.length - 1; i >= 0; i -= 1) {
+        if (values[i]) {
+          utmParams[key] = values[i];
+          break;
+        }
+      }
     });
 
     if (Object.keys(utmParams).length > 0) {
