@@ -70,7 +70,8 @@ const greenhouse_worker_default = {
         return;
       }
     }
-    ctx.waitUntil(handleScheduledUTMPatching(env));
+    // Disables cron job
+    // ctx.waitUntil(handleScheduledUTMPatching(env));
   },
 };
 
@@ -78,6 +79,8 @@ const greenhouse_worker_default = {
  * Validates inbound Greenhouse webhooks and patches any stored UTM data.
  */
 async function handleGhWebhook({ req, env, json, fail, auth }) {
+  return json({ ok: true }); // Remove to enable
+
   const secret = env.GH_WEBHOOK_SECRET;
   if (!secret) {
     return fail("Missing GH_WEBHOOK_SECRET on server", 500);
@@ -177,7 +180,9 @@ async function handleLeadUpsert({ req, env, json, fail }) {
 
   const body = await req.json().catch(() => ({}));
   const rawName = String(body.name || "").trim();
-  const rawEmail = String(body.email || "").trim().toLowerCase();
+  const rawEmail = String(body.email || "")
+    .trim()
+    .toLowerCase();
   const rawPhone = String(body.phone || "").trim();
   const rawStatus = String(body.status || "").trim();
   const requestedRecordId = String(body.recordId || "").trim();
@@ -202,9 +207,9 @@ async function handleLeadUpsert({ req, env, json, fail }) {
     );
   }
 
-  const airtableUrlBase = `https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${encodeURIComponent(
-    env.AIRTABLE_TABLE_NAME
-  )}`;
+  const airtableUrlBase = `https://api.airtable.com/v0/${
+    env.AIRTABLE_BASE_ID
+  }/${encodeURIComponent(env.AIRTABLE_TABLE_NAME)}`;
   const authHeaders = { Authorization: `Bearer ${env.AIRTABLE_TOKEN}` };
 
   let recordId = requestedRecordId || null;
@@ -216,11 +221,7 @@ async function handleLeadUpsert({ req, env, json, fail }) {
     if (recordResp.ok) {
       const recordJson = await recordResp.json().catch(() => ({}));
       existingStatus = String(recordJson.fields?.Status || "");
-    } else if (recordResp.status === 404 || recordResp.status === 403) {
-      logEvent("warn", "Airtable record id invalid, falling back", {
-        status: recordResp.status,
-        recordId,
-      });
+    } else if (recordResp.status === 404) {
       recordId = null;
     } else {
       const errTxt = await recordResp.text();
@@ -234,7 +235,8 @@ async function handleLeadUpsert({ req, env, json, fail }) {
   }
 
   if (!recordId && filters.length > 0) {
-    const filterFormula = filters.length === 1 ? filters[0] : `OR(${filters.join(",")})`;
+    const filterFormula =
+      filters.length === 1 ? filters[0] : `OR(${filters.join(",")})`;
     const searchUrl = new URL(airtableUrlBase);
     searchUrl.searchParams.set("filterByFormula", filterFormula);
     searchUrl.searchParams.set("maxRecords", "1");
@@ -338,10 +340,17 @@ async function handlePatchByEmail({ req, env, json, fail, auth }) {
     return json({ ok: false, ...match.error }, 502);
   }
   if (!match.applicationId) {
-    return json({ ok: false, message: "No matching application found for email" }, 404);
+    return json(
+      { ok: false, message: "No matching application found for email" },
+      404
+    );
   }
 
-  const response = await patchApplicationFields(match.applicationId, fields, auth);
+  const response = await patchApplicationFields(
+    match.applicationId,
+    fields,
+    auth
+  );
   const resTxt = await response.text();
   return json({
     ok: response.ok,
@@ -371,10 +380,7 @@ async function handleApply({ req, env, url, json, fail, auth, requestId }) {
     });
   }
   if (!auth.obo) {
-    return fail(
-      "Missing GH_ON_BEHALF_OF (Greenhouse User ID for writes)",
-      500
-    );
+    return fail("Missing GH_ON_BEHALF_OF (Greenhouse User ID for writes)", 500);
   }
 
   const submitResp = await fetch(
@@ -386,7 +392,11 @@ async function handleApply({ req, env, url, json, fail, auth, requestId }) {
     }
   );
   const submitTxt = await submitResp.text();
-  console.log("Greenhouse Job Board API response:", submitResp.status, submitTxt);
+  console.log(
+    "Greenhouse Job Board API response:",
+    submitResp.status,
+    submitTxt
+  );
   if (!submitResp.ok) {
     console.error(`[gh-apply][${requestId}] Job board submission failed`, {
       status: submitResp.status,
@@ -425,7 +435,12 @@ async function handleApply({ req, env, url, json, fail, auth, requestId }) {
 
     (async () => {
       try {
-        const ok = await tryPatchByEmailOnce(env, emailKey, utmData.custom_fields, auth);
+        const ok = await tryPatchByEmailOnce(
+          env,
+          emailKey,
+          utmData.custom_fields,
+          auth
+        );
         if (ok && env.UTM_STORAGE) {
           await env.UTM_STORAGE.delete(`utm:${emailKey}`);
           console.log(`Immediate patch succeeded; KV cleared for ${email}`);
@@ -434,7 +449,10 @@ async function handleApply({ req, env, url, json, fail, auth, requestId }) {
           await scheduleUTMRetry(env, email, 2 * 60);
         }
       } catch (error) {
-        console.log(`Immediate patch attempt failed for ${email}:`, String(error));
+        console.log(
+          `Immediate patch attempt failed for ${email}:`,
+          String(error)
+        );
         await scheduleUTMRetry(env, email, 2 * 60);
       }
     })();
@@ -469,9 +487,16 @@ async function handleScheduledUTMPatching(env) {
       continue;
     }
     try {
-      const success = await tryPatchByEmailOnce(env, email, data.custom_fields, auth);
+      const success = await tryPatchByEmailOnce(
+        env,
+        email,
+        data.custom_fields,
+        auth
+      );
       if (success) {
-        console.log(`Successfully patched UTM for ${email} via scheduled worker`);
+        console.log(
+          `Successfully patched UTM for ${email} via scheduled worker`
+        );
         await env.UTM_STORAGE.delete(key.name);
       } else {
         console.log(`No application found for ${email}, will retry later`);
@@ -480,7 +505,9 @@ async function handleScheduledUTMPatching(env) {
       console.error(`Error in scheduled UTM patching for ${email}:`, error);
     }
   }
-  console.log(`Scheduled UTM patching complete. ${utmKeys.keys.length} items processed.`);
+  console.log(
+    `Scheduled UTM patching complete. ${utmKeys.keys.length} items processed.`
+  );
 }
 
 /**
@@ -491,7 +518,11 @@ async function tryPatchByEmailOnce(env, email, fields, auth = buildAuth(env)) {
   if (!match.applicationId) {
     return false;
   }
-  const response = await patchApplicationFields(match.applicationId, fields, auth);
+  const response = await patchApplicationFields(
+    match.applicationId,
+    fields,
+    auth
+  );
   return response.ok;
 }
 
@@ -579,13 +610,14 @@ function logEvent(level = "log", message, data) {
 /**
  * Confirms the webhook authenticity via token or HMAC SHA-256 signature.
  */
-async function verifyWebhookSignature({ token, signatureHeader, rawBody, secret }) {
+async function verifyWebhookSignature({
+  token,
+  signatureHeader,
+  rawBody,
+  secret,
+}) {
   if (token && token === secret) return true;
-  if (
-    signatureHeader &&
-    signatureHeader.startsWith("sha256 ") &&
-    rawBody
-  ) {
+  if (signatureHeader && signatureHeader.startsWith("sha256 ") && rawBody) {
     const expected = signatureHeader.slice(7).trim();
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
@@ -611,9 +643,12 @@ async function fetchPrimaryEmailByCandidateId(candidateId, env, auth) {
   if (!candidateId || !env.GH_HARVEST_API_KEY || !auth.obo) {
     return null;
   }
-  const response = await fetch(`${HARVEST_API_BASE}/candidates/${candidateId}`, {
-    headers: { Authorization: auth.hvAuth, "On-Behalf-Of": auth.obo },
-  });
+  const response = await fetch(
+    `${HARVEST_API_BASE}/candidates/${candidateId}`,
+    {
+      headers: { Authorization: auth.hvAuth, "On-Behalf-Of": auth.obo },
+    }
+  );
   if (!response.ok) {
     return null;
   }
@@ -622,9 +657,12 @@ async function fetchPrimaryEmailByCandidateId(candidateId, env, auth) {
     ? candidate.email_addresses
     : [];
   const primary =
-    emails.find((entry) =>
-      entry?.value &&
-      (entry?.type === "work" || entry?.type === "personal" || entry?.type === "other")
+    emails.find(
+      (entry) =>
+        entry?.value &&
+        (entry?.type === "work" ||
+          entry?.type === "personal" ||
+          entry?.type === "other")
     ) || emails[0];
   return primary?.value || null;
 }
@@ -671,7 +709,10 @@ async function findMatchingApplicationForEmail(email, env, auth) {
 
   for (const candidate of candidates) {
     for (const application of candidate.applications || []) {
-      const detailResp = await harvestGet(`/applications/${application.id}`, auth);
+      const detailResp = await harvestGet(
+        `/applications/${application.id}`,
+        auth
+      );
       if (!detailResp.ok) continue;
       if (
         applicationMatchesConfiguredJobs(
@@ -696,7 +737,8 @@ function applicationMatchesConfiguredJobs(detail, jobIdInternal, jobIdPublic) {
     jobIdInternal &&
     Array.isArray(detail?.jobs) &&
     detail.jobs.some((job) => String(job.id) === jobIdInternal);
-  const matchPublic = jobIdPublic && String(detail?.job_post_id) === jobIdPublic;
+  const matchPublic =
+    jobIdPublic && String(detail?.job_post_id) === jobIdPublic;
   return Boolean(matchInternal || matchPublic);
 }
 
@@ -716,7 +758,14 @@ function cloneFormData(source) {
  */
 function extractUtmCustomFields(searchParams) {
   return UTM_KEYS.map((key) => {
-    const value = searchParams.get(key);
+    const values = searchParams.getAll(key);
+    let value = "";
+    for (let i = values.length - 1; i >= 0; i -= 1) {
+      if (values[i]) {
+        value = values[i];
+        break;
+      }
+    }
     if (!value) return null;
     const sanitized = value.trim().substring(0, 255);
     if (sanitized.length === 0) return null;

@@ -1613,7 +1613,7 @@
   function captureUTMParams() {
     const utmParams = {};
     const searchParams = new URLSearchParams(location.search);
-    const utmKeys = [
+    const fallbackKeys = [
       "utm_source",
       "utm_medium",
       "utm_campaign",
@@ -1621,17 +1621,31 @@
       "utm_creative",
       "utm_term",
       "utm_page",
+      "gclid",
+      "gbraid",
+      "gad_source",
+      "gad_campaignid",
+      "fbclid",
+      "msclkid",
+      "ttclid",
+      "im_ref",
+      "nsh_cam",
     ];
+    const allowedKeys = new Set(
+      (window.NOURISH_UTM_PARAMS || fallbackKeys).map((key) =>
+        String(key).toLowerCase()
+      )
+    );
 
-    utmKeys.forEach((key) => {
-      const values = searchParams.getAll(key);
-      for (let i = values.length - 1; i >= 0; i -= 1) {
-        if (values[i]) {
-          utmParams[key] = values[i];
-          break;
-        }
+    for (const [rawKey, value] of searchParams.entries()) {
+      if (!value) continue;
+      const normalizedKey = String(rawKey)
+        .toLowerCase()
+        .replace(/^utm-/, "utm_");
+      if (normalizedKey.startsWith("utm_") || allowedKeys.has(normalizedKey)) {
+        utmParams[normalizedKey] = value;
       }
-    });
+    }
 
     if (Object.keys(utmParams).length > 0) {
       console.log("UTM Parameters captured:", utmParams);
