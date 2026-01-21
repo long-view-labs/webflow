@@ -46,7 +46,7 @@ $(function () {
   }
 
   function getPayersSourceParam() {
-    // Always use the sign-up feed for payers.
+    // The homepage endpoint is deprecated; always use the sign-up feed.
     return "sign-up";
   }
 

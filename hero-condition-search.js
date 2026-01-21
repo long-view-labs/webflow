@@ -68,7 +68,7 @@ $(function () {
       // Ignore storage access issues
     }
 
-    return fetch("https://app.usenourish.com/api/payers?source=homepage", {
+    return fetch("https://app.usenourish.com/api/payers?source=sign-up", {
       method: "GET",
       headers: {
         Accept: "application/json",
