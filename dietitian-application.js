@@ -2,7 +2,6 @@
   // ---------- CONFIG ----------
   const BOARD = "usenourish";
   const JOB_ID = 4007342008; // public job post id
-  const PROXY = "https://gh-apply.geminpak.workers.dev"; // your Worker origin
   const NOURISH_APPLY_ENDPOINT =
     "https://app.usenourish.com/api/provider-job-application/apply";
   const NOURISH_LEAD_ENDPOINT =
@@ -13,7 +12,6 @@
   const CACHE_KEY = `gh_schema_${JOB_ID}`;
   const TTL = 6 * 60 * 60 * 1e3; // 6h
   const STORAGE_KEY = `dietitian_application_${JOB_ID}`;
-  const LEAD_ENDPOINT = `${PROXY}/leads`;
   const LEAD_STATUS = {
     IN_PROGRESS: "In progress",
     SUBMITTED: "Application Submitted",
@@ -784,10 +782,6 @@
     const fields = payload.fields;
     if (!fields) return;
 
-    if (payload.leadRecordId) {
-      leadSyncState.recordId = payload.leadRecordId;
-    }
-
     if (payload.nourishRecordId) {
       leadSyncState.nourishRecordId = payload.nourishRecordId;
     }
@@ -856,7 +850,6 @@
       }
     }
     savedFormPayloadCache = null;
-    leadSyncState.recordId = null;
     leadSyncState.nourishRecordId = null;
     leadSyncState.lastSignature = {};
   }
@@ -867,29 +860,11 @@
     inProgressInFlight: false,
     inProgressNeedsRun: false,
     pendingForm: null,
-    recordId: null,
     nourishRecordId: null,
   };
 
   /**
-   * Stores the Airtable record id locally so future syncs can PATCH.
-   */
-  function updateLeadRecordId(recordId) {
-    leadSyncState.recordId = recordId || null;
-    const storage = getStorage();
-    if (!storage) return;
-    const payload = getSavedFormPayload(storage) || {};
-    if (!payload.fields) payload.fields = {};
-    if (recordId) {
-      payload.leadRecordId = recordId;
-    } else {
-      delete payload.leadRecordId;
-    }
-    persistFormPayload(payload, storage);
-  }
-
-  /**
-   * Stores the Nourish internal record id (numeric) separately from Airtable.
+   * Stores the Nourish internal record id (numeric) for future updates.
    */
   function updateNourishRecordId(recordId) {
     leadSyncState.nourishRecordId = recordId || null;
@@ -906,7 +881,7 @@
   }
 
   /**
-   * Extracts the name/email/phone fields that drive Airtable upserts.
+   * Extracts the name/email/phone fields that drive lead upserts.
    */
   function getLeadPayload(form) {
     if (!form) return null;
@@ -963,13 +938,13 @@
   }
 
   /**
-   * Debounces in-progress lead syncs so typing does not spam the worker.
+   * Debounces in-progress lead syncs so typing does not spam the API.
    */
   function queueLeadSyncInProgress(form) {
-    if (!form || !LEAD_ENDPOINT) return;
+    if (!form || !NOURISH_LEAD_ENDPOINT) return;
     const payload = getLeadPayload(form);
     const hasContact = payload && (payload.email || payload.phone);
-    const canSync = hasContact || Boolean(leadSyncState.recordId);
+    const canSync = hasContact || Boolean(leadSyncState.nourishRecordId);
     if (!payload || !canSync) {
       clearTimeout(leadSyncState.inProgressTimer);
       leadSyncState.inProgressTimer = null;
@@ -1006,44 +981,10 @@
   }
 
   /**
-   * Mirrors lead syncs to Nourish's API without blocking the worker flow.
-   */
-  function mirrorLeadStatus(bodyJson, status) {
-    if (!bodyJson || !NOURISH_LEAD_ENDPOINT) return Promise.resolve(null);
-    try {
-      return fetch(NOURISH_LEAD_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: bodyJson,
-        keepalive: status === LEAD_STATUS.SUBMITTED,
-      })
-        .then(async (resp) => {
-          if (!resp.ok) {
-            const errTxt = await resp.text().catch(() => "");
-            console.warn("Nourish lead sync non-2xx", errTxt || resp.status);
-            return resp;
-          }
-          const data = await resp.json().catch(() => null);
-          if (data?.recordId) {
-            updateNourishRecordId(data.recordId);
-          }
-          return resp;
-        })
-        .catch((err) => {
-          console.warn("Nourish lead sync failed", err);
-          return null;
-        });
-    } catch (err) {
-      console.warn("Nourish lead sync failed to start", err);
-      return Promise.resolve(null);
-    }
-  }
-
-  /**
-   * Posts the current lead status to the worker, returning success/failure.
+   * Posts the current lead status to Nourish, returning success/failure.
    */
   async function syncLeadStatus(form, status) {
-    if (!form || !LEAD_ENDPOINT) return false;
+    if (!form || !NOURISH_LEAD_ENDPOINT) return false;
     const payload = getLeadPayload(form);
     if (!payload) return false;
     const baseBody = { status };
@@ -1053,79 +994,37 @@
     if (payload.email) baseBody.email = payload.email;
     if (payload.phone) baseBody.phone = payload.phone;
 
-    const workerBody = { ...baseBody };
-    if (leadSyncState.recordId) workerBody.recordId = leadSyncState.recordId;
-    if (!workerBody.email && !workerBody.phone && !workerBody.recordId)
+    const requestBody = { ...baseBody };
+    if (leadSyncState.nourishRecordId) {
+      requestBody.recordId = leadSyncState.nourishRecordId;
+    }
+    if (!requestBody.email && !requestBody.phone && !requestBody.recordId)
       return false;
 
-    const workerBodyJson = JSON.stringify(workerBody);
-    if (leadSyncState.lastSignature[status] === workerBodyJson) return false;
-
-    const nourishBody = { ...baseBody };
-    if (leadSyncState.nourishRecordId) {
-      nourishBody.recordId = leadSyncState.nourishRecordId;
-    }
-    const nourishBodyJson = JSON.stringify(nourishBody);
-    const nourishMirror = mirrorLeadStatus(nourishBodyJson, status);
+    const requestBodyJson = JSON.stringify(requestBody);
+    if (leadSyncState.lastSignature[status] === requestBodyJson) return false;
 
     try {
-      const resp = await fetch(LEAD_ENDPOINT, {
+      const resp = await fetch(NOURISH_LEAD_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: workerBodyJson,
+        body: requestBodyJson,
         keepalive: status === LEAD_STATUS.SUBMITTED,
       });
       if (!resp.ok) {
         const errTxt = await resp.text().catch(() => "");
-        console.warn("Lead sync failed", errTxt || resp.status);
+        console.warn("Nourish lead sync failed", errTxt || resp.status);
         return false;
       }
       const data = await resp.json().catch(() => null);
       if (data?.recordId) {
-        updateLeadRecordId(data.recordId);
+        updateNourishRecordId(data.recordId);
       }
-      leadSyncState.lastSignature[status] = workerBodyJson;
+      leadSyncState.lastSignature[status] = requestBodyJson;
       return true;
     } catch (err) {
-      console.warn("Lead sync error", err);
+      console.warn("Nourish lead sync error", err);
       return false;
-    } finally {
-      await nourishMirror;
-    }
-  }
-
-  /**
-   * Mirrors the application payload to the Nourish API without blocking the primary worker flow.
-   */
-  function mirrorApplyPayload(formData) {
-    if (!formData) return Promise.resolve(null);
-    try {
-      const mirrorFormData = new FormData();
-      formData.forEach((value, key) => {
-        mirrorFormData.append(key, value);
-      });
-      const url = `${NOURISH_APPLY_ENDPOINT}${location.search || ""}`;
-      return fetch(url, {
-        method: "POST",
-        body: mirrorFormData,
-      })
-        .then(async (resp) => {
-          if (!resp.ok) {
-            const body = await resp.text().catch(() => "");
-            console.warn("Nourish apply mirror non-2xx", {
-              status: resp.status,
-              body: body?.slice?.(0, 500) || "",
-            });
-          }
-          return resp;
-        })
-        .catch((err) => {
-          console.warn("Nourish apply mirror failed", err);
-          return null;
-        });
-    } catch (err) {
-      console.warn("Nourish apply mirror failed to start", err);
-      return Promise.resolve(null);
     }
   }
 
@@ -1446,18 +1345,25 @@
       }
 
       const fd = new FormData(form);
-      // Best-effort mirror to Nourish API while continuing to rely on the worker response.
-      mirrorApplyPayload(fd);
       try {
-        // First submission
-        const resp = await fetch(`${PROXY}/apply${location.search || ""}`, {
+        const url = `${NOURISH_APPLY_ENDPOINT}${location.search || ""}`;
+        const resp = await fetch(url, {
           method: "POST",
           body: fd,
         });
         const text = await resp.text();
+        let parsedResponse = null;
+        try {
+          parsedResponse = JSON.parse(text);
+        } catch {
+          parsedResponse = null;
+        }
         if (resp.ok) {
           // Application submitted successfully - track event then redirect
-          console.log("Application submitted successfully:", JSON.parse(text));
+          console.log(
+            "Application submitted successfully:",
+            parsedResponse || text
+          );
           await syncLeadStatus(form, LEAD_STATUS.SUBMITTED);
           clearSavedFormData();
 
@@ -1504,12 +1410,7 @@
             window.location.href = "/dietitian-application/thank-you";
           }
         } else {
-          let parsedError = null;
-          try {
-            parsedError = JSON.parse(text);
-          } catch {
-            parsedError = null;
-          }
+          const parsedError = parsedResponse;
           const requestId = parsedError?.requestId;
           const stage = parsedError?.stage;
           const upstreamStatus = parsedError?.status || resp.status;
