@@ -56,7 +56,7 @@ $(document).ready(function () {
       // Ignore storage access issues (private mode, etc.)
     }
 
-    return fetch("https://app.usenourish.com/api/payers?source=sign-up", {
+    return fetch("https://app." + window.__nourish_apex + "/api/payers?source=sign-up", {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -362,7 +362,7 @@ $(document).ready(function () {
 
   // Function to update the CTA URL with new format
   function updateCTAUrl() {
-    var baseUrl = "https://signup.usenourish.com/";
+    var baseUrl = "https://signup." + window.__nourish_apex + "/";
     var params = new URLSearchParams();
 
     // Get the form name to determine which variant to use
@@ -494,7 +494,7 @@ $(document).ready(function () {
     $("#home-filter-cta").attr("href", finalUrl);
 
     // Update all OTHER signup.usenourish.com links on the page with InsuranceSearchInput = false
-    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(
+    $('a[href*="signup.' + window.__nourish_apex + '"]:not(#home-filter-cta)').each(
       function () {
         var $link = $(this);
         var currentHref = $link.attr("href");

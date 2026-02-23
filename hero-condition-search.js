@@ -68,7 +68,7 @@ $(function () {
       // Ignore storage access issues
     }
 
-    return fetch("https://app.usenourish.com/api/payers?source=sign-up", {
+    return fetch("https://app." + window.__nourish_apex + "/api/payers?source=sign-up", {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -105,7 +105,7 @@ $(function () {
    * Fetch specialties data (handles wrapped responses)
    */
   function fetchSpecialtiesData() {
-    return fetch("https://app.usenourish.com/api/specialties/all", {
+    return fetch("https://app." + window.__nourish_apex + "/api/specialties/all", {
       method: "GET",
       headers: {
         Accept: "application/json",
@@ -677,7 +677,7 @@ $(function () {
     var $cta = $widget.find("#home-filter-cta").first();
     if ($cta.length) return $cta;
     return $widget
-      .find('.form-btn-wrap.filter a[href*="signup.usenourish.com"]')
+      .find('.form-btn-wrap.filter a[href*="signup.' + window.__nourish_apex + '"]')
       .first();
   }
 
@@ -1132,7 +1132,7 @@ $(function () {
     if (!$cta.length) return;
 
     var state = getWidgetState($widget);
-    var baseUrl = "https://signup.usenourish.com/";
+    var baseUrl = "https://signup." + window.__nourish_apex + "/";
     var params = new URLSearchParams();
 
     var variation = variationFromPath(window.location.pathname);
