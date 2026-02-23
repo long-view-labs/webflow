@@ -77,7 +77,7 @@ $(function () {
     }
 
     var url =
-      "https://app.usenourish.com/api/payers?source=" +
+      "https://app." + window.__nourish_apex + "/api/payers?source=" +
       encodeURIComponent(sourceParam);
 
     return fetch(url, {
@@ -695,7 +695,7 @@ $(function () {
   function findWidgetCTA($widget) {
     var $cta = $widget.find("#home-filter-cta").first();
     if ($cta.length) return $cta;
-    return $widget.find('a[href*="signup.usenourish.com"]').first();
+    return $widget.find('a[href*="signup.' + window.__nourish_apex + '"]').first();
   }
 
   function injectInsuranceOptions($widget) {
@@ -839,7 +839,7 @@ $(function () {
     var formName = getWidgetFormName($widget);
     var isInsuranceCheck = formName === "Insurance Check";
 
-    var baseUrl = "https://signup.usenourish.com/";
+    var baseUrl = "https://signup." + window.__nourish_apex + "/";
     var params = new URLSearchParams();
 
     var variation = variationFromPath(window.location.pathname);
@@ -893,7 +893,7 @@ $(function () {
       $cta.attr("href", finalUrl);
     }
 
-    $('a[href*="signup.usenourish.com"]:not(#home-filter-cta)').each(
+    $('a[href*="signup.' + window.__nourish_apex + '"]:not(#home-filter-cta)').each(
       function () {
         var $link = $(this);
         var currentHref = $link.attr("href");

@@ -1,4 +1,18 @@
 // ============================================================================
+// DOMAIN DETECTION (nourish.com / usenourish.com dual-domain support)
+// ============================================================================
+(function () {
+  var h = window.location.hostname;
+  // Check usenourish.com first since it also contains "nourish.com"
+  var apex = h.includes("usenourish.com")
+    ? "usenourish.com"
+    : h.includes("nourish.com")
+      ? "nourish.com"
+      : "usenourish.com";
+  window.__nourish_apex = apex;
+})();
+
+// ============================================================================
 // SCRIPT LOADING UTILITIES
 // ============================================================================
 
@@ -131,18 +145,19 @@ $(".menu_slug").each(function () {
 (function () {
   const SESSION_KEY = "persistedUTMs";
   const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
-  const TARGET_HOST = "signup.usenourish.com";
+  const TARGET_HOST = "signup." + window.__nourish_apex;
 
   // Dynamic cookie domain based on current hostname
   const getCookieDomain = () => {
     const hostname = window.location.hostname;
     if (hostname.includes("usenourish.com")) {
       return ".usenourish.com";
+    } else if (hostname.includes("nourish.com")) {
+      return ".nourish.com";
     } else if (hostname.includes("webflow.io")) {
-      // For webflow.io domains, set cookies for the target domain
       return ".usenourish.com";
     } else {
-      return hostname; // Use exact hostname for other domains
+      return hostname;
     }
   };
   const COOKIE_DOMAIN = getCookieDomain();
@@ -795,7 +810,7 @@ function nourishQueueViewedPageEvent() {
  * - Appends ?landingPageVariation=... from path mapping
  */
 (function () {
-  var SIGNUP_HOST = "signup.usenourish.com";
+  var SIGNUP_HOST = "signup." + window.__nourish_apex;
   var EVENT = "Get Started Clicked";
   var VAR_KEY = "landingPageVariation";
 

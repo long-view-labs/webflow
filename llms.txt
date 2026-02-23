@@ -19,3 +19,4 @@ Crawl-delay: 5
 # - Intended for GPTBot, ClaudeBot, PerplexityBot, Gemini, and other compliant LLM crawlers.
 
 Sitemap: https://www.usenourish.com/sitemap.xml
+Sitemap: https://www.nourish.com/sitemap.xml
