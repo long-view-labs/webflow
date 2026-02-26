@@ -985,14 +985,33 @@ function nourishQueueViewedPageEvent() {
     return u;
   }
 
-  // Proactively rewrite signup links on load (so new-tab gets params)
-  jQuery(function () {
+  function rewriteSignupLinks() {
     jQuery('a[href*="' + SIGNUP_HOST + '"]').each(function () {
       var u = safeURL(this.getAttribute("href"));
       if (!isSignupURL(u)) return;
       maybeAppendVariation(u);
       this.setAttribute("href", u.toString());
     });
+  }
+
+  // Proactively rewrite signup links on load (so new-tab gets params)
+  jQuery(function () {
+    rewriteSignupLinks();
+    // Delayed passes for late-rendered content (e.g. CMS, Webflow, #home-filter-cta)
+    setTimeout(rewriteSignupLinks, 500);
+    setTimeout(rewriteSignupLinks, 1500);
+    // MutationObserver: rewrite when new signup links are added to DOM
+    if (typeof MutationObserver !== "undefined" && document.body) {
+      var rewriteTimeout;
+      var obs = new MutationObserver(function () {
+        clearTimeout(rewriteTimeout);
+        rewriteTimeout = setTimeout(rewriteSignupLinks, 100);
+      });
+      obs.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    }
   });
 
   // Delegate clicks sitewide
