@@ -13,19 +13,33 @@ $(function () {
     ".provider-filter",
   ];
 
-  function variationFromPath(path) {
+  function getVariationParams(path) {
     path = (path || window.location.pathname || "/").toLowerCase();
     if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
-    if (path === "/") return "Organic_Homepage";
-    if (path.indexOf("/blog") === 0) return "blog";
-    if (path.indexOf("/landing-page") === 0) return "landing-page";
-    if (path.indexOf("/conditions") === 0) return "conditions";
-    if (path.indexOf("/local-dietitians") === 0) return "local-dietitians";
-    if (path.indexOf("/paid-tt") === 0) return "Paid_TT_Homepage";
-    if (path.indexOf("/paid-labs-b") === 0) return "Labs_LP";
-    if (path.indexOf("/paid") === 0) return "Paid_Homepage";
+    if (path === "/") return { landingPageVariation: "Organic_Homepage" };
+    if (path.indexOf("/blog") === 0) return { landingPageVariation: "blog" };
+    if (path.indexOf("/landing-page") === 0)
+      return { landingPageVariation: "landing-page" };
+    if (path.indexOf("/conditions") === 0)
+      return { landingPageVariation: "conditions" };
+    if (path.indexOf("/local-dietitians") === 0)
+      return { landingPageVariation: "local-dietitians" };
+    if (path.indexOf("/paid-tt") === 0)
+      return { landingPageVariation: "Paid_TT_Homepage" };
+    if (path.indexOf("/paid-labs-b") === 0)
+      return {
+        landingPageVariation: "Labs_LP",
+        variationName: "labsPromotionVariation",
+      };
+    if (path.indexOf("/paid-labs-a") === 0)
+      return {
+        landingPageVariation: "Paid_Homepage_A",
+        variationName: "earlierContactInfoVariation",
+      };
+    if (path.indexOf("/paid") === 0)
+      return { landingPageVariation: "Paid_Homepage" };
     if (path.indexOf("/does-my-insurance-cover-nutrition") === 0)
-      return "Am_I_Covered";
+      return { landingPageVariation: "Am_I_Covered" };
     return null;
   }
 
@@ -843,9 +857,11 @@ $(function () {
     var baseUrl = "https://signup." + window.__nourish_apex + "/";
     var params = new URLSearchParams();
 
-    var variation = variationFromPath(window.location.pathname);
-    if (variation) {
-      params.append("landingPageVariation", variation);
+    var vp = getVariationParams(window.location.pathname);
+    if (vp) {
+      params.append("landingPageVariation", vp.landingPageVariation);
+      if (vp.variationName)
+        params.append("variationName", vp.variationName);
     }
 
     if (selectedInsurance) {

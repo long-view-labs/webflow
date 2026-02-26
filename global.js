@@ -599,6 +599,22 @@ function nourishGetUtms() {
   return {};
 }
 
+function nourishGetPageUrlOverrides() {
+  if (window.__nourish_apex !== "nourish.com") {
+    return null;
+  }
+
+  var href = window.location && window.location.href;
+  if (!href) {
+    return null;
+  }
+
+  return {
+    url: href,
+    tab_url: href,
+  };
+}
+
 function nourishMergeUtmsIntoProps(props) {
   var base = props && typeof props === "object" ? props : {};
   return Object.assign({}, base, nourishGetUtms());
@@ -628,8 +644,12 @@ function nourishMergeTrackArgs(args, utms) {
 
 function nourishMergePageArgs(args, utms) {
   var arr = Array.prototype.slice.call(args || []);
+  var pageOverrides = nourishGetPageUrlOverrides();
+
   if (!utms || !Object.keys(utms).length) {
-    return arr;
+    if (!pageOverrides || !Object.keys(pageOverrides).length) {
+      return arr;
+    }
   }
 
   var propsIndex = 0;
@@ -642,9 +662,18 @@ function nourishMergePageArgs(args, utms) {
   }
 
   if (arr.length > propsIndex && nourishIsPlainObject(arr[propsIndex])) {
-    arr[propsIndex] = Object.assign({}, arr[propsIndex], utms);
+    arr[propsIndex] = Object.assign(
+      {},
+      arr[propsIndex],
+      utms || {},
+      pageOverrides || {}
+    );
   } else {
-    arr.splice(propsIndex, 0, Object.assign({}, utms));
+    arr.splice(
+      propsIndex,
+      0,
+      Object.assign({}, utms || {}, pageOverrides || {})
+    );
   }
 
   return arr;
@@ -656,7 +685,8 @@ function nourishMergeUtmsIntoArgs(method, args) {
   }
 
   var utms = nourishGetUtms();
-  if (!utms || !Object.keys(utms).length) {
+  var hasUtms = utms && Object.keys(utms).length;
+  if (!hasUtms && method !== "page") {
     return Array.prototype.slice.call(args || []);
   }
 
@@ -813,6 +843,7 @@ function nourishQueueViewedPageEvent() {
   var SIGNUP_HOST = "signup." + window.__nourish_apex;
   var EVENT = "Get Started Clicked";
   var VAR_KEY = "landingPageVariation";
+  var VAR_NAME_KEY = "variationName";
 
   if (!window.jQuery) return;
   var $doc = jQuery(document);
@@ -829,25 +860,39 @@ function nourishQueueViewedPageEvent() {
   }
 
   /**
-   * Get landing page variation based on current path
+   * Get landing page variation params based on current path
    * @param {string} path - Current page path
-   * @returns {string|null} - Variation name or null
+   * @returns {{ landingPageVariation: string, variationName?: string }|null}
    */
-  function variationFromPath(path) {
+  function getVariationParams(path) {
     path = normPath(path);
-    if (path === "/") return "Organic_Homepage";
-    if (path.indexOf("/blog") === 0) return "blog";
-    if (path.indexOf("/landing-page") === 0) return "landing-page";
-    if (path.indexOf("/conditions") === 0) return "conditions";
-    if (path.indexOf("/local-dietitians") === 0) return "local-dietitians";
+    if (path === "/") return { landingPageVariation: "Organic_Homepage" };
+    if (path.indexOf("/blog") === 0) return { landingPageVariation: "blog" };
+    if (path.indexOf("/landing-page") === 0)
+      return { landingPageVariation: "landing-page" };
+    if (path.indexOf("/conditions") === 0)
+      return { landingPageVariation: "conditions" };
+    if (path.indexOf("/local-dietitians") === 0)
+      return { landingPageVariation: "local-dietitians" };
     if (path.indexOf("/insurance-dietitians") === 0)
-      return "insurance-dietitians";
-    if (path.indexOf("/paid-tt") === 0) return "Paid_TT_Homepage";
-    if (path.indexOf("/paid-labs-b") === 0) return "Labs_LP";
-    if (path.indexOf("/paid") === 0) return "Paid_Homepage";
-    if (path.indexOf("/quiz-a") === 0) return "quiz";
+      return { landingPageVariation: "insurance-dietitians" };
+    if (path.indexOf("/paid-tt") === 0)
+      return { landingPageVariation: "Paid_TT_Homepage" };
+    if (path.indexOf("/paid-labs-b") === 0)
+      return {
+        landingPageVariation: "Labs_LP",
+        variationName: "labsPromotionVariation",
+      };
+    if (path.indexOf("/paid-labs-a") === 0)
+      return {
+        landingPageVariation: "Paid_Homepage_A",
+        variationName: "earlierContactInfoVariation",
+      };
+    if (path.indexOf("/paid") === 0)
+      return { landingPageVariation: "Paid_Homepage" };
+    if (path.indexOf("/quiz-a") === 0) return { landingPageVariation: "quiz" };
     if (path.indexOf("/does-my-insurance-cover-nutrition") === 0)
-      return "Am_I_Covered";
+      return { landingPageVariation: "Am_I_Covered" };
     return null;
   }
 
@@ -926,13 +971,17 @@ function nourishQueueViewedPageEvent() {
   }
 
   /**
-   * Append landing page variation parameter to URL
+   * Append landing page variation params to URL
    * @param {URL} u - URL object
    * @returns {URL} - Modified URL object
    */
   function maybeAppendVariation(u) {
-    var v = variationFromPath(window.location.pathname);
-    if (v) u.searchParams.set(VAR_KEY, v);
+    var vp = getVariationParams(window.location.pathname);
+    if (vp) {
+      u.searchParams.set(VAR_KEY, vp.landingPageVariation);
+      if (vp.variationName)
+        u.searchParams.set(VAR_NAME_KEY, vp.variationName);
+    }
     return u;
   }
 
