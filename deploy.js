@@ -79,18 +79,12 @@ class DeployManager {
     }
 
     // Analyze file types and changes
-    const hasNewFiles = stagedFiles.some((file) =>
-      file.includes("home-search.js")
-    );
     const hasJsChanges = stagedFiles.some((file) => file.endsWith(".js"));
     const hasPackageChanges =
       stagedFiles.includes("package.json") ||
       stagedFiles.includes("package-lock.json");
 
-    if (hasNewFiles) {
-      message =
-        "feat: add new home-search functionality with payers API integration";
-    } else if (hasJsChanges) {
+    if (hasJsChanges) {
       message = "feat: update search functionality and API integration";
     } else if (hasPackageChanges) {
       message = "chore: update dependencies";
