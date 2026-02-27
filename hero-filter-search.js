@@ -906,6 +906,15 @@ $(function () {
 
     var $cta = findWidgetCTA($widget);
     if ($cta && $cta.length) {
+      var currentHref = $cta.attr("href");
+      if (currentHref && currentHref.indexOf("signup." + window.__nourish_apex) !== -1) {
+        try {
+          var existingUrl = new URL(currentHref, window.location.origin);
+          existingUrl.searchParams.forEach(function (value, key) {
+            if (!params.has(key)) params.set(key, value);
+          });
+        } catch (e) {}
+      }
       var finalUrl = baseUrl + "?" + params.toString();
       $cta.attr("href", finalUrl);
     }
