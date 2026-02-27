@@ -970,6 +970,58 @@ function nourishQueueViewedPageEvent() {
     } catch (e) {}
   }
 
+  var DEFAULT_UTM_KEYS = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "utm_creative",
+    "utm_page",
+    "gclid",
+    "gbraid",
+    "gad_source",
+    "gad_campaignid",
+    "fbclid",
+    "msclkid",
+    "ttclid",
+    "im_ref",
+    "nsh_cam",
+  ];
+
+  /**
+   * Append UTM/tracking params to URL (from NOURISH_GET_UTMS or persistedUTMs)
+   * @param {URL} u - URL object
+   */
+  function appendUtmsToUrl(u) {
+    try {
+      var utmKeys =
+        window.NOURISH_UTM_PARAMS && window.NOURISH_UTM_PARAMS.length
+          ? window.NOURISH_UTM_PARAMS
+          : DEFAULT_UTM_KEYS;
+      var utmSnapshot = nourishGetUtms();
+      if (!utmSnapshot || !Object.keys(utmSnapshot).length) {
+        try {
+          var stored = sessionStorage.getItem("persistedUTMs");
+          if (stored) {
+            var parsed = JSON.parse(stored);
+            if (parsed && parsed.params) utmSnapshot = parsed.params;
+          }
+        } catch (e) {}
+      }
+      if (!utmSnapshot || !Object.keys(utmSnapshot).length) return;
+      for (var i = 0; i < utmKeys.length; i++) {
+        var key = utmKeys[i];
+        var value = utmSnapshot[key];
+        if (value && typeof value === "string" && value.trim()) {
+          if (!u.searchParams.has(key)) {
+            u.searchParams.set(key, value.trim());
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
   /**
    * Append landing page variation params to URL
    * @param {URL} u - URL object
@@ -982,6 +1034,7 @@ function nourishQueueViewedPageEvent() {
       if (vp.variationName)
         u.searchParams.set(VAR_NAME_KEY, vp.variationName);
     }
+    appendUtmsToUrl(u);
     return u;
   }
 
