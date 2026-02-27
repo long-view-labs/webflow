@@ -13,6 +13,20 @@ $(function () {
     ".provider-filter",
   ];
 
+  function getSignupHost() {
+    var apex = window.__nourish_apex;
+    if (!apex) {
+      var h = (window.location.hostname || "").toLowerCase();
+      apex =
+        h.indexOf("usenourish.com") !== -1
+          ? "usenourish.com"
+          : h.indexOf("nourish.com") !== -1
+            ? "nourish.com"
+            : "usenourish.com";
+    }
+    return "signup." + apex;
+  }
+
   function getVariationParams(path) {
     path = (path || window.location.pathname || "/").toLowerCase();
     if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
@@ -710,7 +724,7 @@ $(function () {
   function findWidgetCTA($widget) {
     var $cta = $widget.find("#home-filter-cta").first();
     if ($cta.length) return $cta;
-    return $widget.find('a[href*="signup.' + window.__nourish_apex + '"]').first();
+    return $widget.find('a[href*="' + getSignupHost() + '"]').first();
   }
 
   function injectInsuranceOptions($widget) {
@@ -854,7 +868,7 @@ $(function () {
     var formName = getWidgetFormName($widget);
     var isInsuranceCheck = formName === "Insurance Check";
 
-    var baseUrl = "https://signup." + window.__nourish_apex + "/";
+    var baseUrl = "https://" + getSignupHost() + "/";
     var params = new URLSearchParams();
 
     var vp = getVariationParams(window.location.pathname);
@@ -907,7 +921,7 @@ $(function () {
     var $cta = findWidgetCTA($widget);
     if ($cta && $cta.length) {
       var currentHref = $cta.attr("href");
-      if (currentHref && currentHref.indexOf("signup." + window.__nourish_apex) !== -1) {
+      if (currentHref && currentHref.indexOf(getSignupHost()) !== -1) {
         try {
           var existingUrl = new URL(currentHref, window.location.origin);
           existingUrl.searchParams.forEach(function (value, key) {
@@ -919,7 +933,7 @@ $(function () {
       $cta.attr("href", finalUrl);
     }
 
-    $('a[href*="signup.' + window.__nourish_apex + '"]:not(#home-filter-cta)').each(
+    $('a[href*="' + getSignupHost() + '"]:not(#home-filter-cta)').each(
       function () {
         var $link = $(this);
         var currentHref = $link.attr("href");
