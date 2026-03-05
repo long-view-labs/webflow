@@ -102,7 +102,7 @@ window.addEventListener("scroll", function onScroll() {
           ) {
             initializeSwiper();
           }
-        }
+        },
       );
     }
   });
@@ -555,35 +555,6 @@ $(".menu_slug").each(function () {
 })();
 
 // ============================================================================
-// SEO AND DOM UTILITIES
-// ============================================================================
-
-// Handle canonical URLs for paginated content
-const urlPath = window.location.href;
-if (urlPath.includes("_page=")) {
-  const canonicalLink = document.querySelector("link[rel='canonical']");
-  if (canonicalLink) {
-    canonicalLink.href = urlPath;
-  } else {
-    const link = document.createElement("link");
-    link.setAttribute("rel", "canonical");
-    link.setAttribute("href", urlPath);
-    document.head.appendChild(link);
-  }
-}
-
-/**
- * Remove conditionally hidden elements from the DOM
- * This improves performance by removing elements that are never shown
- */
-const eraseHidden = () => {
-  document.querySelectorAll(".w-condition-invisible").forEach((el) => {
-    el.remove();
-  });
-};
-document.addEventListener("DOMContentLoaded", eraseHidden);
-
-// ============================================================================
 // ANALYTICS AND TRACKING
 // ============================================================================
 
@@ -832,6 +803,35 @@ function nourishQueueViewedPageEvent() {
     });
   }
 })();
+
+// ============================================================================
+// SEO AND DOM UTILITIES
+// ============================================================================
+
+// Handle canonical URLs for paginated content
+const urlPath = window.location.href;
+if (urlPath.includes("_page=")) {
+  const canonicalLink = document.querySelector("link[rel='canonical']");
+  if (canonicalLink) {
+    canonicalLink.href = urlPath;
+  } else {
+    const link = document.createElement("link");
+    link.setAttribute("rel", "canonical");
+    link.setAttribute("href", urlPath);
+    document.head.appendChild(link);
+  }
+}
+
+/**
+ * Remove conditionally hidden elements from the DOM
+ * This improves performance by removing elements that are never shown
+ */
+const eraseHidden = () => {
+  document.querySelectorAll(".w-condition-invisible").forEach((el) => {
+    el.remove();
+  });
+};
+document.addEventListener("DOMContentLoaded", eraseHidden);
 
 /**
  * Global "Get Started" tracking + param injection
