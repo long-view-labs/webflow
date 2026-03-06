@@ -562,11 +562,30 @@ function nourishGetUtms() {
   try {
     if (typeof window.NOURISH_GET_UTMS === "function") {
       var utms = window.NOURISH_GET_UTMS();
-      if (utms && typeof utms === "object") {
+      if (utms && typeof utms === "object" && Object.keys(utms).length) {
         return utms;
       }
     }
   } catch (e) {}
+
+  // Fallback: parse UTMs directly from the current URL
+  // Covers cases where sessionStorage is unavailable (iOS WebViews, private mode)
+  try {
+    var allowed = window.NOURISH_UTM_PARAMS;
+    if (!allowed || !allowed.length) return {};
+    var params = new URLSearchParams(window.location.search);
+    var fallback = {};
+    params.forEach(function (value, key) {
+      var k = key.toLowerCase();
+      if (allowed.indexOf(k) !== -1) {
+        fallback[k] = value;
+      }
+    });
+    if (Object.keys(fallback).length) {
+      return fallback;
+    }
+  } catch (e) {}
+
   return {};
 }
 
