@@ -705,6 +705,43 @@ function nourishMergeUtmsIntoArgs(method, args) {
   return cloned;
 }
 
+function nourishPatchRudderArrayPush(arr) {
+  if (arr.__nourishPushPatched) return;
+  var origPush = arr.push;
+  arr.push = function (entry) {
+    if (
+      Array.isArray(entry) &&
+      (entry[0] === "page" || entry[0] === "track")
+    ) {
+      var method = entry[0];
+      var enriched = nourishMergeUtmsIntoArgs(method, entry.slice(1));
+      return origPush.call(this, [method].concat(enriched));
+    }
+    return origPush.apply(this, arguments);
+  };
+  arr.__nourishPushPatched = true;
+}
+
+function nourishInstallRudderInterceptor() {
+  if (window.rudderanalytics) return;
+  var _ra;
+  Object.defineProperty(window, "rudderanalytics", {
+    get: function () {
+      return _ra;
+    },
+    set: function (val) {
+      _ra = val;
+      if (Array.isArray(val)) {
+        nourishPatchRudderArrayPush(val);
+      } else if (val && typeof val === "object") {
+        nourishPatchLiveRudder();
+      }
+    },
+    configurable: true,
+    enumerable: true,
+  });
+}
+
 function nourishPatchRudderQueue() {
   var ra = window.rudderanalytics;
   if (!ra) return;
@@ -738,27 +775,31 @@ function nourishPatchRudderQueue() {
 
 function nourishPatchLiveRudder() {
   var ra = window.rudderanalytics;
-  if (!ra || typeof ra !== "object") {
-    return false;
-  }
-  if (ra.__nourishUtmsPatched) {
-    return true;
-  }
+  if (!ra || typeof ra !== "object") return false;
+  if (Array.isArray(ra)) return false;
 
+  var allPatched = true;
   ["track", "page"].forEach(function (method) {
-    var original = ra && ra[method];
-    if (typeof original !== "function") return;
-    ra[method] = function () {
+    var current = ra[method];
+    if (typeof current !== "function") {
+      allPatched = false;
+      return;
+    }
+    if (current.__nourishUtmWrapper) return;
+    allPatched = false;
+    var wrapper = function () {
       var args = nourishMergeUtmsIntoArgs(method, arguments);
-      return original.apply(this, args);
+      return current.apply(this, args);
     };
+    wrapper.__nourishUtmWrapper = true;
+    ra[method] = wrapper;
   });
 
-  ra.__nourishUtmsPatched = true;
-  return true;
+  return allPatched;
 }
 
 function nourishEnsureRudderUtms() {
+  nourishInstallRudderInterceptor();
   nourishPatchRudderQueue();
 
   if (nourishPatchLiveRudder()) {
