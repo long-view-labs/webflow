@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.619.2] - 2026-03-06
+
+No release notes provided.
+
+
+## [2.619.1] - 2026-03-06
+
+No release notes provided.
+
+
+## [2.619.0] - 2026-03-05
+
+No release notes provided.
+
+
+## [2.618.5] - 2026-02-27
+
+No release notes provided.
+
+
+## [2.618.4] - 2026-02-27
+
+No release notes provided.
+
+
+## [2.618.3] - 2026-02-27
+
+No release notes provided.
+
+
+## [2.618.2] - 2026-02-26
+
+No release notes provided.
+
+
+## [2.618.1] - 2026-02-26
+
+No release notes provided.
+
+
+## [2.618.0] - 2026-02-26
+
+No release notes provided.
+
+
+## [2.617.0] - 2026-02-26
+
+No release notes provided.
+
+
+## [2.616.4] - 2026-02-04
+
+No release notes provided.
+
+
 ## [2.616.3] - 2026-01-21
 
 No release notes provided.

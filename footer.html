@@ -46,14 +46,14 @@
       var t = document.createElement("script");
       (t.type = "text/javascript"),
         (t.async = !0),
-        (t.src = "https://jssdk-proxy.usenourish.com/v3/modern/rsa.min.js");
+        (t.src = "https://jssdk-proxy." + (window.__nourish_apex || "usenourish.com") + "/v3/modern/rsa.min.js");
       var r = document.getElementsByTagName("script")[0];
       r.parentNode.insertBefore(t, r);
     };
     e.loadJS(),
       e.load(
         "2aOoUzHccHpDljomHWiSCOqQAv5",
-        "https://dataplane-proxy.usenourish.com"
+        "https://dataplane-proxy." + (window.__nourish_apex || "usenourish.com")
       ),
       e.page();
   })();

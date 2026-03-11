@@ -1,4 +1,18 @@
 // ============================================================================
+// DOMAIN DETECTION (nourish.com / usenourish.com dual-domain support)
+// ============================================================================
+(function () {
+  var h = window.location.hostname;
+  // Check usenourish.com first since it also contains "nourish.com"
+  var apex = h.includes("usenourish.com")
+    ? "usenourish.com"
+    : h.includes("nourish.com")
+      ? "nourish.com"
+      : "usenourish.com";
+  window.__nourish_apex = apex;
+})();
+
+// ============================================================================
 // SCRIPT LOADING UTILITIES
 // ============================================================================
 
@@ -88,7 +102,7 @@ window.addEventListener("scroll", function onScroll() {
           ) {
             initializeSwiper();
           }
-        }
+        },
       );
     }
   });
@@ -131,18 +145,19 @@ $(".menu_slug").each(function () {
 (function () {
   const SESSION_KEY = "persistedUTMs";
   const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
-  const TARGET_HOST = "signup.usenourish.com";
+  const TARGET_HOST = "signup." + window.__nourish_apex;
 
   // Dynamic cookie domain based on current hostname
   const getCookieDomain = () => {
     const hostname = window.location.hostname;
     if (hostname.includes("usenourish.com")) {
       return ".usenourish.com";
+    } else if (hostname.includes("nourish.com")) {
+      return ".nourish.com";
     } else if (hostname.includes("webflow.io")) {
-      // For webflow.io domains, set cookies for the target domain
       return ".usenourish.com";
     } else {
-      return hostname; // Use exact hostname for other domains
+      return hostname;
     }
   };
   const COOKIE_DOMAIN = getCookieDomain();
@@ -540,35 +555,6 @@ $(".menu_slug").each(function () {
 })();
 
 // ============================================================================
-// SEO AND DOM UTILITIES
-// ============================================================================
-
-// Handle canonical URLs for paginated content
-const urlPath = window.location.href;
-if (urlPath.includes("_page=")) {
-  const canonicalLink = document.querySelector("link[rel='canonical']");
-  if (canonicalLink) {
-    canonicalLink.href = urlPath;
-  } else {
-    const link = document.createElement("link");
-    link.setAttribute("rel", "canonical");
-    link.setAttribute("href", urlPath);
-    document.head.appendChild(link);
-  }
-}
-
-/**
- * Remove conditionally hidden elements from the DOM
- * This improves performance by removing elements that are never shown
- */
-const eraseHidden = () => {
-  document.querySelectorAll(".w-condition-invisible").forEach((el) => {
-    el.remove();
-  });
-};
-document.addEventListener("DOMContentLoaded", eraseHidden);
-
-// ============================================================================
 // ANALYTICS AND TRACKING
 // ============================================================================
 
@@ -576,12 +562,47 @@ function nourishGetUtms() {
   try {
     if (typeof window.NOURISH_GET_UTMS === "function") {
       var utms = window.NOURISH_GET_UTMS();
-      if (utms && typeof utms === "object") {
+      if (utms && typeof utms === "object" && Object.keys(utms).length) {
         return utms;
       }
     }
   } catch (e) {}
+
+  // Fallback: parse UTMs directly from the current URL
+  // Covers cases where sessionStorage is unavailable (iOS WebViews, private mode)
+  try {
+    var allowed = window.NOURISH_UTM_PARAMS;
+    if (!allowed || !allowed.length) return {};
+    var params = new URLSearchParams(window.location.search);
+    var fallback = {};
+    params.forEach(function (value, key) {
+      var k = key.toLowerCase();
+      if (allowed.indexOf(k) !== -1) {
+        fallback[k] = value;
+      }
+    });
+    if (Object.keys(fallback).length) {
+      return fallback;
+    }
+  } catch (e) {}
+
   return {};
+}
+
+function nourishGetPageUrlOverrides() {
+  if (window.__nourish_apex !== "nourish.com") {
+    return null;
+  }
+
+  var href = window.location && window.location.href;
+  if (!href) {
+    return null;
+  }
+
+  return {
+    url: href,
+    tab_url: href,
+  };
 }
 
 function nourishMergeUtmsIntoProps(props) {
@@ -613,8 +634,12 @@ function nourishMergeTrackArgs(args, utms) {
 
 function nourishMergePageArgs(args, utms) {
   var arr = Array.prototype.slice.call(args || []);
+  var pageOverrides = nourishGetPageUrlOverrides();
+
   if (!utms || !Object.keys(utms).length) {
-    return arr;
+    if (!pageOverrides || !Object.keys(pageOverrides).length) {
+      return arr;
+    }
   }
 
   var propsIndex = 0;
@@ -627,9 +652,18 @@ function nourishMergePageArgs(args, utms) {
   }
 
   if (arr.length > propsIndex && nourishIsPlainObject(arr[propsIndex])) {
-    arr[propsIndex] = Object.assign({}, arr[propsIndex], utms);
+    arr[propsIndex] = Object.assign(
+      {},
+      arr[propsIndex],
+      utms || {},
+      pageOverrides || {}
+    );
   } else {
-    arr.splice(propsIndex, 0, Object.assign({}, utms));
+    arr.splice(
+      propsIndex,
+      0,
+      Object.assign({}, utms || {}, pageOverrides || {})
+    );
   }
 
   return arr;
@@ -641,7 +675,8 @@ function nourishMergeUtmsIntoArgs(method, args) {
   }
 
   var utms = nourishGetUtms();
-  if (!utms || !Object.keys(utms).length) {
+  var hasUtms = utms && Object.keys(utms).length;
+  if (!hasUtms && method !== "page") {
     return Array.prototype.slice.call(args || []);
   }
 
@@ -668,6 +703,43 @@ function nourishMergeUtmsIntoArgs(method, args) {
 
   cloned.push(Object.assign({}, utms));
   return cloned;
+}
+
+function nourishPatchRudderArrayPush(arr) {
+  if (arr.__nourishPushPatched) return;
+  var origPush = arr.push;
+  arr.push = function (entry) {
+    if (
+      Array.isArray(entry) &&
+      (entry[0] === "page" || entry[0] === "track")
+    ) {
+      var method = entry[0];
+      var enriched = nourishMergeUtmsIntoArgs(method, entry.slice(1));
+      return origPush.call(this, [method].concat(enriched));
+    }
+    return origPush.apply(this, arguments);
+  };
+  arr.__nourishPushPatched = true;
+}
+
+function nourishInstallRudderInterceptor() {
+  if (window.rudderanalytics) return;
+  var _ra;
+  Object.defineProperty(window, "rudderanalytics", {
+    get: function () {
+      return _ra;
+    },
+    set: function (val) {
+      _ra = val;
+      if (Array.isArray(val)) {
+        nourishPatchRudderArrayPush(val);
+      } else if (val && typeof val === "object") {
+        nourishPatchLiveRudder();
+      }
+    },
+    configurable: true,
+    enumerable: true,
+  });
 }
 
 function nourishPatchRudderQueue() {
@@ -703,27 +775,31 @@ function nourishPatchRudderQueue() {
 
 function nourishPatchLiveRudder() {
   var ra = window.rudderanalytics;
-  if (!ra || typeof ra !== "object") {
-    return false;
-  }
-  if (ra.__nourishUtmsPatched) {
-    return true;
-  }
+  if (!ra || typeof ra !== "object") return false;
+  if (Array.isArray(ra)) return false;
 
+  var allPatched = true;
   ["track", "page"].forEach(function (method) {
-    var original = ra && ra[method];
-    if (typeof original !== "function") return;
-    ra[method] = function () {
+    var current = ra[method];
+    if (typeof current !== "function") {
+      allPatched = false;
+      return;
+    }
+    if (current.__nourishUtmWrapper) return;
+    allPatched = false;
+    var wrapper = function () {
       var args = nourishMergeUtmsIntoArgs(method, arguments);
-      return original.apply(this, args);
+      return current.apply(this, args);
     };
+    wrapper.__nourishUtmWrapper = true;
+    ra[method] = wrapper;
   });
 
-  ra.__nourishUtmsPatched = true;
-  return true;
+  return allPatched;
 }
 
 function nourishEnsureRudderUtms() {
+  nourishInstallRudderInterceptor();
   nourishPatchRudderQueue();
 
   if (nourishPatchLiveRudder()) {
@@ -788,6 +864,35 @@ function nourishQueueViewedPageEvent() {
   }
 })();
 
+// ============================================================================
+// SEO AND DOM UTILITIES
+// ============================================================================
+
+// Handle canonical URLs for paginated content
+const urlPath = window.location.href;
+if (urlPath.includes("_page=")) {
+  const canonicalLink = document.querySelector("link[rel='canonical']");
+  if (canonicalLink) {
+    canonicalLink.href = urlPath;
+  } else {
+    const link = document.createElement("link");
+    link.setAttribute("rel", "canonical");
+    link.setAttribute("href", urlPath);
+    document.head.appendChild(link);
+  }
+}
+
+/**
+ * Remove conditionally hidden elements from the DOM
+ * This improves performance by removing elements that are never shown
+ */
+const eraseHidden = () => {
+  document.querySelectorAll(".w-condition-invisible").forEach((el) => {
+    el.remove();
+  });
+};
+document.addEventListener("DOMContentLoaded", eraseHidden);
+
 /**
  * Global "Get Started" tracking + param injection
  * - Fires on ANY click that goes to signup.usenourish.com
@@ -795,9 +900,10 @@ function nourishQueueViewedPageEvent() {
  * - Appends ?landingPageVariation=... from path mapping
  */
 (function () {
-  var SIGNUP_HOST = "signup.usenourish.com";
+  var SIGNUP_HOST = "signup." + window.__nourish_apex;
   var EVENT = "Get Started Clicked";
   var VAR_KEY = "landingPageVariation";
+  var VAR_NAME_KEY = "variationName";
 
   if (!window.jQuery) return;
   var $doc = jQuery(document);
@@ -814,24 +920,39 @@ function nourishQueueViewedPageEvent() {
   }
 
   /**
-   * Get landing page variation based on current path
+   * Get landing page variation params based on current path
    * @param {string} path - Current page path
-   * @returns {string|null} - Variation name or null
+   * @returns {{ landingPageVariation: string, variationName?: string }|null}
    */
-  function variationFromPath(path) {
+  function getVariationParams(path) {
     path = normPath(path);
-    if (path === "/") return "Organic_Homepage";
-    if (path.indexOf("/blog") === 0) return "blog";
-    if (path.indexOf("/landing-page") === 0) return "landing-page";
-    if (path.indexOf("/conditions") === 0) return "conditions";
-    if (path.indexOf("/local-dietitians") === 0) return "local-dietitians";
+    if (path === "/") return { landingPageVariation: "Organic_Homepage" };
+    if (path.indexOf("/blog") === 0) return { landingPageVariation: "blog" };
+    if (path.indexOf("/landing-page") === 0)
+      return { landingPageVariation: "landing-page" };
+    if (path.indexOf("/conditions") === 0)
+      return { landingPageVariation: "conditions" };
+    if (path.indexOf("/local-dietitians") === 0)
+      return { landingPageVariation: "local-dietitians" };
     if (path.indexOf("/insurance-dietitians") === 0)
-      return "insurance-dietitians";
-    if (path.indexOf("/paid-tt") === 0) return "Paid_TT_Homepage";
-    if (path.indexOf("/paid") === 0) return "Paid_Homepage";
-    if (path.indexOf("/quiz-a") === 0) return "quiz";
+      return { landingPageVariation: "insurance-dietitians" };
+    if (path.indexOf("/paid-tt") === 0)
+      return { landingPageVariation: "Paid_TT_Homepage" };
+    if (path.indexOf("/paid-labs-b") === 0)
+      return {
+        landingPageVariation: "Labs_LP",
+        variationName: "labsPromotionVariation",
+      };
+    if (path.indexOf("/paid-labs-a") === 0)
+      return {
+        landingPageVariation: "Paid_Homepage_A",
+        variationName: "earlierContactInfoVariation",
+      };
+    if (path.indexOf("/paid") === 0)
+      return { landingPageVariation: "Paid_Homepage" };
+    if (path.indexOf("/quiz-a") === 0) return { landingPageVariation: "quiz" };
     if (path.indexOf("/does-my-insurance-cover-nutrition") === 0)
-      return "Am_I_Covered";
+      return { landingPageVariation: "Am_I_Covered" };
     return null;
   }
 
@@ -909,25 +1030,101 @@ function nourishQueueViewedPageEvent() {
     } catch (e) {}
   }
 
+  var DEFAULT_UTM_KEYS = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "utm_creative",
+    "utm_page",
+    "gclid",
+    "gbraid",
+    "gad_source",
+    "gad_campaignid",
+    "fbclid",
+    "msclkid",
+    "ttclid",
+    "im_ref",
+    "nsh_cam",
+  ];
+
   /**
-   * Append landing page variation parameter to URL
+   * Append UTM/tracking params to URL (from NOURISH_GET_UTMS or persistedUTMs)
+   * @param {URL} u - URL object
+   */
+  function appendUtmsToUrl(u) {
+    try {
+      var utmKeys =
+        window.NOURISH_UTM_PARAMS && window.NOURISH_UTM_PARAMS.length
+          ? window.NOURISH_UTM_PARAMS
+          : DEFAULT_UTM_KEYS;
+      var utmSnapshot = nourishGetUtms();
+      if (!utmSnapshot || !Object.keys(utmSnapshot).length) {
+        try {
+          var stored = sessionStorage.getItem("persistedUTMs");
+          if (stored) {
+            var parsed = JSON.parse(stored);
+            if (parsed && parsed.params) utmSnapshot = parsed.params;
+          }
+        } catch (e) {}
+      }
+      if (!utmSnapshot || !Object.keys(utmSnapshot).length) return;
+      for (var i = 0; i < utmKeys.length; i++) {
+        var key = utmKeys[i];
+        var value = utmSnapshot[key];
+        if (value && typeof value === "string" && value.trim()) {
+          if (!u.searchParams.has(key)) {
+            u.searchParams.set(key, value.trim());
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  /**
+   * Append landing page variation params to URL
    * @param {URL} u - URL object
    * @returns {URL} - Modified URL object
    */
   function maybeAppendVariation(u) {
-    var v = variationFromPath(window.location.pathname);
-    if (v) u.searchParams.set(VAR_KEY, v);
+    var vp = getVariationParams(window.location.pathname);
+    if (vp) {
+      u.searchParams.set(VAR_KEY, vp.landingPageVariation);
+      if (vp.variationName)
+        u.searchParams.set(VAR_NAME_KEY, vp.variationName);
+    }
+    appendUtmsToUrl(u);
     return u;
   }
 
-  // Proactively rewrite signup links on load (so new-tab gets params)
-  jQuery(function () {
+  function rewriteSignupLinks() {
     jQuery('a[href*="' + SIGNUP_HOST + '"]').each(function () {
       var u = safeURL(this.getAttribute("href"));
       if (!isSignupURL(u)) return;
       maybeAppendVariation(u);
       this.setAttribute("href", u.toString());
     });
+  }
+
+  // Proactively rewrite signup links on load (so new-tab gets params)
+  jQuery(function () {
+    rewriteSignupLinks();
+    // Delayed passes for late-rendered content (e.g. CMS, Webflow, #home-filter-cta)
+    setTimeout(rewriteSignupLinks, 500);
+    setTimeout(rewriteSignupLinks, 1500);
+    // MutationObserver: rewrite when new signup links are added to DOM
+    if (typeof MutationObserver !== "undefined" && document.body) {
+      var rewriteTimeout;
+      var obs = new MutationObserver(function () {
+        clearTimeout(rewriteTimeout);
+        rewriteTimeout = setTimeout(rewriteSignupLinks, 100);
+      });
+      obs.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    }
   });
 
   // Delegate clicks sitewide
