@@ -176,6 +176,7 @@ $(".menu_slug").each(function () {
     "gbraid",
     "gad_source",
     "gad_campaignid",
+    "matchtype",
     "fbclid",
     "msclkid",
     "ttclid",
