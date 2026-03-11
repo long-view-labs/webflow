@@ -370,6 +370,7 @@ $(function () {
         "msclkid",
         "ttclid",
         "im_ref",
+        "matchtype",
       ];
 
       var utmSnapshot = {};
@@ -405,6 +406,23 @@ $(function () {
           persistedUTMs.params[key]
         ) {
           value = persistedUTMs.params[key];
+        }
+
+        if (
+          (!value || !String(value).trim()) &&
+          typeof window !== "undefined" &&
+          window.location &&
+          window.location.search
+        ) {
+          try {
+            var urlParams = new URLSearchParams(window.location.search);
+            var raw = urlParams.get(key);
+            if (raw && typeof raw === "string" && raw.trim()) {
+              value = raw.trim();
+            }
+          } catch (queryError) {
+            // ignore URL param resolution errors
+          }
         }
 
         if (value && typeof value === "string" && value.trim()) {
@@ -710,6 +728,17 @@ $(function () {
 
     var $dividerRow = $container.find(".filter-divider").first();
     var $insertAfter = $dividerRow.closest(".filter-list_radio-field");
+
+    if ($insertAfter.length) {
+      // Remove any existing static/dynamic options after the divider.
+      $insertAfter.nextAll(".filter-list_radio-field").remove();
+    } else {
+      // Fallback: remove existing insurance options to avoid duplicate IDs.
+      $container
+        .find('input[type="radio"][data-name="Insurance"]')
+        .closest(".filter-list_radio-field")
+        .remove();
+    }
     var fragment = document.createDocumentFragment();
 
     var sorted = payersData
@@ -752,6 +781,35 @@ $(function () {
       label.appendChild(span);
       fragment.appendChild(label);
     });
+
+    var otherLabel = document.createElement("label");
+    otherLabel.className = "filter-list_radio-field w-radio dynamic-insurance";
+
+    var otherRadioDiv = document.createElement("div");
+    otherRadioDiv.className =
+      "w-form-formradioinput w-form-formradioinput--inputType-custom radio-hide w-radio-input";
+
+    var otherInput = document.createElement("input");
+    otherInput.type = "radio";
+    otherInput.name = "Insurance";
+    otherInput.id = "Other";
+    otherInput.setAttribute("data-name", "Insurance");
+    otherInput.style.opacity = "0";
+    otherInput.style.position = "absolute";
+    otherInput.style.zIndex = "-1";
+    otherInput.value = "Other";
+
+    var otherSpan = document.createElement("span");
+    otherSpan.setAttribute("fs-cmsfilter-field", "insurance");
+    otherSpan.className = "filter-list_label state w-form-label";
+    otherSpan.setAttribute("for", "Other");
+    otherSpan.setAttribute("tabindex", "0");
+    otherSpan.textContent = "Other";
+
+    otherLabel.appendChild(otherRadioDiv);
+    otherLabel.appendChild(otherInput);
+    otherLabel.appendChild(otherSpan);
+    fragment.appendChild(otherLabel);
 
     if ($insertAfter && $insertAfter.length) {
       $insertAfter.after(fragment);
