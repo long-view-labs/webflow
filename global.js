@@ -71,7 +71,7 @@ function loadScriptOnScroll(src, element, callback) {
       loadScriptOnScroll(
         element.getAttribute("data-script-src"),
         element,
-        callback
+        callback,
       );
       window.removeEventListener("scroll", onScroll);
     }
@@ -82,7 +82,7 @@ function loadScriptOnScroll(src, element, callback) {
 window.addEventListener("scroll", function onScroll() {
   // Select all elements that have a 'data-script-src' attribute
   var elements = document.querySelectorAll(
-    "[data-script-src]:not([data-script-loaded])"
+    "[data-script-src]:not([data-script-loaded])",
   );
 
   elements.forEach(function (element) {
@@ -270,7 +270,7 @@ $(".menu_slug").each(function () {
     if (!entries.length) return;
 
     const trackingKeys = new Set(
-      Array.from(SUPPORTED_PARAMS).map((key) => normalizeParamKey(key))
+      Array.from(SUPPORTED_PARAMS).map((key) => normalizeParamKey(key)),
     );
     const counts = new Map();
 
@@ -282,7 +282,7 @@ $(".menu_slug").each(function () {
     });
 
     const hasDuplicates = Array.from(counts.values()).some(
-      (count) => count > 1
+      (count) => count > 1,
     );
     if (!hasDuplicates) return;
 
@@ -657,13 +657,13 @@ function nourishMergePageArgs(args, utms) {
       {},
       arr[propsIndex],
       utms || {},
-      pageOverrides || {}
+      pageOverrides || {},
     );
   } else {
     arr.splice(
       propsIndex,
       0,
-      Object.assign({}, utms || {}, pageOverrides || {})
+      Object.assign({}, utms || {}, pageOverrides || {}),
     );
   }
 
@@ -710,10 +710,7 @@ function nourishPatchRudderArrayPush(arr) {
   if (arr.__nourishPushPatched) return;
   var origPush = arr.push;
   arr.push = function (entry) {
-    if (
-      Array.isArray(entry) &&
-      (entry[0] === "page" || entry[0] === "track")
-    ) {
+    if (Array.isArray(entry) && (entry[0] === "page" || entry[0] === "track")) {
       var method = entry[0];
       var enriched = nourishMergeUtmsIntoArgs(method, entry.slice(1));
       return origPush.call(this, [method].concat(enriched));
@@ -939,15 +936,10 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       return { landingPageVariation: "insurance-dietitians" };
     if (path.indexOf("/paid-tt") === 0)
       return { landingPageVariation: "Paid_TT_Homepage" };
-    if (path.indexOf("/paid-labs-b") === 0)
+    if (path.indexOf("/paid-labs") === 0)
       return {
         landingPageVariation: "Labs_LP",
         variationName: "labsPromotionVariation",
-      };
-    if (path.indexOf("/paid-labs-a") === 0)
-      return {
-        landingPageVariation: "Paid_Homepage_A",
-        variationName: "earlierContactInfoVariation",
       };
     if (path.indexOf("/paid") === 0)
       return { landingPageVariation: "Paid_Homepage" };
@@ -965,7 +957,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     var ua = navigator.userAgent || navigator.vendor || window.opera;
     if (
       /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
-        ua.toLowerCase()
+        ua.toLowerCase(),
       )
     ) {
       return "mobile";
@@ -1092,8 +1084,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     var vp = getVariationParams(window.location.pathname);
     if (vp) {
       u.searchParams.set(VAR_KEY, vp.landingPageVariation);
-      if (vp.variationName)
-        u.searchParams.set(VAR_NAME_KEY, vp.variationName);
+      if (vp.variationName) u.searchParams.set(VAR_NAME_KEY, vp.variationName);
     }
     appendUtmsToUrl(u);
     return u;
