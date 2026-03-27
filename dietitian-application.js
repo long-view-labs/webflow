@@ -714,18 +714,18 @@
     return field?.closest(".gh-field") || null;
   }
 
-  function setTextFieldValue(block, value) {
+  function setTextFieldValue(block, value, force = false) {
     const input = block.querySelector('input[type="text"], textarea');
     if (!input) return false;
-    if (String(input.value || "").trim() !== "") return false;
+    if (!force && String(input.value || "").trim() !== "") return false;
     input.value = value;
     return true;
   }
 
-  function setSelectFieldValue(block, desiredLabel) {
+  function setSelectFieldValue(block, desiredLabel, force = false) {
     const select = block.querySelector("select");
     if (!select) return false;
-    if (String(select.value || "").trim() !== "") return false;
+    if (!force && String(select.value || "").trim() !== "") return false;
     const desired = normalizeLabelText(desiredLabel);
     const match = Array.from(select.options).find((opt) => {
       return (
@@ -738,10 +738,10 @@
     return true;
   }
 
-  function setRadioFieldValue(block, desiredLabel) {
+  function setRadioFieldValue(block, desiredLabel, force = false) {
     const radios = Array.from(block.querySelectorAll('input[type="radio"]'));
     if (!radios.length) return false;
-    if (radios.some((radio) => radio.checked)) return false;
+    if (!force && radios.some((radio) => radio.checked)) return false;
     const desired = normalizeLabelText(desiredLabel);
     for (const radio of radios) {
       const radioValue = normalizeLabelText(radio.value || "");
@@ -762,10 +762,11 @@
     return false;
   }
 
-  function setTagPickerValue(block, desiredLabel) {
+  function setTagPickerValue(block, desiredLabel, force = false) {
     const picker = block.querySelector(".tagpicker");
     if (!picker || typeof picker.setSelectedValues !== "function") return false;
-    if (picker.getSelectedCount && picker.getSelectedCount() > 0) return false;
+    if (!force && picker.getSelectedCount && picker.getSelectedCount() > 0)
+      return false;
     const options = picker._options || [];
     const desired = normalizeLabelText(desiredLabel);
     const match = options.find((opt) => {
@@ -779,61 +780,8 @@
     return true;
   }
 
-  let lastReferralPrefill = {
-    referredBy: null,
-    heardAbout: null,
-  };
   let referralListenerAttached = false;
   let historyPatched = false;
-
-  function getSelectLabel(select) {
-    const option = select?.selectedOptions?.[0];
-    return option ? String(option.textContent || "") : "";
-  }
-
-  function isHeardAboutBlankOrReferral(block) {
-    const desired = normalizeLabelText("Referral");
-    const select = block.querySelector("select");
-    if (select) {
-      if (!String(select.value || "").trim()) return true;
-      return normalizeLabelText(getSelectLabel(select)) === desired;
-    }
-    const radios = Array.from(block.querySelectorAll('input[type="radio"]'));
-    if (radios.length) {
-      const checked = radios.find((radio) => radio.checked);
-      if (!checked) return true;
-      const valueMatch = normalizeLabelText(checked.value || "") === desired;
-      if (valueMatch) return true;
-      if (checked.id) {
-        const label = block.querySelector(
-          `label[for="${CSS.escape(checked.id)}"]`
-        );
-        return label ? normalizeLabelText(label.textContent) === desired : false;
-      }
-      return false;
-    }
-    const picker = block.querySelector(".tagpicker");
-    if (picker && typeof picker.getSelectedValues === "function") {
-      const selected = picker.getSelectedValues();
-      if (!selected || selected.length === 0) return true;
-      const options = picker._options || [];
-      return selected.some((val) => {
-        const match = options.find((opt) => String(opt.value) === String(val));
-        return match && normalizeLabelText(match.label) === desired;
-      });
-    }
-    return true;
-  }
-
-  function setTextFieldValueIfAllowed(block, value) {
-    const input = block.querySelector('input[type="text"], textarea');
-    if (!input) return false;
-    const current = String(input.value || "").trim();
-    const last = String(lastReferralPrefill.referredBy || "").trim();
-    if (current !== "" && current !== last) return false;
-    input.value = value;
-    return true;
-  }
 
   function applyReferralPrefill(form) {
     const searchParams = new URLSearchParams(location.search);
@@ -847,13 +795,8 @@
       form,
       REFERRAL_FIELD_NAMES.referredBy
     );
-    if (
-      referredByBlock &&
-      (setTextFieldValueIfAllowed(referredByBlock, referredBy) ||
-        setTextFieldValue(referredByBlock, referredBy))
-    ) {
+    if (referredByBlock && setTextFieldValue(referredByBlock, referredBy, true)) {
       didUpdate = true;
-      lastReferralPrefill.referredBy = referredBy;
     }
 
     const heardAboutBlock = findFieldBlockByName(
@@ -861,12 +804,10 @@
       REFERRAL_FIELD_NAMES.heardAbout
     );
     if (heardAboutBlock) {
-      const canUpdate = isHeardAboutBlankOrReferral(heardAboutBlock);
-      const updated = canUpdate
-        ? setSelectFieldValue(heardAboutBlock, "Referral") ||
-          setRadioFieldValue(heardAboutBlock, "Referral") ||
-          setTagPickerValue(heardAboutBlock, "Referral")
-        : false;
+      const updated =
+        setSelectFieldValue(heardAboutBlock, "Referral", true) ||
+        setRadioFieldValue(heardAboutBlock, "Referral", true) ||
+        setTagPickerValue(heardAboutBlock, "Referral", true);
       if (updated) didUpdate = true;
     }
 
