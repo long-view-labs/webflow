@@ -371,6 +371,7 @@
     const shell = document.createElement("div");
     shell.className = "tagpicker";
     shell.dataset.required = required ? "1" : "0";
+    shell._options = options;
 
     const input = document.createElement("input");
     input.type = "text";
@@ -683,6 +684,133 @@
 
   let isRestoringFromStorage = false;
   let savedFormPayloadCache = null;
+
+  const REFERRAL_FIELD_NAMES = {
+    referredBy: "question_4038249008",
+    heardAbout: "question_4038248008",
+  };
+
+  function normalizeLabelText(text = "") {
+    return String(text)
+      .replace(/\s+/g, " ")
+      .replace(/\s*\*$/, "")
+      .replace(/[?:]\s*$/, "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function getQueryParamValue(searchParams, key) {
+    const target = String(key || "").toLowerCase();
+    for (const [rawKey, value] of searchParams.entries()) {
+      if (String(rawKey).toLowerCase() === target) return value;
+    }
+    return null;
+  }
+
+  function findFieldBlockByName(form, fieldName) {
+    if (!fieldName) return null;
+    const selector = `[name="${CSS.escape(fieldName)}"]`;
+    const field = form.querySelector(selector);
+    return field?.closest(".gh-field") || null;
+  }
+
+  function setTextFieldValue(block, value) {
+    const input = block.querySelector('input[type="text"], textarea');
+    if (!input) return false;
+    if (String(input.value || "").trim() !== "") return false;
+    input.value = value;
+    return true;
+  }
+
+  function setSelectFieldValue(block, desiredLabel) {
+    const select = block.querySelector("select");
+    if (!select) return false;
+    if (String(select.value || "").trim() !== "") return false;
+    const desired = normalizeLabelText(desiredLabel);
+    const match = Array.from(select.options).find((opt) => {
+      return (
+        normalizeLabelText(opt.textContent) === desired ||
+        normalizeLabelText(opt.value) === desired
+      );
+    });
+    if (!match) return false;
+    select.value = match.value;
+    return true;
+  }
+
+  function setRadioFieldValue(block, desiredLabel) {
+    const radios = Array.from(block.querySelectorAll('input[type="radio"]'));
+    if (!radios.length) return false;
+    if (radios.some((radio) => radio.checked)) return false;
+    const desired = normalizeLabelText(desiredLabel);
+    for (const radio of radios) {
+      const radioValue = normalizeLabelText(radio.value || "");
+      if (radioValue === desired) {
+        radio.checked = true;
+        return true;
+      }
+      if (radio.id) {
+        const radioLabel = block.querySelector(
+          `label[for="${CSS.escape(radio.id)}"]`
+        );
+        if (radioLabel && normalizeLabelText(radioLabel.textContent) === desired) {
+          radio.checked = true;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function setTagPickerValue(block, desiredLabel) {
+    const picker = block.querySelector(".tagpicker");
+    if (!picker || typeof picker.setSelectedValues !== "function") return false;
+    if (picker.getSelectedCount && picker.getSelectedCount() > 0) return false;
+    const options = picker._options || [];
+    const desired = normalizeLabelText(desiredLabel);
+    const match = options.find((opt) => {
+      return (
+        normalizeLabelText(opt.label) === desired ||
+        normalizeLabelText(opt.value) === desired
+      );
+    });
+    if (!match) return false;
+    picker.setSelectedValues([match.value]);
+    return true;
+  }
+
+  function applyReferralPrefill(form) {
+    const searchParams = new URLSearchParams(location.search);
+    const referredBy = String(
+      getQueryParamValue(searchParams, "referredBy") || ""
+    ).trim();
+    if (!referredBy) return;
+
+    let didUpdate = false;
+    const referredByBlock = findFieldBlockByName(
+      form,
+      REFERRAL_FIELD_NAMES.referredBy
+    );
+    if (referredByBlock && setTextFieldValue(referredByBlock, referredBy)) {
+      didUpdate = true;
+    }
+
+    const heardAboutBlock = findFieldBlockByName(
+      form,
+      REFERRAL_FIELD_NAMES.heardAbout
+    );
+    if (heardAboutBlock) {
+      const updated =
+        setSelectFieldValue(heardAboutBlock, "Referral") ||
+        setRadioFieldValue(heardAboutBlock, "Referral") ||
+        setTagPickerValue(heardAboutBlock, "Referral");
+      if (updated) didUpdate = true;
+    }
+
+    if (didUpdate) {
+      saveFormData(form);
+    }
+  }
 
   /**
    * Reads any persisted form state from storage, caching it for reuse.
@@ -1505,6 +1633,7 @@
     mount.appendChild(form);
 
     restoreFormData(form);
+    applyReferralPrefill(form);
     queueLeadSyncInProgress(form);
   }
 
