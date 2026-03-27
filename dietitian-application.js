@@ -779,6 +779,62 @@
     return true;
   }
 
+  let lastReferralPrefill = {
+    referredBy: null,
+    heardAbout: null,
+  };
+  let referralListenerAttached = false;
+  let historyPatched = false;
+
+  function getSelectLabel(select) {
+    const option = select?.selectedOptions?.[0];
+    return option ? String(option.textContent || "") : "";
+  }
+
+  function isHeardAboutBlankOrReferral(block) {
+    const desired = normalizeLabelText("Referral");
+    const select = block.querySelector("select");
+    if (select) {
+      if (!String(select.value || "").trim()) return true;
+      return normalizeLabelText(getSelectLabel(select)) === desired;
+    }
+    const radios = Array.from(block.querySelectorAll('input[type="radio"]'));
+    if (radios.length) {
+      const checked = radios.find((radio) => radio.checked);
+      if (!checked) return true;
+      const valueMatch = normalizeLabelText(checked.value || "") === desired;
+      if (valueMatch) return true;
+      if (checked.id) {
+        const label = block.querySelector(
+          `label[for="${CSS.escape(checked.id)}"]`
+        );
+        return label ? normalizeLabelText(label.textContent) === desired : false;
+      }
+      return false;
+    }
+    const picker = block.querySelector(".tagpicker");
+    if (picker && typeof picker.getSelectedValues === "function") {
+      const selected = picker.getSelectedValues();
+      if (!selected || selected.length === 0) return true;
+      const options = picker._options || [];
+      return selected.some((val) => {
+        const match = options.find((opt) => String(opt.value) === String(val));
+        return match && normalizeLabelText(match.label) === desired;
+      });
+    }
+    return true;
+  }
+
+  function setTextFieldValueIfAllowed(block, value) {
+    const input = block.querySelector('input[type="text"], textarea');
+    if (!input) return false;
+    const current = String(input.value || "").trim();
+    const last = String(lastReferralPrefill.referredBy || "").trim();
+    if (current !== "" && current !== last) return false;
+    input.value = value;
+    return true;
+  }
+
   function applyReferralPrefill(form) {
     const searchParams = new URLSearchParams(location.search);
     const referredBy = String(
@@ -791,8 +847,13 @@
       form,
       REFERRAL_FIELD_NAMES.referredBy
     );
-    if (referredByBlock && setTextFieldValue(referredByBlock, referredBy)) {
+    if (
+      referredByBlock &&
+      (setTextFieldValueIfAllowed(referredByBlock, referredBy) ||
+        setTextFieldValue(referredByBlock, referredBy))
+    ) {
       didUpdate = true;
+      lastReferralPrefill.referredBy = referredBy;
     }
 
     const heardAboutBlock = findFieldBlockByName(
@@ -800,16 +861,52 @@
       REFERRAL_FIELD_NAMES.heardAbout
     );
     if (heardAboutBlock) {
-      const updated =
-        setSelectFieldValue(heardAboutBlock, "Referral") ||
-        setRadioFieldValue(heardAboutBlock, "Referral") ||
-        setTagPickerValue(heardAboutBlock, "Referral");
+      const canUpdate = isHeardAboutBlankOrReferral(heardAboutBlock);
+      const updated = canUpdate
+        ? setSelectFieldValue(heardAboutBlock, "Referral") ||
+          setRadioFieldValue(heardAboutBlock, "Referral") ||
+          setTagPickerValue(heardAboutBlock, "Referral")
+        : false;
       if (updated) didUpdate = true;
     }
 
     if (didUpdate) {
       saveFormData(form);
     }
+  }
+
+  function attachReferralParamListener(form) {
+    if (referralListenerAttached) return;
+    referralListenerAttached = true;
+
+    let lastSearch = location.search;
+    const handle = () => {
+      if (location.search === lastSearch) return;
+      lastSearch = location.search;
+      applyReferralPrefill(form);
+    };
+
+    window.addEventListener("popstate", handle);
+
+    if (!historyPatched && window.history) {
+      historyPatched = true;
+      const push = history.pushState;
+      const replace = history.replaceState;
+      if (typeof push === "function") {
+        history.pushState = function (...args) {
+          push.apply(this, args);
+          window.dispatchEvent(new Event("nourish:locationchange"));
+        };
+      }
+      if (typeof replace === "function") {
+        history.replaceState = function (...args) {
+          replace.apply(this, args);
+          window.dispatchEvent(new Event("nourish:locationchange"));
+        };
+      }
+    }
+
+    window.addEventListener("nourish:locationchange", handle);
   }
 
   /**
@@ -1634,6 +1731,7 @@
 
     restoreFormData(form);
     applyReferralPrefill(form);
+    attachReferralParamListener(form);
     queueLeadSyncInProgress(form);
   }
 
