@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.620.7] - 2026-05-07
+
+No release notes provided.
+
+
 ## [2.620.6] - 2026-04-15
 
 No release notes provided.
