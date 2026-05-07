@@ -137,9 +137,34 @@ $(function () {
       return;
     }
 
+    $component.find(".auto-tabs.w-tabs").addBack(".auto-tabs.w-tabs").attr({
+      "data-duration-in": "0",
+      "data-duration-out": "0",
+    });
+    $panes.css({
+      opacity: 1,
+      transition: "none",
+    });
+
     $panes.each(function () {
       paneReady($(this));
     });
+
+    function setActiveTab(trigger) {
+      let tabIndex = $tabs.index(trigger);
+
+      $tabs
+        .removeClass("w--current")
+        .attr("aria-selected", "false")
+        .attr("tabindex", "-1");
+      trigger
+        .addClass("w--current")
+        .attr("aria-selected", "true")
+        .removeAttr("tabindex");
+
+      $panes.attr("aria-hidden", "true");
+      $panes.eq(tabIndex).removeAttr("aria-hidden");
+    }
 
     // Function to update content pane based on the active tab
     function updateContentPane(trigger) {
@@ -160,12 +185,17 @@ $(function () {
 
         // Remove active class after the next pane is ready to prevent first-view flashes.
         $panes.removeClass("w--tab-active");
-        activePane.addClass("w--tab-active");
+        activePane
+          .css({
+            opacity: 1,
+            transition: "none",
+          })
+          .addClass("w--tab-active");
       });
     }
 
     function isPlaying() {
-      return $pauseBtn.attr("auto-tabs") == "playing";
+      return !$pauseBtn.length || $pauseBtn.attr("auto-tabs") == "playing";
     }
 
     // Define cycle through all tabs
@@ -174,60 +204,64 @@ $(function () {
         trigger = $tabs.first();
       }
 
-      // If pause btn is set to playing, loop to next tab
+      setActiveTab(trigger);
+
+      // Reset all timer bars and animate the current one for tabDuration
+      $component.find(".auto-tabs_timer-bar").stop(true, true).css("width", "0%");
+
       if (isPlaying()) {
-        // Reset all timer bars and animate the current one for tabDuration
-        $component.find(".auto-tabs_timer-bar").stop(true, true).css("width", "0%");
         trigger
           .find(".auto-tabs_timer-bar")
           .animate({ width: "100%" }, tabDuration);
+      }
 
-        // Reset rotation for all tab arrows
-        $component.find(".tab-arrow").css("transform", "rotate(0deg)");
-        // Reset top padding for all tab titles
-        $component.find(".tab-button-title").css("padding-top", "0px");
+      // Reset rotation for all tab arrows
+      $component.find(".tab-arrow").css("transform", "rotate(0deg)");
+      // Reset top padding for all tab titles
+      $component.find(".tab-button-title").css("padding-top", "0px");
 
-        // Hide the description for all tabs
-        $component.find(".auto-tabs_description, .auto-tabs_timer-wrap").css({
-          display: "none",
-          opacity: 0,
-          bottom: "-10px",
-        });
+      // Hide the description for all tabs
+      $component.find(".auto-tabs_description, .auto-tabs_timer-wrap").css({
+        display: "none",
+        opacity: 0,
+        bottom: "-10px",
+      });
 
-        $tabs.css({
-          "border-top": "1px solid #e5dfd9",
-        });
-        // Show the description for the current tab
-        trigger
-          .find(".auto-tabs_description, .auto-tabs_timer-wrap")
-          .css("display", "block")
-          .animate(
-            {
-              opacity: 1,
-              bottom: "0px",
-            },
-            500
-          );
+      $tabs.css({
+        "border-top": "1px solid #e5dfd9",
+      });
+      // Show the description for the current tab
+      trigger
+        .find(".auto-tabs_description, .auto-tabs_timer-wrap")
+        .css("display", "block")
+        .animate(
+          {
+            opacity: 1,
+            bottom: "0px",
+          },
+          500
+        );
 
-        trigger
-          .find(".tab-button-title")
-          .css("padding-top", "0px") // Starting from 0px
-          .animate(
-            {
-              "padding-top": "8px", // Ending at 8px
-            },
-            {
-              duration: 200, // Animation time in milliseconds
-            }
-          );
-        // Rotate the arrow of the current tab
-        trigger.find(".tab-arrow").css("transform", "rotate(180deg)");
-        trigger.css("border-top", "none");
+      trigger
+        .find(".tab-button-title")
+        .css("padding-top", "0px") // Starting from 0px
+        .animate(
+          {
+            "padding-top": "8px", // Ending at 8px
+          },
+          {
+            duration: 200, // Animation time in milliseconds
+          }
+        );
+      // Rotate the arrow of the current tab
+      trigger.find(".tab-arrow").css("transform", "rotate(180deg)");
+      trigger.css("border-top", "none");
 
-        // Update the content pane based on the active tab
-        updateContentPane(trigger);
+      // Update the content pane based on the active tab
+      updateContentPane(trigger);
 
-        // Loop to next/first tab after tabDuration
+      // Loop to next/first tab after tabDuration
+      if (isPlaying()) {
         tabTimeout = setTimeout(function () {
           let currentIndex = $tabs.index(trigger);
           let $next = $tabs.eq(currentIndex + 1);
@@ -245,12 +279,23 @@ $(function () {
     clearTimeout(tabTimeout);
     tabLoop($tabs.filter(".w--current").first());
 
-    // Reset timeout if a tab is clicked
-    $tabs.off("click.timedTabs").on("click.timedTabs", function (event) {
-      if (event.originalEvent) {
+    // Prevent Webflow's native tab fade from flashing the pane before assets are ready.
+    $tabs.each(function () {
+      if (this.timedTabsClickHandler) {
+        this.removeEventListener("click", this.timedTabsClickHandler, true);
+      }
+
+      this.timedTabsClickHandler = function (event) {
+        if ($(event.target).closest(".timed-link").length) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
         clearTimeout(tabTimeout);
         tabLoop($(this));
-      }
+      };
+      this.addEventListener("click", this.timedTabsClickHandler, true);
     });
 
     // Pause/play timeout every other click
