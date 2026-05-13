@@ -39,9 +39,41 @@ class ReleaseManager {
     return this.packageJson.version;
   }
 
+  getLatestReleasedVersion() {
+    try {
+      const tags = execSync("git tag --list 'v*'", { encoding: "utf8" })
+        .split("\n")
+        .map((tag) => tag.trim().replace(/^v/, ""))
+        .filter((tag) => semver.valid(tag));
+
+      if (!tags.length) {
+        return null;
+      }
+
+      return tags.sort(semver.rcompare)[0];
+    } catch (error) {
+      console.error(chalk.red("Error checking git tags:", error.message));
+      return null;
+    }
+  }
+
   getNextVersion(type = "patch") {
     const currentVersion = this.getCurrentVersion();
-    return semver.inc(currentVersion, type);
+    const latestReleasedVersion = this.getLatestReleasedVersion();
+    const baseVersion =
+      latestReleasedVersion && semver.gt(latestReleasedVersion, currentVersion)
+        ? latestReleasedVersion
+        : currentVersion;
+
+    if (baseVersion !== currentVersion) {
+      console.log(
+        chalk.yellow(
+          `Package version ${currentVersion} is behind latest tag v${latestReleasedVersion}. Bumping from v${latestReleasedVersion}.`
+        )
+      );
+    }
+
+    return semver.inc(baseVersion, type);
   }
 
   checkGitStatus() {
