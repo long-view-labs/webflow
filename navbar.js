@@ -81,10 +81,6 @@ function closeDesktopDropdown() {
   menuLink.removeClass("active");
 }
 
-function isDesktopDropdownOpen() {
-  return menuLink.filter(".active").length && dropdownWrap.css("display") !== "none";
-}
-
 function scheduleDropdownClose(event) {
   clearDropdownClose();
 
@@ -306,6 +302,14 @@ menuLink.on("mouseleave", function (event) {
   scheduleDropdownClose(event);
 });
 
+$(".menu_dp-wrap").on("mouseenter", function () {
+  clearDropdownClose();
+});
+
+$(".menu_dp-wrap").on("mouseleave", function (event) {
+  scheduleDropdownClose(event);
+});
+
 // Open dropdown animation
 let showDropdown = gsap.timeline({
   onStart: function () {
@@ -371,7 +375,7 @@ $(document).on("click", function (event) {
 });
 
 $(document).on("mousemove", function (event) {
-  if (!isDesktopDropdownOpen()) {
+  if (!menuLink.filter(".active").length || dropdownWrap.css("display") === "none") {
     return;
   }
 
@@ -379,26 +383,6 @@ $(document).on("mousemove", function (event) {
     clearDropdownClose();
   } else {
     scheduleDropdownClose(event);
-  }
-});
-
-$(document).on("mouseout", function (event) {
-  if (!isDesktopDropdownOpen()) return;
-
-  if (!event.relatedTarget && !event.toElement) {
-    closeDesktopDropdown();
-  }
-});
-
-$(window).on("blur pagehide", function () {
-  if (isDesktopDropdownOpen()) {
-    closeDesktopDropdown();
-  }
-});
-
-$(document).on("visibilitychange", function () {
-  if (document.hidden && isDesktopDropdownOpen()) {
-    closeDesktopDropdown();
   }
 });
 
