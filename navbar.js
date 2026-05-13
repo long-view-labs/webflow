@@ -4,9 +4,79 @@ let content = $(".menu_dropdown_content");
 let tabContent = $(".menu_tab-content-wrap");
 let menuBG = $(".menu_bg");
 let dropdownWrap = $(".menu_content");
+let closeDropdownTimeout;
 gsap.defaults({
   duration: 0.2,
 });
+
+function getMenuIndex(link) {
+  return menuLink.index(link);
+}
+
+function getMenuContent(link) {
+  return content.eq(getMenuIndex(link));
+}
+
+function getActiveMenuContent() {
+  let activeLink = menuLink.filter(".active").first();
+  if (!activeLink.length) return $();
+  return getMenuContent(activeLink);
+}
+
+function clearDropdownClose() {
+  clearTimeout(closeDropdownTimeout);
+}
+
+function isPointInElement(element, event, buffer) {
+  if (!element || !event || event.clientX == null || event.clientY == null) return false;
+
+  let rect = element.getBoundingClientRect();
+  return (
+    event.clientX >= rect.left - buffer &&
+    event.clientX <= rect.right + buffer &&
+    event.clientY >= rect.top - buffer &&
+    event.clientY <= rect.bottom + buffer
+  );
+}
+
+function isInsideDesktopDropdown(event) {
+  let target = event && event.target ? event.target : event;
+  let activeLink = menuLink.filter(".active").first();
+
+  if ($(target).closest(".menu_dp-link").length) return true;
+
+  if (event && event.clientX != null) {
+    return (
+      isPointInElement(activeLink[0], event, 12) ||
+      isPointInElement(menuBG[0], event, 8) ||
+      isPointInElement(getActiveMenuContent()[0], event, 8)
+    );
+  }
+
+  return $(target).closest(".menu_dropdown_content, .menu_bg").length > 0;
+}
+
+function closeDesktopDropdown() {
+  clearDropdownClose();
+  gsap.killTweensOf(content);
+  gsap.set(content, { display: "none" });
+  content.removeClass("active");
+  showDropdown.reverse();
+  gsap.to(".menu_dropdown-caret", { rotation: 0, duration: 0 });
+  menuLink.removeClass("active");
+}
+
+function scheduleDropdownClose(event) {
+  clearDropdownClose();
+
+  closeDropdownTimeout = setTimeout(function () {
+    if (isInsideDesktopDropdown(event)) {
+      return;
+    }
+
+    closeDesktopDropdown();
+  }, 120);
+}
 
 $(document).ready(function () {
   $(window).scroll(function () {
@@ -171,10 +241,12 @@ function switchDropdown(currentLink, previousContent, currentContent) {
 let isFirstReveal = true; // Add this variable to keep track of the first reveal
 
 menuLink.on("mouseenter", function () {
+  clearDropdownClose();
+
   let previousLink = menuLink.filter(".active").removeClass("active");
   let currentLink = $(this).addClass("active");
   let previousContent = content.filter(".active").removeClass("active");
-  let currentContent = content.eq($(this).index()).addClass("active");
+  let currentContent = getMenuContent(currentLink).addClass("active");
   let relatedCaret = $(this).find(".menu_dropdown-caret");
 
   gsap.killTweensOf(content);
@@ -205,19 +277,14 @@ menuLink.on("mouseenter", function () {
   }
 });
 
-menuLink.on("mouseleave", function () {
-  let currentLink = $(this);
-  let currentContent = content.eq(currentLink.index()).removeClass("active");
+menuLink.on("click", function (event) {
+  event.preventDefault();
+  event.stopPropagation();
+  $(this).trigger("mouseenter");
+});
 
-  // Check if the dropdown content is being hovered over
-  if (!dropdownWrap.is(":hover")) {
-    gsap.killTweensOf(content);
-    // Set the display property of the previousContent to "none"
-    gsap.set(currentContent, { display: "none" });
-    showDropdown.reverse();
-    gsap.to(".menu_dropdown-caret", { rotation: 0, duration: 0 });
-    menuLink.removeClass("active");
-  }
+menuLink.on("mouseleave", function (event) {
+  scheduleDropdownClose(event);
 });
 
 // Open dropdown animation
@@ -225,7 +292,7 @@ let showDropdown = gsap.timeline({
   onStart: function () {
     let currentLink = menuLink.filter(".active");
     let linkText = currentLink.find(".menu_link-text");
-    let currentContent = content.eq(currentLink.index());
+    let currentContent = getActiveMenuContent();
 
     // Get dimensions and viewport info
     const contentWidth = currentContent.outerWidth();
@@ -270,10 +337,30 @@ let showDropdown = gsap.timeline({
 showDropdown.from(dropdownWrap, { opacity: 0, rotateX: -10, duration: 0.2 });
 
 // Menu Hover Out
-dropdownWrap.on("mouseleave", function () {
-  gsap.killTweensOf(content);
-  showDropdown.reverse();
-  gsap.to(".menu_dropdown-caret", { rotation: 0, duration: 0 }); // rotate the caret back
+dropdownWrap.on("mouseenter", function () {
+  clearDropdownClose();
+});
+
+dropdownWrap.on("mouseleave", function (event) {
+  scheduleDropdownClose(event);
+});
+
+$(document).on("click", function (event) {
+  if (!isInsideDesktopDropdown(event)) {
+    closeDesktopDropdown();
+  }
+});
+
+$(document).on("mousemove", function (event) {
+  if (!menuLink.filter(".active").length || dropdownWrap.css("display") === "none") {
+    return;
+  }
+
+  if (isInsideDesktopDropdown(event)) {
+    clearDropdownClose();
+  } else {
+    scheduleDropdownClose(event);
+  }
 });
 
 function revealTab(currentLink, currentContent) {
