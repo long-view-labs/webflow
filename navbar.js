@@ -20,6 +20,15 @@ function getMenuIndex(link) {
 }
 
 function getMenuContent(link) {
+  let scopedContent = link
+    .closest(".menu_dp-wrap")
+    .find(".menu_dropdown_content")
+    .first();
+
+  if (scopedContent.length) {
+    return scopedContent;
+  }
+
   return content.eq(getMenuIndex(link));
 }
 

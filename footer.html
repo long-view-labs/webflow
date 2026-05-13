@@ -150,15 +150,18 @@
 
       updateCopyrightYear();
 
-      loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js", function () {
-        loadScript("https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.8/timed-tabs.js");
-        loadScript("https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.9/navbar.js");
-      });
-
+      loadScript("https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.8/timed-tabs.js");
       loadScript("https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js");
     }
 
+    function loadNavbarScripts() {
+      loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js", function () {
+        loadScript("https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.9/navbar.js");
+      });
+    }
+
     updateCopyrightYear();
+    loadNavbarScripts();
     $(window).one("scroll touchstart mousemove", loadScriptsOnInteraction);
   })();
 </script>
