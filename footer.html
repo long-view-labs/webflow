@@ -1,13 +1,12 @@
-<script
-  async
-  defer
-  src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"
-></script>
 <script src="https://cdn.jsdelivr.net/npm/@statsig/js-client@3/build/statsig-js-client+session-replay+web-analytics.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.610.4/global.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.2/global.js"></script>
 <script
   src="https://widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"
   defer
+></script>
+<script
+  async
+  src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.1/hero-filter-search.js"
 ></script>
 
 <!--Rudderstack-->
@@ -44,18 +43,28 @@
     }
     e.loadJS = function () {
       var t = document.createElement("script");
-      (t.type = "text/javascript"),
+      ((t.type = "text/javascript"),
         (t.async = !0),
-        (t.src = "https://jssdk-proxy." + (window.__nourish_apex || "usenourish.com") + "/v3/modern/rsa.min.js");
+        (t.src =
+          "https://jssdk-proxy." +
+          (window.__nourish_apex || "usenourish.com") +
+          "/v3/modern/rsa.min.js"));
       var r = document.getElementsByTagName("script")[0];
       r.parentNode.insertBefore(t, r);
     };
-    e.loadJS(),
+    (e.loadJS(),
       e.load(
         "2aOoUzHccHpDljomHWiSCOqQAv5",
-        "https://dataplane-proxy." + (window.__nourish_apex || "usenourish.com")
+        "https://dataplane-proxy." +
+          (window.__nourish_apex || "usenourish.com"),
+        {
+          consentManagement: {
+            enabled: true,
+            provider: "custom",
+          },
+        },
       ),
-      e.page();
+      e.page());
   })();
 </script>
 <!--END Rudderstack-->
@@ -95,55 +104,63 @@
 <!--END RB2B-->
 
 <script>
-  var scriptsLoaded = false;
+  (function () {
+    var scriptsLoaded = false;
+    var loadedScripts = {};
 
-  function loadScriptsOnInteraction() {
-    if (scriptsLoaded) return;
-    scriptsLoaded = true;
+    function loadScript(src, callback) {
+      if (!src) return;
 
-    function loadScript(src, async, defer) {
-      if (async === void 0) async = true;
-      if (defer === void 0) defer = false;
+      if (loadedScripts[src]) {
+        if (typeof callback === "function") callback();
+        return;
+      }
+
+      var existing = document.querySelector('script[src="' + src + '"]');
+      if (existing) {
+        loadedScripts[src] = true;
+        if (typeof callback === "function") {
+          if (existing.hasAttribute("data-loaded")) callback();
+          else existing.addEventListener("load", callback, { once: true });
+        }
+        return;
+      }
+
       var script = document.createElement("script");
       script.src = src;
-      script.async = async;
-      script.defer = defer;
+      script.async = true;
+      script.onload = function () {
+        loadedScripts[src] = true;
+        script.setAttribute("data-loaded", "true");
+        if (typeof callback === "function") callback();
+      };
       document.body.appendChild(script);
     }
 
-    loadScript(
-      "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js",
-      true,
-      true
-    );
-    loadScript(
-      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v1.14/timed-tabs.js",
-      true,
-      true
-    );
-    loadScript(
-      "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js",
-      true,
-      true
-    );
-    loadScript(
-      "https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js",
-      true,
-      true
-    );
-    loadScript(
-      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.606.2/navbar.js",
-      true,
-      true
-    );
-    loadScript(
-      "https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsnest@1/cmsnest.js",
-      true,
-      true
-    );
-  }
+    function updateCopyrightYear() {
+      var year = new Date().getFullYear();
+      document.querySelectorAll("#copyright").forEach(function (element) {
+        element.textContent = "© " + year;
+      });
+    }
 
-  $(window).one("scroll touchstart mousemove", loadScriptsOnInteraction);
+    function loadScriptsOnInteraction() {
+      if (scriptsLoaded) return;
+      scriptsLoaded = true;
+
+      updateCopyrightYear();
+
+      loadScript("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js", function () {
+        loadScript("https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.8/timed-tabs.js");
+        loadScript("https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.9/navbar.js");
+      });
+
+      loadScript("https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js");
+    }
+
+    updateCopyrightYear();
+    $(window).one("scroll touchstart mousemove", loadScriptsOnInteraction);
+  })();
 </script>
 
 <!--LinkedIn Insights Tag-->
@@ -178,3 +195,86 @@
   />
 </noscript>
 <!--END LinkedIn Insights Tag-->
+
+<script>
+  $(document).ready(function () {
+    var apex = window.__nourish_apex || "nourish.com";
+
+    $("a[href*='usenourish.com']").each(function () {
+      var updated = $(this)
+        .attr("href")
+        .replace(/usenourish\.com/g, apex);
+      $(this).attr("href", updated);
+    });
+  });
+</script>
+
+<script>
+  //Osano consent listener
+  (function () {
+    // Prevent double-initialization
+    if (window._osanoListenerInit) return;
+
+    var OSANO_CONSENT_CATEGORIES = ["MARKETING"];
+
+    // Reads current Osano consent state and syncs it to Rudderstack.
+    // After this runs, all subsequent track/page calls will include
+    // consentManagement in their context payload automatically.
+    function updateRudderstackConsent() {
+      if (!window.Osano?.cm?.getConsent) return;
+      if (typeof rudderanalytics?.consent !== "function") return;
+
+      var osanoConsent = window.Osano.cm.getConsent();
+      var allowedConsentIds = [];
+      var deniedConsentIds = [];
+
+      OSANO_CONSENT_CATEGORIES.forEach(function (category) {
+        var status = osanoConsent[category];
+        if (status === "ACCEPT") allowedConsentIds.push(category);
+        else if (status === "DENY") deniedConsentIds.push(category);
+        // If neither, user hasn't made a choice yet — omit from both arrays
+      });
+
+      rudderanalytics.consent({
+        consentManagement: {
+          enabled: true,
+          provider: "custom", // Osano isn't a built-in Rudderstack provider
+          allowedConsentIds: allowedConsentIds,
+          deniedConsentIds: deniedConsentIds,
+        },
+      });
+    }
+
+    // Attaches listeners and fires an initial sync.
+    // osano-cm-initialized: fires on page load with stored consent state
+    // osano-cm-consent-saved: fires when user updates preferences via the cookie widget
+    function setupListeners() {
+      if (!window.Osano?.cm) return false;
+      if (typeof rudderanalytics?.consent !== "function") return false;
+
+      window.Osano.cm.addEventListener(
+        "osano-cm-initialized",
+        updateRudderstackConsent,
+      );
+      window.Osano.cm.addEventListener(
+        "osano-cm-consent-saved",
+        updateRudderstackConsent,
+      );
+
+      updateRudderstackConsent();
+      return true;
+    }
+
+    // Both Osano and Rudderstack load async — poll until both are ready.
+    // Gives up after 10s (20 attempts × 500ms).
+    var attempts = 0;
+    var checkInterval = setInterval(function () {
+      attempts++;
+      if (setupListeners() || attempts >= 20) {
+        if (attempts >= 20) console.warn("[Osano] Consent init timed out");
+        else window._osanoListenerInit = true;
+        clearInterval(checkInterval);
+      }
+    }, 500);
+  })();
+</script>

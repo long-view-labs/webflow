@@ -1,3 +1,9 @@
+(function initNavbarWhenReady() {
+  if (!window.jQuery || !window.gsap) {
+    setTimeout(initNavbarWhenReady, 50);
+    return;
+  }
+
 let menuLink = $(".menu_dp-link");
 let tabLink = $(".menu_dropdown-tab-item");
 let content = $(".menu_dropdown_content");
@@ -498,3 +504,4 @@ function animateMenu(clickClass, animateClass) {
 }
 
 animateMenu(".nav_link-2.resources", ".nav_mobile-resources");
+})();
