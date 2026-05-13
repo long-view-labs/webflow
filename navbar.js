@@ -81,6 +81,10 @@ function closeDesktopDropdown() {
   menuLink.removeClass("active");
 }
 
+function isDesktopDropdownOpen() {
+  return menuLink.filter(".active").length && dropdownWrap.css("display") !== "none";
+}
+
 function scheduleDropdownClose(event) {
   clearDropdownClose();
 
@@ -90,7 +94,7 @@ function scheduleDropdownClose(event) {
     }
 
     closeDesktopDropdown();
-  }, 120);
+  }, 50);
 }
 
 $(document).ready(function () {
@@ -367,7 +371,7 @@ $(document).on("click", function (event) {
 });
 
 $(document).on("mousemove", function (event) {
-  if (!menuLink.filter(".active").length || dropdownWrap.css("display") === "none") {
+  if (!isDesktopDropdownOpen()) {
     return;
   }
 
@@ -375,6 +379,26 @@ $(document).on("mousemove", function (event) {
     clearDropdownClose();
   } else {
     scheduleDropdownClose(event);
+  }
+});
+
+$(document).on("mouseout", function (event) {
+  if (!isDesktopDropdownOpen()) return;
+
+  if (!event.relatedTarget && !event.toElement) {
+    closeDesktopDropdown();
+  }
+});
+
+$(window).on("blur pagehide", function () {
+  if (isDesktopDropdownOpen()) {
+    closeDesktopDropdown();
+  }
+});
+
+$(document).on("visibilitychange", function () {
+  if (document.hidden && isDesktopDropdownOpen()) {
+    closeDesktopDropdown();
   }
 });
 
