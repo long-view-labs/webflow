@@ -298,6 +298,20 @@ menuLink.on("click", function (event) {
   $(this).trigger("mouseenter");
 });
 
+$(".menu_dp-wrap").on("mouseenter click", function (event) {
+  let relatedLink = $(this).find(".menu_dp-link").first();
+  if (!relatedLink.length || $(event.target).closest(".menu_dropdown_content").length) {
+    return;
+  }
+
+  if (event.type === "click") {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  relatedLink.trigger("mouseenter");
+});
+
 menuLink.on("mouseleave", function (event) {
   scheduleDropdownClose(event);
 });
@@ -307,6 +321,10 @@ $(".menu_dp-wrap").on("mouseenter", function () {
 });
 
 $(".menu_dp-wrap").on("mouseleave", function (event) {
+  if ($(event.relatedTarget).closest(this).length) {
+    return;
+  }
+
   scheduleDropdownClose(event);
 });
 
