@@ -90,7 +90,7 @@ function scheduleDropdownClose(event) {
     }
 
     closeDesktopDropdown();
-  }, 120);
+  }, 50);
 }
 
 $(document).ready(function () {
