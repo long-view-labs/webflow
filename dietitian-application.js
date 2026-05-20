@@ -20,6 +20,8 @@
   const JOB_DETAILS_TITLE = "Learn More About Being an RD at Nourish";
   const JOB_DETAILS_SUBTITLE =
     "About Nourish, our Clinical Philosophy, and Job Description";
+  const PHONE_DISCLOSURE_TEXT =
+    "By providing your number, you agree to receive texts from Nourish about your application. Reply STOP to opt out. Msg & data rates may apply.";
   const EMAIL_INPUT_SELECTOR = [
     'input[name="email"]',
     'input[name="job_application[email]"]',
@@ -30,6 +32,11 @@
     'input[name="job_application[phone]"]',
     'input[name="job_application[phone_number]"]',
   ].join(", ");
+  const PHONE_INPUT_NAMES = [
+    "phone",
+    "job_application[phone]",
+    "job_application[phone_number]",
+  ];
 
   // match your Webflow input look
   const INPUT_CLASSES = ["provider-filter_input", "hero", "no-icon", "w-input"];
@@ -1232,6 +1239,13 @@
           help.className = "gh-help";
           help.innerHTML = q.description;
           block.appendChild(help);
+        }
+
+        if ((q.fields || []).some((f) => PHONE_INPUT_NAMES.includes(f.name))) {
+          const subtext = document.createElement("div");
+          subtext.className = "gh-help";
+          subtext.textContent = PHONE_DISCLOSURE_TEXT;
+          block.appendChild(subtext);
         }
 
         // Add subtext for state field (more specific detection) - after all fields
