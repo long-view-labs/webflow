@@ -53,9 +53,11 @@
   };
 
   /** Returns the primary email input element in the generated form. */
-  const getEmailInput = (form) => form?.querySelector(EMAIL_INPUT_SELECTOR) || null;
+  const getEmailInput = (form) =>
+    form?.querySelector(EMAIL_INPUT_SELECTOR) || null;
   /** Returns the primary phone input element in the generated form. */
-  const getPhoneInput = (form) => form?.querySelector(PHONE_INPUT_SELECTOR) || null;
+  const getPhoneInput = (form) =>
+    form?.querySelector(PHONE_INPUT_SELECTOR) || null;
 
   // Validation functions
   /**
@@ -89,7 +91,7 @@
       const limitedDigits = digits.slice(0, 10);
       return `${limitedDigits.slice(0, 3)}-${limitedDigits.slice(
         3,
-        6
+        6,
       )}-${limitedDigits.slice(6)}`;
     }
   }
@@ -403,7 +405,7 @@
       const avail = options.filter(
         (o) =>
           !selected.has(String(o.value)) &&
-          (q === "" || o.label.toLowerCase().includes(q))
+          (q === "" || o.label.toLowerCase().includes(q)),
       );
       list.innerHTML = "";
       avail.forEach((o) => {
@@ -440,7 +442,7 @@
       input.setCustomValidity("");
       render();
       shell.dispatchEvent(
-        new CustomEvent("tagpickerchange", { bubbles: true })
+        new CustomEvent("tagpickerchange", { bubbles: true }),
       );
     };
 
@@ -454,14 +456,14 @@
         .find(
           (p) =>
             p.textContent.replace("×", "").trim() ===
-            options.find((o) => String(o.value) === String(v))?.label
+            options.find((o) => String(o.value) === String(v))?.label,
         )
         ?.remove();
       render();
       if (required && selected.size === 0)
         input.setCustomValidity("Please select at least one option.");
       shell.dispatchEvent(
-        new CustomEvent("tagpickerchange", { bubbles: true })
+        new CustomEvent("tagpickerchange", { bubbles: true }),
       );
     };
 
@@ -644,7 +646,7 @@
             if (!allowedTypes.includes(file.type)) {
               showValidationError(
                 this,
-                "Please upload a PDF, Word document, or text file (.pdf, .doc, .docx, .txt, .rtf)"
+                "Please upload a PDF, Word document, or text file (.pdf, .doc, .docx, .txt, .rtf)",
               );
               this.value = ""; // Clear the invalid file
             } else if (file.size > maxSize) {
@@ -758,9 +760,12 @@
       }
       if (radio.id) {
         const radioLabel = block.querySelector(
-          `label[for="${CSS.escape(radio.id)}"]`
+          `label[for="${CSS.escape(radio.id)}"]`,
         );
-        if (radioLabel && normalizeLabelText(radioLabel.textContent) === desired) {
+        if (
+          radioLabel &&
+          normalizeLabelText(radioLabel.textContent) === desired
+        ) {
           radio.checked = true;
           return true;
         }
@@ -793,22 +798,25 @@
   function applyReferralPrefill(form) {
     const searchParams = new URLSearchParams(location.search);
     const referredBy = String(
-      getQueryParamValue(searchParams, "referredBy") || ""
+      getQueryParamValue(searchParams, "referredBy") || "",
     ).trim();
     if (!referredBy) return;
 
     let didUpdate = false;
     const referredByBlock = findFieldBlockByName(
       form,
-      REFERRAL_FIELD_NAMES.referredBy
+      REFERRAL_FIELD_NAMES.referredBy,
     );
-    if (referredByBlock && setTextFieldValue(referredByBlock, referredBy, true)) {
+    if (
+      referredByBlock &&
+      setTextFieldValue(referredByBlock, referredBy, true)
+    ) {
       didUpdate = true;
     }
 
     const heardAboutBlock = findFieldBlockByName(
       form,
-      REFERRAL_FIELD_NAMES.heardAbout
+      REFERRAL_FIELD_NAMES.heardAbout,
     );
     if (heardAboutBlock) {
       const updated =
@@ -926,16 +934,14 @@
         const vals = elements.map((el) => el.value).filter((v) => v !== "");
         payload.fields[name] = vals;
       } else if (first.type === "checkbox") {
-        const vals = elements
-          .filter((el) => el.checked)
-          .map((el) => el.value);
+        const vals = elements.filter((el) => el.checked).map((el) => el.value);
         payload.fields[name] = vals;
       } else if (first.type === "radio") {
         const checked = elements.find((el) => el.checked);
         if (checked) payload.fields[name] = checked.value;
       } else if (first.tagName === "SELECT" && first.multiple) {
         payload.fields[name] = Array.from(first.selectedOptions).map(
-          (opt) => opt.value
+          (opt) => opt.value,
         );
       } else {
         payload.fields[name] = first.value;
@@ -1089,18 +1095,13 @@
     const emailField = getEmailInput(form);
     const rawEmail = normalizeEmailValue(emailField?.value || "");
     const email =
-      rawEmail &&
-      !hasInvalidEmailChars(rawEmail) &&
-      validateEmail(rawEmail)
+      rawEmail && !hasInvalidEmailChars(rawEmail) && validateEmail(rawEmail)
         ? rawEmail
         : "";
 
     const phoneField = getPhoneInput(form);
     const rawPhone = phoneField?.value?.trim() || "";
-    const phone =
-      rawPhone && validateUSPhone(rawPhone)
-        ? rawPhone
-        : "";
+    const phone = rawPhone && validateUSPhone(rawPhone) ? rawPhone : "";
 
     return {
       name: name || undefined,
@@ -1261,7 +1262,7 @@
         }
 
         form.appendChild(block);
-      }
+      },
     );
 
     // submit
@@ -1336,7 +1337,7 @@
           if (!validateUSPhone(this.value)) {
             showValidationError(
               this,
-              "Please enter a valid US phone number (e.g., 555-123-4567)"
+              "Please enter a valid US phone number (e.g., 555-123-4567)",
             );
           } else {
             clearValidationError(this);
@@ -1358,7 +1359,7 @@
           if (hasInvalidEmailChars(normalized)) {
             showValidationError(
               this,
-              'Email addresses cannot include spaces or "/" characters'
+              'Email addresses cannot include spaces or "/" characters',
             );
           } else if (!validateEmail(normalized)) {
             showValidationError(this, "Please enter a valid email address");
@@ -1384,7 +1385,7 @@
         if (trimmed && hasInvalidEmailChars(trimmed)) {
           showValidationError(
             this,
-            'Email addresses cannot include spaces or "/" characters'
+            'Email addresses cannot include spaces or "/" characters',
           );
           return;
         }
@@ -1456,7 +1457,7 @@
 
       // Check tagpicker validation first
       const bad = [...form.querySelectorAll(".tagpicker")].find(
-        (tp) => tp.dataset.required === "1" && tp.getSelectedCount?.() === 0
+        (tp) => tp.dataset.required === "1" && tp.getSelectedCount?.() === 0,
       );
       if (bad) {
         bad.checkValidity?.();
@@ -1473,7 +1474,7 @@
         if (!validateUSPhone(phoneInput.value)) {
           showValidationError(
             phoneInput,
-            "Please enter a valid US phone number (e.g., 555-123-4567)"
+            "Please enter a valid US phone number (e.g., 555-123-4567)",
           );
           hasValidationErrors = true;
         } else {
@@ -1491,7 +1492,7 @@
         if (hasInvalidEmailChars(normalizedEmail)) {
           showValidationError(
             emailInput,
-            'Email addresses cannot include spaces or "/" characters'
+            'Email addresses cannot include spaces or "/" characters',
           );
           hasValidationErrors = true;
         } else if (!validateEmail(normalizedEmail)) {
@@ -1510,7 +1511,7 @@
           if (digits.length < 5 || digits.length > 8) {
             showValidationError(
               rdIdInput,
-              "Please enter a 5 to 8 digit number"
+              "Please enter a 5 to 8 digit number",
             );
             hasValidationErrors = true;
           } else {
@@ -1543,13 +1544,13 @@
           // Application submitted successfully - track event then redirect
           console.log(
             "Application submitted successfully:",
-            parsedResponse || text
+            parsedResponse || text,
           );
           await syncLeadStatus(form, LEAD_STATUS.SUBMITTED);
           clearSavedFormData();
 
           const submittedEmail = normalizeEmailValue(
-            getEmailInput(form)?.value || ""
+            getEmailInput(form)?.value || "",
           );
           const submittedPhone = getPhoneInput(form)?.value?.trim() || "";
           const e164Phone = formatPhoneNumberForRudderstack(submittedPhone);
@@ -1572,7 +1573,7 @@
                 {},
                 () => {
                   window.location.href = "/dietitian-application/thank-you";
-                }
+                },
               );
               // Fallback redirect in case callback doesn't fire promptly
               setTimeout(() => {
@@ -1586,7 +1587,7 @@
             }
           } else {
             console.error(
-              "RudderStack not available for tracking: Dietitian Submit Clicked"
+              "RudderStack not available for tracking: Dietitian Submit Clicked",
             );
             window.location.href = "/dietitian-application/thank-you";
           }
@@ -1717,8 +1718,8 @@
     ];
     const allowedKeys = new Set(
       (window.NOURISH_UTM_PARAMS || fallbackKeys).map((key) =>
-        String(key).toLowerCase()
-      )
+        String(key).toLowerCase(),
+      ),
     );
 
     for (const [rawKey, value] of searchParams.entries()) {
@@ -1729,10 +1730,6 @@
       if (normalizedKey.startsWith("utm_") || allowedKeys.has(normalizedKey)) {
         utmParams[normalizedKey] = value;
       }
-    }
-
-    if (Object.keys(utmParams).length > 0) {
-      console.log("UTM Parameters captured:", utmParams);
     }
 
     return utmParams;
@@ -1783,10 +1780,10 @@
 
     // Check if all required fields are filled
     const requiredInputs = form.querySelectorAll(
-      "input[required], select[required], textarea[required]"
+      "input[required], select[required], textarea[required]",
     );
     const requiredTagPickers = form.querySelectorAll(
-      '.tagpicker[data-required="1"]'
+      '.tagpicker[data-required="1"]',
     );
 
     let allFieldsValid = true;
