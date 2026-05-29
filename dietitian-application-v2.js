@@ -1061,6 +1061,11 @@
         display:flex;
         justify-content:center;
       }
+      #gh-app.gh-app--legacy{
+        background:#FFFCF8;
+        border-radius:1rem;
+        padding:2rem;
+      }
       #gh-app .nourish-application-iframe{
         width:712px;
         height:560px;
@@ -1079,6 +1084,9 @@
           padding-left:0;
           padding-right:0;
         }
+        #gh-app.gh-app--legacy{
+          padding:2rem;
+        }
         #gh-app .nourish-application-iframe{
           width:100%;
           border:0;
@@ -1092,6 +1100,7 @@
   function mountSteppedIframe(iframeUrl) {
     const mount = document.getElementById("gh-app");
     if (!mount) return;
+    mount.classList.remove("gh-app--legacy");
     mount.innerHTML = "";
 
     const iframe = document.createElement("iframe");
@@ -1896,6 +1905,7 @@
     });
 
     const mount = document.getElementById("gh-app");
+    mount.classList.add("gh-app--legacy");
     mount.innerHTML = "";
     mount.appendChild(form);
 
