@@ -1063,7 +1063,8 @@
       }
       #gh-app.gh-app--legacy{
         background:#FFFCF8;
-        border-radius:1rem;
+        border:1px solid rgba(16,24,40,0.12);
+        border-radius:8px;
         padding:2rem;
       }
       #gh-app .nourish-application-iframe{
