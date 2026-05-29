@@ -1,6 +1,6 @@
 {
   "name": "nourish-long-view-labs",
-  "version": "2.620.26",
+  "version": "2.620.27",
   "description": "Webflow JavaScript files for Nourish Long View Labs",
   "main": "index.js",
   "scripts": {
