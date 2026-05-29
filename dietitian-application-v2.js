@@ -44,6 +44,8 @@
     LEGACY: "GREENHOUSE_SCHEMA",
     STEPPED: "CONFIGURED_STEPPED_FLOW",
   };
+  const STATIC_NEW_FORM_IFRAME_URL =
+    "https://app.nourish.com/classic/provider-application?applicationPublicId=opaque-public-id&flowRuntime=CONFIGURED_STEPPED_FLOW";
 
   let runtimeContext = {
     applicationPublicId: null,
@@ -992,6 +994,37 @@
       flowRuntime: data.flowRuntime,
       iframeUrl: data.iframeUrl || null,
     };
+  }
+
+  function getPreviewRuntimeOverride() {
+    const searchParams = new URLSearchParams(window.location.search || "");
+    const forceNewForm = shouldForceNewForm();
+    const iframeUrl =
+      searchParams.get("iframe") ||
+      searchParams.get("stepped") ||
+      searchParams.get("nourishPreviewIframeUrl") ||
+      (forceNewForm ? STATIC_NEW_FORM_IFRAME_URL : null);
+
+    if (!iframeUrl) return null;
+
+    try {
+      const parsedUrl = new URL(iframeUrl, window.location.href);
+      return {
+        applicationPublicId:
+          searchParams.get("nourishPreviewApplicationPublicId") ||
+          "preview-application-public-id",
+        flowRuntime: FLOW_RUNTIME.STEPPED,
+        iframeUrl: parsedUrl.href,
+      };
+    } catch (err) {
+      console.warn("Invalid nourishPreviewIframeUrl override", err);
+      return null;
+    }
+  }
+
+  function shouldForceNewForm() {
+    const searchParams = new URLSearchParams(window.location.search || "");
+    return String(searchParams.get("newform") || "").toLowerCase() === "true";
   }
 
   function ensureApplicationStyles() {
@@ -1983,15 +2016,24 @@
   ensureOverviewBelowApplication();
   captureUTMParams();
 
-  try {
-    runtimeContext = await initDraft();
-  } catch (err) {
-    console.warn("Draft init failed, falling back to legacy form", err);
-    runtimeContext = {
-      applicationPublicId: null,
-      flowRuntime: FLOW_RUNTIME.LEGACY,
-      iframeUrl: null,
-    };
+  const previewRuntimeOverride = getPreviewRuntimeOverride();
+  const forceNewForm = shouldForceNewForm();
+  if (previewRuntimeOverride) {
+    runtimeContext = previewRuntimeOverride;
+  } else {
+    try {
+      runtimeContext = await initDraft();
+    } catch (err) {
+      console.warn("Draft init failed, falling back to legacy form", err);
+      runtimeContext = {
+        applicationPublicId: null,
+        flowRuntime: FLOW_RUNTIME.LEGACY,
+        iframeUrl: null,
+      };
+    }
+  }
+  if (forceNewForm && runtimeContext.iframeUrl) {
+    runtimeContext.flowRuntime = FLOW_RUNTIME.STEPPED;
   }
 
   let schema = null;
