@@ -19,9 +19,7 @@
     IN_PROGRESS: "In progress",
     SUBMITTED: "Application Submitted",
   };
-  const JOB_DETAILS_TITLE = "Learn More About Being an RD at Nourish";
-  const JOB_DETAILS_SUBTITLE =
-    "About Nourish, our Clinical Philosophy, and Job Description";
+  const JOB_DETAILS_TITLE = "Job description";
   const PHONE_DISCLOSURE_TEXT =
     "By providing your number, you agree to receive texts from Nourish about your application. Reply STOP to opt out. Msg & data rates may apply.";
   const EMAIL_INPUT_SELECTOR = [
@@ -194,6 +192,16 @@
     return data;
   }
 
+  function getJobMetaText(schema) {
+    const loc = schema.location?.name || "—";
+    const upd = new Date(schema.updated_at).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    return `${schema.company_name || ""} · ${loc} · Updated ${upd}`;
+  }
+
   // ---------- RENDER HEADER ----------
   /**
    * Populates the hero content with the job details fetched from Greenhouse.
@@ -203,13 +211,7 @@
     const c = document.getElementById("gh-content");
 
     if (m) {
-      const loc = schema.location?.name || "—";
-      const upd = new Date(schema.updated_at).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-      m.textContent = `${schema.company_name || ""} · ${loc} · Updated ${upd}`;
+      m.textContent = getJobMetaText(schema);
     }
     if (c) {
       const tmp = document.createElement("div");
@@ -231,7 +233,7 @@
         accordionTmp.innerHTML = sanitizedHTML;
         const nodes = Array.from(accordionTmp.childNodes);
         if (nodes.length) {
-          accordionVariant.append(buildJobDetailsAccordion(nodes));
+          accordionVariant.append(buildJobDetailsAccordion(nodes, schema));
         }
 
         c.append(accordionVariant);
@@ -255,8 +257,8 @@
       }
       .gh-job-accordion{
         border:1px solid rgba(16,24,40,0.12);
-        border-radius:16px;
-        background:#fff;
+        border-radius:8px;
+        background:#E5DFD9;
         transition:border-color .2s ease;
         margin:40px 0 !important;
       }
@@ -267,7 +269,7 @@
         width:100%;
         border:0;
         background:transparent;
-        padding:24px 32px;
+        padding:16px 20px;
         display:flex;
         align-items:center;
         justify-content:space-between;
@@ -284,19 +286,14 @@
         flex:1;
       }
       .gh-job-accordion-title{
-        font-size:1.25rem;
-        font-weight:600;
-        color:#2f2418;
-        margin-bottom:4px;
-      }
-      .gh-job-accordion-subtitle{
-        font-size:1rem;
-        color:#5f4c39;
-        opacity:0.8;
+        font-size:14px;
+        line-height:20px;
+        font-weight:500;
+        color:#101828;
       }
       .gh-job-accordion-caret{
-        width:32px;
-        height:32px;
+        width:20px;
+        height:20px;
         display:inline-flex;
         align-items:center;
         justify-content:center;
@@ -306,9 +303,9 @@
         transform:rotate(180deg);
       }
       .gh-job-accordion-caret svg{
-        width:18px;
-        height:18px;
-        stroke:#ff5c35;
+        width:12px;
+        height:8px;
+        stroke:#98a2b3;
       }
       .gh-job-accordion-body{
         overflow:hidden;
@@ -316,8 +313,20 @@
         transition:max-height .35s ease;
       }
       .gh-job-accordion-inner{
-        padding:24px 32px 32px;
-        border-top:1px solid rgba(47,36,24,0.1);
+        padding:0 20px 24px;
+      }
+      .gh-job-expanded-title{
+        font-size:20px;
+        line-height:28px;
+        font-weight:500;
+        color:#101828;
+        margin:0 0 4px;
+      }
+      .gh-job-expanded-meta{
+        font-size:12px;
+        line-height:18px;
+        color:#667085;
+        margin:0 0 16px;
       }
     `;
     document.head.appendChild(style);
@@ -326,7 +335,7 @@
   /**
    * Wraps the job description HTML inside an accessible accordion UI.
    */
-  function buildJobDetailsAccordion(contentNodes) {
+  function buildJobDetailsAccordion(contentNodes, schema) {
     ensureJobAccordionStyles();
     const wrapper = document.createElement("div");
     wrapper.className = "gh-job-accordion";
@@ -343,11 +352,7 @@
     title.className = "gh-job-accordion-title";
     title.textContent = JOB_DETAILS_TITLE;
 
-    const subtitle = document.createElement("div");
-    subtitle.className = "gh-job-accordion-subtitle";
-    subtitle.textContent = JOB_DETAILS_SUBTITLE;
-
-    textWrap.append(title, subtitle);
+    textWrap.append(title);
 
     const caret = document.createElement("span");
     caret.className = "gh-job-accordion-caret";
@@ -363,6 +368,17 @@
 
     const inner = document.createElement("div");
     inner.className = "gh-job-accordion-inner";
+
+    const expandedTitle = document.createElement("h3");
+    expandedTitle.className = "gh-job-expanded-title";
+    expandedTitle.textContent = schema.title || "";
+    inner.appendChild(expandedTitle);
+
+    const expandedMeta = document.createElement("p");
+    expandedMeta.className = "gh-job-expanded-meta";
+    expandedMeta.textContent = getJobMetaText(schema);
+    inner.appendChild(expandedMeta);
+
     contentNodes.forEach((node) => inner.appendChild(node));
     body.appendChild(inner);
 
