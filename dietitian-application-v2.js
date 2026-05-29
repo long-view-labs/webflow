@@ -255,6 +255,9 @@
       .gh-content-variant--accordion{
         display:block;
       }
+      #gh-content-accordion{
+        margin-top:32px;
+      }
       .gh-job-accordion{
         border:1px solid rgba(16,24,40,0.12);
         border-radius:8px;
@@ -286,7 +289,7 @@
         flex:1;
       }
       .gh-job-accordion-title{
-        font-size:14px;
+        font-size:16px;
         line-height:20px;
         font-weight:500;
         color:#101828;
