@@ -258,7 +258,7 @@
       .gh-job-accordion{
         border:1px solid rgba(16,24,40,0.12);
         border-radius:8px;
-        background:#E5DFD9;
+        background:#FFFCF8;
         transition:border-color .2s ease;
         margin:40px 0 !important;
       }
