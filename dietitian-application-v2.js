@@ -1047,6 +1047,9 @@
       .${STEPPED_FLOW_PAGE_CLASS} .dietapp_title-wrap{
         display:none;
       }
+      .${STEPPED_FLOW_PAGE_CLASS} .section_rd-application{
+        padding-top:0;
+      }
       #gh-app{
         display:flex;
         justify-content:center;
