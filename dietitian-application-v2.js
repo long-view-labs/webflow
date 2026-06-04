@@ -1043,7 +1043,8 @@
         font-weight:400;
       }
       .${STEPPED_FLOW_PAGE_CLASS} #gh-title,
-      .${STEPPED_FLOW_PAGE_CLASS} #gh-meta{
+      .${STEPPED_FLOW_PAGE_CLASS} #gh-meta,
+      .${STEPPED_FLOW_PAGE_CLASS} .dietapp_title-wrap{
         display:none;
       }
       #gh-app{
@@ -1079,13 +1080,14 @@
           padding-right:0;
         }
         #gh-app.gh-app--legacy{
+          border-radius:0px;
           padding:2rem;
         }
         #gh-app .nourish-application-iframe{
           width:100%;
           height:auto;
           border:0;
-          border-radius:0;
+          border-radius:0px;
         }
       }
     `;
