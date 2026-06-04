@@ -2476,6 +2476,13 @@ $(function () {
     return row;
   }
 
+  function createPlanNoResultsRow() {
+    var row = document.createElement("div");
+    row.className = "insurance-plan-no-results";
+    row.style.display = "none";
+    return row;
+  }
+
   function appendHighlightedText(target, text, query) {
     target.textContent = "";
     if (!query) {
@@ -2545,6 +2552,14 @@ $(function () {
     $container
       .find(".insurance-plan-results-divider")
       .toggle(hasVisiblePopularPlans && hasVisibleAllPlans);
+
+    var hasAnyVisiblePlans = hasVisiblePopularPlans || hasVisibleAllPlans;
+    var $noResults = $container.find(".insurance-plan-no-results").first();
+    if ($noResults.length) {
+      $noResults
+        .text(query ? 'Sorry no results found for "' + query + '"' : "")
+        .toggle(Boolean(query) && !hasAnyVisiblePlans);
+    }
   }
 
   function injectInsuranceOptions($widget) {
@@ -2656,6 +2671,7 @@ $(function () {
     var fragment = document.createDocumentFragment();
     if (allPlans.length) {
       fragment.appendChild(createPlanSearchInput(carrierName));
+      fragment.appendChild(createPlanNoResultsRow());
     }
 
     if (popularPlans.length) {
@@ -2753,12 +2769,17 @@ $(function () {
     var $dropdownList = $element.closest(
       ".w-dropdown-list, .provider-filter_dropdown"
     );
-    if (!$dropdownList.length) return;
-
-    var $dropdown = $dropdownList.closest(".w-dropdown");
-    if (!$dropdown.length) {
-      $dropdown = $dropdownList.closest(".provider-filter_dopdown");
+    var $dropdown = $();
+    if ($dropdownList.length) {
+      $dropdown = $dropdownList.closest(".w-dropdown");
     }
+    if (!$dropdown.length) {
+      $dropdown = $element.closest(".provider-filter_dopdown, .w-dropdown");
+    }
+    if (!$dropdownList.length && $dropdown.length) {
+      $dropdownList = $dropdown.find(".w-dropdown-list").first();
+    }
+    if (!$dropdown.length) return;
 
     var dropdownApi =
       window.Webflow &&
@@ -2773,7 +2794,7 @@ $(function () {
       }
     }
 
-    $dropdownList.removeClass("open").slideUp(0);
+    $dropdownList.removeClass("open w--open").slideUp(0);
     $dropdown
       .find(".provider-filter_dopdown-toggle, .w-dropdown-toggle")
       .attr("aria-expanded", "false")
@@ -2788,28 +2809,36 @@ $(function () {
     }
 
     var $planToggle = $widget.find("#insurance_plan").first();
-    if (
-      !$planToggle.length ||
-      $planToggle.hasClass("disabled") ||
-      $planToggle.attr("aria-disabled") === "true"
-    ) {
+    if (!$planToggle.length) {
       return;
     }
+    $planToggle
+      .removeClass("disabled")
+      .attr("aria-disabled", "false")
+      .closest(".provider-filter_dopdown, .w-dropdown")
+      .removeClass("disabled")
+      .attr("aria-disabled", "false");
 
-    setTimeout(function () {
-      if (
-        $planToggle.hasClass("disabled") ||
-        $planToggle.attr("aria-disabled") === "true" ||
-        $planToggle.attr("aria-expanded") === "true"
-      ) {
-        return;
-      }
-
+    function openPlanDropdown() {
       var $dropdown = $planToggle.closest(".provider-filter_dopdown");
       if (!$dropdown.length) {
         $dropdown = $planToggle.closest(".w-dropdown");
       }
       var $list = $dropdown.find(".w-dropdown-list").first();
+      var $listWrapper = $list.find(".filter-list_list-wrapper").first();
+      var isOpen =
+        $planToggle.attr("aria-expanded") === "true" &&
+        $list.hasClass("w--open") &&
+        $list.is(":visible") &&
+        $listWrapper.is(":visible");
+
+      if (
+        $planToggle.hasClass("disabled") ||
+        $planToggle.attr("aria-disabled") === "true" ||
+        isOpen
+      ) {
+        return;
+      }
 
       var dropdownApi =
         window.Webflow &&
@@ -2827,11 +2856,17 @@ $(function () {
       $planToggle.attr("aria-expanded", "true").addClass("w--open");
       if ($list.length) {
         $list.addClass("open w--open").stop(true, true).slideDown(0);
+        $listWrapper.stop(true, true).css("display", "flex");
       }
 
       setTimeout(function () {
         $widget.find(".insurance-plan-search-input").first().focus();
       }, 0);
+    }
+
+    setTimeout(function () {
+      openPlanDropdown();
+      setTimeout(openPlanDropdown, 120);
     }, 80);
   }
 

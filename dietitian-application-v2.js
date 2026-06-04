@@ -43,7 +43,6 @@
     STEPPED: "CONFIGURED_STEPPED_FLOW",
   };
   const STEPPED_FLOW_PAGE_CLASS = "provider-application--stepped";
-  const MOBILE_IFRAME_MEDIA_QUERY = "(max-width:767px)";
 
   let runtimeContext = {
     applicationPublicId: null,
@@ -1088,7 +1087,7 @@
         }
         #gh-app .nourish-application-iframe{
           width:100%;
-          height:auto;
+          height:720px;
           border:0;
           border-radius:0px;
         }
@@ -1140,44 +1139,16 @@
     return true;
   }
 
-  function getProviderApplicationMessageHeight(data) {
-    const rawHeight =
-      data.height ?? data.iframeHeight ?? data.payload?.height ?? null;
-    const height = Number(rawHeight);
-    if (!Number.isFinite(height) || height <= 0) return null;
-    return Math.ceil(height);
-  }
-
-  function syncSteppedIframeHeightMode() {
-    if (
-      steppedIframe &&
-      !window.matchMedia(MOBILE_IFRAME_MEDIA_QUERY).matches
-    ) {
-      steppedIframe.style.height = "";
-    }
-  }
-
   function handleProviderApplicationMessage(event) {
     if (!isMessageFromSteppedIframe(event)) return;
-    const data = event.data;
 
     if (isProviderApplicationSubmittedMessage(event)) {
       removeStoredApplicationPublicId();
       return;
     }
-
-    const height = getProviderApplicationMessageHeight(data);
-    if (
-      height &&
-      steppedIframe &&
-      window.matchMedia(MOBILE_IFRAME_MEDIA_QUERY).matches
-    ) {
-      steppedIframe.style.height = `${height}px`;
-    }
   }
 
   window.addEventListener("message", handleProviderApplicationMessage);
-  window.addEventListener("resize", syncSteppedIframeHeightMode);
 
   function ensureOverviewBelowApplication() {
     const mount = document.getElementById("gh-app");
