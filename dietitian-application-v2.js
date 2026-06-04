@@ -42,12 +42,15 @@
     LEGACY: "GREENHOUSE_SCHEMA",
     STEPPED: "CONFIGURED_STEPPED_FLOW",
   };
+  const STEPPED_FLOW_PAGE_CLASS = "provider-application--stepped";
+  const MOBILE_IFRAME_MEDIA_QUERY = "(max-width:767px)";
 
   let runtimeContext = {
     applicationPublicId: null,
     flowRuntime: FLOW_RUNTIME.LEGACY,
     iframeUrl: null,
   };
+  let steppedIframe = null;
 
   // match your Webflow input look
   const INPUT_CLASSES = ["provider-filter_input", "hero", "no-icon", "w-input"];
@@ -961,6 +964,16 @@
     }
   }
 
+  function removeStoredApplicationPublicId() {
+    const store = getStorage();
+    if (!store) return;
+    try {
+      store.removeItem(APPLICATION_PUBLIC_ID_STORAGE_KEY);
+    } catch (err) {
+      console.warn("Unable to clear applicationPublicId", err);
+    }
+  }
+
   function getRudderAnonymousId() {
     try {
       if (
@@ -1029,6 +1042,10 @@
         line-height:60px;
         font-weight:400;
       }
+      .${STEPPED_FLOW_PAGE_CLASS} #gh-title,
+      .${STEPPED_FLOW_PAGE_CLASS} #gh-meta{
+        display:none;
+      }
       #gh-app{
         display:flex;
         justify-content:center;
@@ -1041,12 +1058,16 @@
       }
       #gh-app .nourish-application-iframe{
         width:712px;
-        height:560px;
+        height:564px;
         border:1px solid rgba(16,24,40,0.12);
         border-radius:12px;
         display:block;
       }
-      @media (max-width:640px){
+      @media (max-width:767px){
+        .job{
+          padding-left:5%;
+          padding-right:5%;
+        }
         #gh-title{
           font-family:Inter, Arial, sans-serif;
           font-size:20px;
@@ -1062,6 +1083,7 @@
         }
         #gh-app .nourish-application-iframe{
           width:100%;
+          height:auto;
           border:0;
           border-radius:0;
         }
@@ -1074,6 +1096,7 @@
     const mount = document.getElementById("gh-app");
     if (!mount) return;
     mount.classList.remove("gh-app--legacy");
+    document.documentElement.classList.add(STEPPED_FLOW_PAGE_CLASS);
     mount.innerHTML = "";
 
     const iframe = document.createElement("iframe");
@@ -1082,8 +1105,74 @@
     iframe.setAttribute("title", "Nourish provider application");
     iframe.setAttribute("loading", "lazy");
 
+    steppedIframe = iframe;
     mount.appendChild(iframe);
   }
+
+  function isMessageFromSteppedIframe(event) {
+    if (!steppedIframe || event.source !== steppedIframe.contentWindow)
+      return false;
+    try {
+      return event.origin === new URL(steppedIframe.src).origin;
+    } catch {
+      return false;
+    }
+  }
+
+  function isProviderApplicationSubmittedMessage(event) {
+    const data = event?.data;
+    if (!data || typeof data !== "object") return false;
+    if (steppedIframe && event.source !== steppedIframe.contentWindow)
+      return false;
+    if (data.source !== "provider-application-embed") return false;
+    if (data.type !== "provider-application:submitted") return false;
+    if (
+      !runtimeContext.applicationPublicId ||
+      data.applicationPublicId !== runtimeContext.applicationPublicId
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  function getProviderApplicationMessageHeight(data) {
+    const rawHeight =
+      data.height ?? data.iframeHeight ?? data.payload?.height ?? null;
+    const height = Number(rawHeight);
+    if (!Number.isFinite(height) || height <= 0) return null;
+    return Math.ceil(height);
+  }
+
+  function syncSteppedIframeHeightMode() {
+    if (
+      steppedIframe &&
+      !window.matchMedia(MOBILE_IFRAME_MEDIA_QUERY).matches
+    ) {
+      steppedIframe.style.height = "";
+    }
+  }
+
+  function handleProviderApplicationMessage(event) {
+    if (!isMessageFromSteppedIframe(event)) return;
+    const data = event.data;
+
+    if (isProviderApplicationSubmittedMessage(event)) {
+      removeStoredApplicationPublicId();
+      return;
+    }
+
+    const height = getProviderApplicationMessageHeight(data);
+    if (
+      height &&
+      steppedIframe &&
+      window.matchMedia(MOBILE_IFRAME_MEDIA_QUERY).matches
+    ) {
+      steppedIframe.style.height = `${height}px`;
+    }
+  }
+
+  window.addEventListener("message", handleProviderApplicationMessage);
+  window.addEventListener("resize", syncSteppedIframeHeightMode);
 
   function ensureOverviewBelowApplication() {
     const mount = document.getElementById("gh-app");
@@ -1878,6 +1967,8 @@
     });
 
     const mount = document.getElementById("gh-app");
+    document.documentElement.classList.remove(STEPPED_FLOW_PAGE_CLASS);
+    steppedIframe = null;
     mount.classList.add("gh-app--legacy");
     mount.innerHTML = "";
     mount.appendChild(form);
