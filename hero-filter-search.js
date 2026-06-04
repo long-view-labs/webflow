@@ -2515,9 +2515,8 @@ $(function () {
       .trim()
       .toLowerCase();
 
-    $container
-      .find(".insurance-plan-section-label, .insurance-plan-results-divider")
-      .toggle(!query);
+    var hasVisiblePopularPlans = false;
+    var hasVisibleAllPlans = false;
 
     $container.find(".dynamic-insurance-plan").each(function () {
       var option = this;
@@ -2525,15 +2524,27 @@ $(function () {
       var isPopular = option.classList.contains(
         "dynamic-insurance-plan--popular"
       );
-      var isMatch =
-        !query || (!isPopular && text.toLowerCase().indexOf(query) !== -1);
+      var isAll = option.classList.contains("dynamic-insurance-plan--all");
+      var isMatch = !query || text.toLowerCase().indexOf(query) !== -1;
       option.style.display = isMatch ? "" : "none";
+      if (isMatch && isPopular) hasVisiblePopularPlans = true;
+      if (isMatch && isAll) hasVisibleAllPlans = true;
 
       var label = option.querySelector(".filter-list_label");
       if (label) {
         appendHighlightedText(label, text, query);
       }
     });
+
+    $container
+      .find(".insurance-plan-section-label--popular")
+      .toggle(hasVisiblePopularPlans);
+    $container
+      .find(".insurance-plan-section-label--all")
+      .toggle(hasVisibleAllPlans);
+    $container
+      .find(".insurance-plan-results-divider")
+      .toggle(hasVisiblePopularPlans && hasVisibleAllPlans);
   }
 
   function injectInsuranceOptions($widget) {
@@ -2787,15 +2798,41 @@ $(function () {
 
     setTimeout(function () {
       if (
-        !$planToggle.hasClass("disabled") &&
-        $planToggle.attr("aria-expanded") !== "true"
+        $planToggle.hasClass("disabled") ||
+        $planToggle.attr("aria-disabled") === "true" ||
+        $planToggle.attr("aria-expanded") === "true"
       ) {
-        $planToggle.trigger("click");
-        setTimeout(function () {
-          $widget.find(".insurance-plan-search-input").first().focus();
-        }, 0);
+        return;
       }
-    }, 0);
+
+      var $dropdown = $planToggle.closest(".provider-filter_dopdown");
+      if (!$dropdown.length) {
+        $dropdown = $planToggle.closest(".w-dropdown");
+      }
+      var $list = $dropdown.find(".w-dropdown-list").first();
+
+      var dropdownApi =
+        window.Webflow &&
+        window.Webflow.require &&
+        window.Webflow.require("dropdown");
+
+      if (dropdownApi && typeof dropdownApi.open === "function") {
+        try {
+          dropdownApi.open($dropdown[0]);
+        } catch (e) {
+          // Fall back to manual class updates below.
+        }
+      }
+
+      $planToggle.attr("aria-expanded", "true").addClass("w--open");
+      if ($list.length) {
+        $list.addClass("open w--open").stop(true, true).slideDown(0);
+      }
+
+      setTimeout(function () {
+        $widget.find(".insurance-plan-search-input").first().focus();
+      }, 0);
+    }, 80);
   }
 
   function updateWidgetCTA($widget) {
