@@ -2114,12 +2114,25 @@ $(function () {
   function getAllWidgets() {
     var collected = [];
     var seen = new Set();
+    var widgetSelector = widgetSelectors.join(",");
 
     for (var i = 0; i < widgetSelectors.length; i++) {
       var selector = widgetSelectors[i];
       $(selector).each(function () {
         var node = this;
         if (seen.has(node)) return;
+        var hasCollectedAncestor = false;
+        $(node)
+          .parents(widgetSelector)
+          .each(function () {
+            if (seen.has(this)) {
+              hasCollectedAncestor = true;
+              return false;
+            }
+            return true;
+          });
+        if (hasCollectedAncestor) return;
+
         var $node = $(node);
         if (
           $node.find("#home-filter-cta").length ||
@@ -3401,7 +3414,9 @@ $(function () {
         if (!$radio.is('input[type="radio"]')) {
           var targetId = $radio.attr("for");
           if (targetId) {
-            var $target = $widget.find("#" + targetId);
+            var $target = $widget
+              .find('[id="' + targetId.replace(/"/g, '\\"') + '"]')
+              .first();
             if (
               $target.is(
                 'input[type="radio"][data-name="Insurance"], input[type="radio"][data-name="Insurance Plan"]'
@@ -3453,9 +3468,9 @@ $(function () {
       var $dropdown = $(this).closest(
         ".provider-filter_dropdown, .provider-filter_dopdown, .w-dropdown"
       );
-      var $list = $dropdown.find("#dropdown-list-1").first();
+      var $list = $dropdown.find('[id="dropdown-list-1"]').first();
       if (!$list.length) {
-        $list = $widget.find("#dropdown-list-1").first();
+        $list = $widget.find('[id="dropdown-list-1"]').first();
       }
       if ($list.length) {
         if ($list.hasClass("open")) {
@@ -3503,7 +3518,7 @@ $(function () {
       $widgets.each(function () {
         var $widget = $(this);
         var $toggle = $widget.find("#state_filter").first();
-        var $list = $widget.find("#dropdown-list-1").first();
+        var $list = $widget.find('[id="dropdown-list-1"]').first();
         if (!$toggle.length || !$list.length) return;
 
         if (

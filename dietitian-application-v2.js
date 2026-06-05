@@ -8,7 +8,7 @@
   const NOURISH_LEAD_ENDPOINT =
     "https://app." + _apex + "/api/provider-job-application/sync-leads";
   const DRAFTS_ENDPOINT =
-    "https://staging.nourish.com/api/provider-job-application/drafts";
+    "https://app." + _apex + "/api/provider-job-application/drafts";
   const JOB_SCHEMA_URL = `https://boards-api.greenhouse.io/v1/boards/${BOARD}/jobs/${JOB_ID}?questions=true`;
 
   // optional caching
