@@ -2,13 +2,13 @@
   // ---------- CONFIG ----------
   const BOARD = "usenourish";
   const JOB_ID = 4007342008; // public job post id
-  const _apex = window.__nourish_apex || "usenourish.com";
+  const PROVIDER_APPLICATION_BASE_URL = "https://app.nourish.com";
   const NOURISH_APPLY_ENDPOINT =
-    "https://app." + _apex + "/api/provider-job-application/apply";
+    PROVIDER_APPLICATION_BASE_URL + "/api/provider-job-application/apply";
   const NOURISH_LEAD_ENDPOINT =
-    "https://app." + _apex + "/api/provider-job-application/sync-leads";
+    PROVIDER_APPLICATION_BASE_URL + "/api/provider-job-application/sync-leads";
   const DRAFTS_ENDPOINT =
-    "https://app." + _apex + "/api/provider-job-application/drafts";
+    PROVIDER_APPLICATION_BASE_URL + "/api/provider-job-application/drafts";
   const JOB_SCHEMA_URL = `https://boards-api.greenhouse.io/v1/boards/${BOARD}/jobs/${JOB_ID}?questions=true`;
 
   // optional caching
