@@ -1,0 +1,528 @@
+<script>
+  window.__nourishStatsig = window.__nourishStatsig || {};
+  window.__nourishStatsig.homepageExperimentOwner = "sidecar";
+  window.__nourishStatsig.sidecarExperimentIds =
+    window.__nourishStatsig.sidecarExperimentIds || [];
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@statsig/js-client@3/build/statsig-js-client+session-replay+web-analytics.min.js"></script>
+<script src="https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a450465c069b2ceb93e5ecf_hero-filter-search.txt"></script>
+<script>
+  (function () {
+    function isSidecarOwnedExperiment(name) {
+      var ids = window.__nourishStatsig?.sidecarExperimentIds || [];
+      return ids.indexOf(name) !== -1;
+    }
+
+    function fallbackExperiment(name) {
+      return {
+        name: name,
+        ruleID: "blocked_by_sidecar_owner",
+        get: function (_key, fallback) {
+          return fallback;
+        },
+      };
+    }
+
+    function installStatsigJsClientGuard() {
+      var StatsigClient = window.Statsig?.StatsigClient;
+      if (!StatsigClient?.prototype) return false;
+
+      var proto = StatsigClient.prototype;
+      if (proto.__nourishHomepageGuardInstalled) return true;
+
+      var originalGetExperiment = proto.getExperiment;
+      if (typeof originalGetExperiment === "function") {
+        proto.getExperiment = function (name) {
+          if (isSidecarOwnedExperiment(name)) {
+            console.warn(
+              "[Statsig] Homepage experiment is owned by Sidecar; skipped js-client getExperiment:",
+              name,
+            );
+            return fallbackExperiment(name);
+          }
+          return originalGetExperiment.apply(this, arguments);
+        };
+      }
+
+      var originalCheckGate = proto.checkGate;
+      if (typeof originalCheckGate === "function") {
+        proto.checkGate = function (name) {
+          if (isSidecarOwnedExperiment(name)) {
+            console.warn(
+              "[Statsig] Homepage experiment is owned by Sidecar; skipped js-client checkGate:",
+              name,
+            );
+            return false;
+          }
+          return originalCheckGate.apply(this, arguments);
+        };
+      }
+
+      proto.__nourishHomepageGuardInstalled = true;
+      return true;
+    }
+
+    if (!installStatsigJsClientGuard()) {
+      window.addEventListener("load", installStatsigJsClientGuard, { once: true });
+    }
+  })();
+</script>
+<script src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.2/global.js"></script>
+<script src="https://widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js" defer></script>
+
+<script>
+  (function () {
+    function isRendered(el) {
+      if (!el || !el.isConnected) return false;
+      var node = el;
+      while (node && node.nodeType === 1) {
+        var style = window.getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden") return false;
+        node = node.parentElement;
+      }
+      var rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }
+
+    function setupMobileDrawer(nav) {
+      if (!nav || nav === document || nav.dataset.mobileDrawerInit) return;
+
+      var toggle = nav.querySelector(".toggle-menu-2");
+      var drawer = nav.querySelector(".nav_mobile-menu");
+      var startedBtn = nav.querySelector("#mobile-nav-getstarted");
+      if (!toggle || !drawer) return;
+
+      nav.dataset.mobileDrawerInit = "true";
+
+      var lineTop = toggle.querySelector(".m-line-2");
+      var lineMid = toggle.querySelector(".m-line-2-2");
+      var lineBot = toggle.querySelector(".m-line-3-2");
+      var logo = nav.querySelector(".logo-embed");
+      var drawerStyleState = null;
+
+      [lineTop, lineMid, lineBot].forEach(function (line) {
+        if (line) line.style.transition = "transform 0.3s ease, opacity 0.3s ease";
+      });
+
+      Object.assign(drawer.style, {
+        display: "block",
+        transform: "translateX(100%)",
+        transition: "transform 0.4s ease",
+      });
+
+      function morphToX() {
+        if (lineTop) lineTop.style.transform = "translateY(7px) rotate(45deg)";
+        if (lineBot) lineBot.style.transform = "translateY(-6px) rotate(-45deg)";
+        if (lineMid) lineMid.style.opacity = "0";
+      }
+
+      function morphToBurger() {
+        if (lineTop) lineTop.style.transform = "translateY(0) rotate(0deg)";
+        if (lineBot) lineBot.style.transform = "translateY(0) rotate(0deg)";
+        if (lineMid) lineMid.style.opacity = "1";
+      }
+
+      function applyOpenColors() {
+        if (!drawerStyleState) {
+          drawerStyleState = {
+            lineTopBackground: lineTop ? lineTop.style.backgroundColor : "",
+            lineMidBackground: lineMid ? lineMid.style.backgroundColor : "",
+            lineBotBackground: lineBot ? lineBot.style.backgroundColor : "",
+            logoColor: logo ? logo.style.color : "",
+          };
+        }
+
+        [lineTop, lineMid, lineBot].forEach(function (line) {
+          if (line) line.style.backgroundColor = "#000000";
+        });
+
+        if (logo) logo.style.color = "rgb(254, 80, 0)";
+      }
+
+      function restoreClosedColors() {
+        if (!drawerStyleState) return;
+
+        if (lineTop) lineTop.style.backgroundColor = drawerStyleState.lineTopBackground;
+        if (lineMid) lineMid.style.backgroundColor = drawerStyleState.lineMidBackground;
+        if (lineBot) lineBot.style.backgroundColor = drawerStyleState.lineBotBackground;
+        if (logo) logo.style.color = drawerStyleState.logoColor;
+
+        drawerStyleState = null;
+      }
+
+      function openDrawer() {
+        nav.classList.add("is-mobile-drawer-open");
+        applyOpenColors();
+        drawer.style.transition = "transform 0.4s ease";
+        drawer.style.transform = "translateX(0%)";
+        drawer.classList.add("is-open");
+        toggle.classList.add("is-active");
+        document.body.style.overflow = "hidden";
+        morphToX();
+        if (startedBtn) {
+          startedBtn.style.opacity = "0";
+          startedBtn.style.pointerEvents = "none";
+        }
+      }
+
+      function closeDrawer() {
+        drawer.style.transition = "transform 0.4s ease";
+        drawer.style.transform = "translateX(100%)";
+        drawer.classList.remove("is-open");
+        toggle.classList.remove("is-active");
+        document.body.style.overflow = "";
+        morphToBurger();
+        restoreClosedColors();
+        nav.classList.remove("is-mobile-drawer-open");
+        if (startedBtn) {
+          startedBtn.style.opacity = "";
+          startedBtn.style.pointerEvents = "";
+        }
+      }
+
+      toggle.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        drawer.classList.contains("is-open") ? closeDrawer() : openDrawer();
+      });
+
+      drawer.querySelectorAll("a").forEach(function (link) {
+        link.addEventListener("click", closeDrawer);
+      });
+
+      var startX = 0;
+      var currentX = 0;
+      var dragging = false;
+
+      drawer.addEventListener(
+        "touchstart",
+        function (event) {
+          if (!drawer.classList.contains("is-open")) return;
+          startX = event.touches[0].clientX;
+          currentX = startX;
+          dragging = true;
+          drawer.style.transition = "none";
+        },
+        { passive: true },
+      );
+
+      drawer.addEventListener(
+        "touchmove",
+        function (event) {
+          if (!dragging) return;
+          currentX = event.touches[0].clientX;
+          var delta = currentX - startX;
+          if (delta > 0) {
+            drawer.style.transform = "translateX(" + delta + "px)";
+          }
+        },
+        { passive: true },
+      );
+
+      drawer.addEventListener("touchend", function () {
+        if (!dragging) return;
+        dragging = false;
+        var delta = currentX - startX;
+        var threshold = drawer.offsetWidth * 0.3;
+        delta > threshold ? closeDrawer() : openDrawer();
+      });
+    }
+
+    function initMobileDrawers() {
+      document.querySelectorAll(".nav-2").forEach(function (nav) {
+        if (!isRendered(nav)) return;
+        setupMobileDrawer(nav);
+      });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initMobileDrawers, { once: true });
+    } else {
+      initMobileDrawers();
+    }
+
+    window.addEventListener("resize", function () {
+      setTimeout(initMobileDrawers, 150);
+    });
+  })();
+</script>
+
+<!-- OneTrust Cookies Consent Notice start for nourish.com
+<script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js" type="text/javascript" charset="UTF-8" data-domain-script="019e6eb7-ce82-700d-ab43-3a3e0ff71ffc-test"></script>
+<script type="text/javascript">
+function OptanonWrapper() { }
+</script>
+OneTrust Cookies Consent Notice end for nourish.com -->
+
+<!--Rudderstack-->
+<script async defer type="text/javascript">
+  !(function () {
+    var e = (window.rudderanalytics = window.rudderanalytics || []);
+    e.methods = [
+      "load",
+      "page",
+      "track",
+      "identify",
+      "alias",
+      "group",
+      "ready",
+      "reset",
+      "getAnonymousId",
+      "setAnonymousId",
+      "getUserId",
+      "getUserTraits",
+      "getGroupId",
+      "getGroupTraits",
+      "startSession",
+      "endSession",
+      "getSessionId",
+    ];
+    e.factory = function (t) {
+      return function () {
+        e.push([t].concat(Array.prototype.slice.call(arguments)));
+      };
+    };
+    for (var t = 0; t < e.methods.length; t++) {
+      var r = e.methods[t];
+      e[r] = e.factory(r);
+    }
+    e.loadJS = function () {
+      var t = document.createElement("script");
+      ((t.type = "text/javascript"),
+        (t.async = !0),
+        (t.src =
+          "https://jssdk-proxy." +
+          (window.__nourish_apex || "usenourish.com") +
+          "/v3/modern/rsa.min.js"));
+      var r = document.getElementsByTagName("script")[0];
+      r.parentNode.insertBefore(t, r);
+    };
+    (e.loadJS(),
+      e.load(
+        "2aOoUzHccHpDljomHWiSCOqQAv5",
+        "https://dataplane-proxy." +
+          (window.__nourish_apex || "usenourish.com"),
+        {
+          consentManagement: {
+            enabled: true,
+            provider: "custom",
+          },
+        },
+      ),
+      e.page());
+  })();
+</script>
+<!--END Rudderstack-->
+
+<!--RB2B-->
+<script>
+  !(function () {
+    var reb2b = (window.reb2b = window.reb2b || []);
+    if (reb2b.invoked) return;
+    reb2b.invoked = true;
+    reb2b.methods = ["identify", "collect"];
+    reb2b.factory = function (method) {
+      return function () {
+        var args = Array.prototype.slice.call(arguments);
+        args.unshift(method);
+        reb2b.push(args);
+        return reb2b;
+      };
+    };
+    for (var i = 0; i < reb2b.methods.length; i++) {
+      var key = reb2b.methods[i];
+      reb2b[key] = reb2b.factory(key);
+    }
+    reb2b.load = function (key) {
+      var script = document.createElement("script");
+      script.type = "text/javascript";
+      script.async = true;
+      script.src =
+        "https://ddwl4m2hdecbv.cloudfront.net/b/" + key + "/VN080HXGZ56J.js.gz";
+      var first = document.getElementsByTagName("script")[0];
+      first.parentNode.insertBefore(script, first);
+    };
+    reb2b.SNIPPET_VERSION = "1.0.1";
+    reb2b.load("VN080HXGZ56J");
+  })();
+</script>
+<!--END RB2B-->
+
+<script>
+  (function () {
+    var scriptsLoaded = false;
+    var loadedScripts = {};
+
+    function loadScript(src, callback) {
+      if (!src) return;
+
+      if (loadedScripts[src]) {
+        if (typeof callback === "function") callback();
+        return;
+      }
+
+      var existing = document.querySelector('script[src="' + src + '"]');
+      if (existing) {
+        loadedScripts[src] = true;
+        if (typeof callback === "function") {
+          if (existing.hasAttribute("data-loaded")) callback();
+          else existing.addEventListener("load", callback, { once: true });
+        }
+        return;
+      }
+
+      var script = document.createElement("script");
+      script.src = src;
+      script.async = true;
+      script.onload = function () {
+        loadedScripts[src] = true;
+        script.setAttribute("data-loaded", "true");
+        if (typeof callback === "function") callback();
+      };
+      document.body.appendChild(script);
+    }
+
+    function updateCopyrightYear() {
+      var year = new Date().getFullYear();
+      document.querySelectorAll("#copyright").forEach(function (element) {
+        element.textContent = "© " + year;
+      });
+    }
+
+    function loadScriptsOnInteraction() {
+      if (scriptsLoaded) return;
+      scriptsLoaded = true;
+
+      updateCopyrightYear();
+      loadScript("https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.8/timed-tabs.js");
+    }
+
+    function loadNavbarScripts() {
+      loadScript("https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a2be4c48b51648e8c046961_navbar.txt");
+    }
+
+    updateCopyrightYear();
+    loadNavbarScripts();
+
+    if (window.jQuery) {
+      jQuery(window).one("scroll touchstart mousemove", loadScriptsOnInteraction);
+    } else {
+      ["scroll", "touchstart", "mousemove"].forEach(function (eventName) {
+        window.addEventListener(eventName, loadScriptsOnInteraction, {
+          once: true,
+          passive: true,
+        });
+      });
+    }
+  })();
+</script>
+
+<!--LinkedIn Insights Tag-->
+<script type="text/javascript">
+  _linkedin_partner_id = "8614857";
+  window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
+  window._linkedin_data_partner_ids.push(_linkedin_partner_id);
+</script>
+<script type="text/javascript">
+  (function (l) {
+    if (!l) {
+      window.lintrk = function (a, b) {
+        window.lintrk.q.push([a, b]);
+      };
+      window.lintrk.q = [];
+    }
+    var s = document.getElementsByTagName("script")[0];
+    var b = document.createElement("script");
+    b.type = "text/javascript";
+    b.async = true;
+    b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
+    s.parentNode.insertBefore(b, s);
+  })(window.lintrk);
+</script>
+<noscript>
+  <img
+    height="1"
+    width="1"
+    style="display: none"
+    alt=""
+    src="https://px.ads.linkedin.com/collect/?pid=8614857&fmt=gif"
+  />
+</noscript>
+<!--END LinkedIn Insights Tag-->
+
+<script>
+  (function () {
+    function updateLinks() {
+      var apex = window.__nourish_apex || "nourish.com";
+      document.querySelectorAll("a[href*='usenourish.com']").forEach(function (link) {
+        link.href = link.href.replace(/usenourish\.com/g, apex);
+      });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", updateLinks, { once: true });
+    } else {
+      updateLinks();
+    }
+  })();
+</script>
+
+<script>
+  // Osano consent listener
+  (function () {
+    if (window._osanoListenerInit) return;
+
+    var OSANO_CONSENT_CATEGORIES = ["MARKETING"];
+
+    function updateRudderstackConsent() {
+      if (!window.Osano?.cm?.getConsent) return;
+      if (typeof rudderanalytics?.consent !== "function") return;
+
+      var osanoConsent = window.Osano.cm.getConsent();
+      var allowedConsentIds = [];
+      var deniedConsentIds = [];
+
+      OSANO_CONSENT_CATEGORIES.forEach(function (category) {
+        var status = osanoConsent[category];
+        if (status === "ACCEPT") allowedConsentIds.push(category);
+        else if (status === "DENY") deniedConsentIds.push(category);
+      });
+
+      rudderanalytics.consent({
+        consentManagement: {
+          enabled: true,
+          provider: "custom",
+          allowedConsentIds: allowedConsentIds,
+          deniedConsentIds: deniedConsentIds,
+        },
+      });
+    }
+
+    function setupListeners() {
+      if (!window.Osano?.cm) return false;
+      if (typeof rudderanalytics?.consent !== "function") return false;
+
+      window.Osano.cm.addEventListener(
+        "osano-cm-initialized",
+        updateRudderstackConsent,
+      );
+      window.Osano.cm.addEventListener(
+        "osano-cm-consent-saved",
+        updateRudderstackConsent,
+      );
+
+      updateRudderstackConsent();
+      return true;
+    }
+
+    var attempts = 0;
+    var checkInterval = setInterval(function () {
+      attempts++;
+      if (setupListeners() || attempts >= 20) {
+        if (attempts >= 20) console.warn("[Osano] Consent init timed out");
+        else window._osanoListenerInit = true;
+        clearInterval(checkInterval);
+      }
+    }, 500);
+  })();
+</script>

@@ -14,13 +14,21 @@ $(function () {
     ".provider-filter",
   ];
 
+  function localSelector(selector) {
+    return String(selector || "").replace(/#([A-Za-z0-9_-]+)/g, '[id="$1"]');
+  }
+
+  function findLocal($root, selector) {
+    return $root.find(localSelector(selector));
+  }
+
   var insurancePlanOptions = {
       "Aetna": {
           "popular": [
-              "Aetna Choice® POS II (Open Access)",
+              "Aetna Choice POS II (Open Access)",
               "Aetna Choice POS II (Aetna HealthFund)",
               "Open Choice PPO",
-              "Aetna Choice® POS (Open Access)",
+              "Aetna Choice POS (Open Access)",
               "Elect Choice EPO",
               "Aetna Select",
               "Aetna PPO",
@@ -205,20 +213,20 @@ $(function () {
               "Choice POS II by Dow",
               "Choice POS II by Johnson & Johnson",
               "Choice POS II on the Altius Network",
-              "Choice® POS (Open Access)",
-              "Choice® POS II (Open Access)",
+              "Choice POS (Open Access)",
+              "Choice POS II (Open Access)",
               "CO Medicare HMO Denver CO Prime Plan",
               "CO Whole Health - Colorado Front Range",
               "CO: Medicare Prime 1 (PPO)",
               "CO: Medicare Prime Plan (PPO)",
-              "Columbia University Open Choice® - Plan 100",
-              "Columbia University Open Choice® - Plan 90",
+              "Columbia University Open Choice - Plan 100",
+              "Columbia University Open Choice - Plan 90",
               "Comprehensive PPO by Bank of America",
               "Connected Care by General Motors",
               "Consumer HDHP by Bank of America",
               "Contribution by Walmart",
               "Cornell Program for Healthy Living",
-              "Cornell University : Choice® POS II - Weill PPO",
+              "Cornell University : Choice POS II - Weill PPO",
               "Coventry Auto Injury",
               "Coventry Illinois Health Care Network",
               "Coventry Missouri Health Care Network",
@@ -247,7 +255,7 @@ $(function () {
               "FL: Medicare Choice (HMO-POS)",
               "FL: Medicare Choice Plan (HMO-POS)",
               "FL: Medicare Summit Select (HMO)",
-              "FL: North Broward Hospital District DBA Broward Health Choice® POS II",
+              "FL: North Broward Hospital District DBA Broward Health Choice POS II",
               "FL: Select 1 (University of Miami)",
               "FL: Select 2 (University of Miami)",
               "FL: University of Miami: Choice POS II Open Access (HRA)",
@@ -282,8 +290,8 @@ $(function () {
               "HealthFund Health Savings Account (HSA)",
               "HealthFund HMO",
               "HealthFund HMO (available in CA only)",
-              "HealthFund® Health Network Only (Open Access)",
-              "HealthFund® Health Network Option (Open Access)",
+              "HealthFund Health Network Only (Open Access)",
+              "HealthFund Health Network Option (Open Access)",
               "HMO",
               "HMO Basic",
               "HMO Deductible",
@@ -494,11 +502,11 @@ $(function () {
               "Open Access Select ( Health Fund)",
               "Open Access Select HMO (Broad)",
               "Open Access Select HMO (Performance)",
-              "Open Access® Managed Choice® - NY Tri-State POS 15",
+              "Open Access Managed Choice - NY Tri-State POS 15",
               "Open Choice PPO",
               "Open Choice PPO on the Altius Network",
-              "Open Choice® PPO ( Health Fund)",
-              "OpenAccess® Managed Choice® - HDHP Base Plan",
+              "Open Choice PPO ( Health Fund)",
+              "OpenAccess Managed Choice - HDHP Base Plan",
               "PA Whole Health - PinnacleHealth",
               "PA Whole Health - Valley Preferred",
               "PA Whole Health - WellSpan",
@@ -570,7 +578,7 @@ $(function () {
               "Sutter Health Open Access Managed Choice POS",
               "Texas - Preferred Medicare Dual SNP HMO",
               "TN Whole Health - Baptist/Select Health Alliance",
-              "Traditional Choice® Indemnity",
+              "Traditional Choice Indemnity",
               "TRS-Care Networks",
               "TX Bronze 5500 50% QHDHP HMO (Off Ex)",
               "TX Bronze 5500 50% QHDHP HMO PD",
@@ -613,7 +621,7 @@ $(function () {
               "TX: Medicare Choice II Plan (PPO)",
               "TX: Medicare Dual Complete Plan (HMO D-SNP)",
               "TX: Medicare Prime Plan (HMO)",
-              "USAccess®",
+              "USAccess",
               "Utah Connected Network",
               "VA Medicare HMO VA Innovation Prime Plan",
               "VA Whole Health - Coastal Virginia Health Partners",
@@ -628,7 +636,7 @@ $(function () {
               "Value Performance Network",
               "Virginia - Cardinal Care Medicaid HMO",
               "Vision",
-              "Vision Preferred® - High Option",
+              "Vision Preferred - High Option",
               "Voluntary Plans",
               "WA Whole Health - Rainier Health Network",
               "WA: Medicare Platinum Plan (HMO)",
@@ -1560,6 +1568,11 @@ $(function () {
     path = (path || window.location.pathname || "/").toLowerCase();
     if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
     if (path === "/") return { landingPageVariation: "Organic_Homepage" };
+    if (
+      path.indexOf("/home-b-no-wordmark") === 0 ||
+      path.indexOf("/home-new") === 0
+    )
+      return { landingPageVariation: "landing-page" };
     if (path.indexOf("/blog") === 0) return { landingPageVariation: "blog" };
     if (path.indexOf("/landing-page") === 0)
       return { landingPageVariation: "landing-page" };
@@ -1601,6 +1614,67 @@ $(function () {
       .replace(/\u2019/g, "'")
       .trim()
       .toLowerCase();
+  }
+
+  var stateAbbreviationsByName = {
+    alabama: "AL",
+    alaska: "AK",
+    arizona: "AZ",
+    arkansas: "AR",
+    california: "CA",
+    colorado: "CO",
+    connecticut: "CT",
+    delaware: "DE",
+    florida: "FL",
+    georgia: "GA",
+    hawaii: "HI",
+    idaho: "ID",
+    illinois: "IL",
+    indiana: "IN",
+    iowa: "IA",
+    kansas: "KS",
+    kentucky: "KY",
+    louisiana: "LA",
+    maine: "ME",
+    maryland: "MD",
+    massachusetts: "MA",
+    michigan: "MI",
+    minnesota: "MN",
+    mississippi: "MS",
+    missouri: "MO",
+    montana: "MT",
+    nebraska: "NE",
+    nevada: "NV",
+    "new hampshire": "NH",
+    "new jersey": "NJ",
+    "new mexico": "NM",
+    "new york": "NY",
+    "north carolina": "NC",
+    "north dakota": "ND",
+    ohio: "OH",
+    oklahoma: "OK",
+    oregon: "OR",
+    pennsylvania: "PA",
+    "rhode island": "RI",
+    "south carolina": "SC",
+    "south dakota": "SD",
+    tennessee: "TN",
+    texas: "TX",
+    utah: "UT",
+    vermont: "VT",
+    virginia: "VA",
+    washington: "WA",
+    "west virginia": "WV",
+    wisconsin: "WI",
+    wyoming: "WY",
+    "district of columbia": "DC",
+  };
+
+  function normalizeStateForSignup(value) {
+    if (!value) return null;
+    var trimmed = String(value).trim();
+    if (/^[A-Za-z]{2}$/.test(trimmed)) return trimmed.toUpperCase();
+    return stateAbbreviationsByName[normalizeValue(trimmed)] || trimmed;
   }
 
   function getPayersSourceParam() {
@@ -2135,12 +2209,12 @@ $(function () {
 
         var $node = $(node);
         if (
-          $node.find("#home-filter-cta").length ||
-          $node.find("#insurance_filter").length ||
-          $node.find("#insurance-condensed_filter").length ||
-          $node.find("#insurance_plan").length ||
-          $node.find("#specialty_filter").length ||
-          $node.find("#state_filter").length
+          findLocal($node, "#home-filter-cta").length ||
+          findLocal($node, "#insurance_filter").length ||
+          findLocal($node, "#insurance-condensed_filter").length ||
+          findLocal($node, "#insurance_plan").length ||
+          findLocal($node, "#specialty_filter").length ||
+          findLocal($node, "#state_filter").length
         ) {
           seen.add(node);
           collected.push(node);
@@ -2223,12 +2297,12 @@ $(function () {
       .filter(function () {
         return !$(this)
           .closest(".provider-filter_dopdown, .w-dropdown")
-          .find("#insurance_plan").length;
+          .find('[id="insurance_plan"]').length;
       });
     if (!$labels.length) return;
 
     var $toggle = $widget
-      .find("#insurance-condensed_filter, #insurance_filter")
+      .find(localSelector("#insurance-condensed_filter, #insurance_filter"))
       .first();
     var maxWidth = $toggle.length ? $toggle.width() : null;
     var $reference = $labels.first();
@@ -2251,7 +2325,9 @@ $(function () {
 
     var $dropdownLabel = $widget
       .find(
-        "#insurance-condensed_filter .provider-filter_dropdown-label.filter, #insurance_filter .provider-filter_dropdown-label.filter"
+        localSelector(
+          "#insurance-condensed_filter .provider-filter_dropdown-label.filter, #insurance_filter .provider-filter_dropdown-label.filter"
+        )
       )
       .first();
     if ($dropdownLabel.length) {
@@ -2270,7 +2346,7 @@ $(function () {
     var $labels = $widget.find('[id="insurance-plan-text"]');
     if (!$labels.length) return;
 
-    var $toggle = $widget.find("#insurance_plan").first();
+    var $toggle = findLocal($widget, "#insurance_plan").first();
     var maxWidth = $toggle.length ? $toggle.width() : null;
     var $reference = $labels.first();
     var truncated =
@@ -2326,14 +2402,15 @@ $(function () {
   }
 
   function updateInsurancePlanDisabledState($widget, carrierName) {
-    var $planToggle = $widget.find("#insurance_plan").first();
+    var $planToggle = findLocal($widget, "#insurance_plan").first();
     if (!$planToggle.length) return;
 
     var hasPlanOptions =
       !!carrierName &&
       Object.prototype.hasOwnProperty.call(insurancePlanOptions, carrierName);
     var shouldDisable =
-      $widget.find("#insurance-condensed_filter").length > 0 && !hasPlanOptions;
+      findLocal($widget, "#insurance-condensed_filter").length > 0 &&
+      !hasPlanOptions;
 
     $planToggle
       .toggleClass("disabled", shouldDisable)
@@ -2347,9 +2424,9 @@ $(function () {
   function updateSpecialtyLabel($widget, values) {
     var defaultText = "Primary concern";
     var listText = Array.isArray(values) ? values.join(", ") : "";
-    var $labels = $widget.find("#concern-text");
+    var $labels = findLocal($widget, "#concern-text");
     if ($labels.length) {
-      var $toggle = $widget.find("#specialty_filter").first();
+      var $toggle = findLocal($widget, "#specialty_filter").first();
       var maxWidth = $toggle.length ? $toggle.width() : null;
       var $reference = $labels.first();
       var truncated =
@@ -2392,13 +2469,13 @@ $(function () {
   }
 
   function findWidgetCTA($widget) {
-    var $cta = $widget.find("#home-filter-cta").first();
+    var $cta = findLocal($widget, "#home-filter-cta").first();
     if ($cta.length) return $cta;
     return $widget.find('a[href*="' + getSignupHost() + '"]').first();
   }
 
   function getDropdownListContainer($widget, toggleSelector) {
-    var $toggle = $widget.find(toggleSelector).first();
+    var $toggle = findLocal($widget, toggleSelector).first();
     if (!$toggle.length) return $();
 
     var $dropdown = $toggle.closest(".provider-filter_dopdown, .w-dropdown");
@@ -2578,7 +2655,7 @@ $(function () {
   function injectInsuranceOptions($widget) {
     if (!$widget || !$widget.length) return;
 
-    var isCondensed = $widget.find("#insurance-condensed_filter").length > 0;
+    var isCondensed = findLocal($widget, "#insurance-condensed_filter").length > 0;
     var $container = getDropdownListContainer(
       $widget,
       isCondensed ? "#insurance-condensed_filter" : "#insurance_filter"
@@ -2749,6 +2826,59 @@ $(function () {
     return $form.length ? $form.attr("data-name") : "";
   }
 
+  function isValidLandingPageModuleType(value) {
+    return (
+      value === "CarrierPlanName" ||
+      value === "Quiz" ||
+      value === "NameDobForm" ||
+      value === "FindADietitian"
+    );
+  }
+
+  function getLandingPageModuleType($widget, isInsuranceCheck) {
+    var $configured = $widget
+      .closest("[data-landing-page-module-type]")
+      .add($widget.find("[data-landing-page-module-type]").first())
+      .first();
+    var configured = $configured.attr("data-landing-page-module-type");
+    if (isValidLandingPageModuleType(configured)) {
+      return configured;
+    }
+
+    if (isInsuranceCheck) return "NameDobForm";
+    if (findLocal($widget, "#insurance_plan").length) return "CarrierPlanName";
+
+    var path = (window.location.pathname || "").toLowerCase();
+    if (path.indexOf("/quiz-a") === 0) return "Quiz";
+
+    return null;
+  }
+
+  function applyConfiguredLandingPageModuleType() {
+    $('a[href*="' + getSignupHost() + '"]').each(function () {
+      var link = this;
+      var module = link.closest
+        ? link.closest("[data-landing-page-module-type]")
+        : null;
+      if (!module) return;
+
+      var moduleType = module.getAttribute("data-landing-page-module-type");
+      if (!isValidLandingPageModuleType(moduleType)) return;
+
+      var currentHref = link.getAttribute("href");
+      if (!currentHref) return;
+
+      try {
+        var url = new URL(currentHref, window.location.origin);
+        if (url.hostname.indexOf(getSignupHost()) === -1) return;
+        if (!url.searchParams.has("landingPageModuleType")) {
+          url.searchParams.set("landingPageModuleType", moduleType);
+          link.setAttribute("href", url.toString());
+        }
+      } catch (e) {}
+    });
+  }
+
   function selectRadioByValue($widget, dataName, targetValue) {
     if (!targetValue) return false;
 
@@ -2816,12 +2946,12 @@ $(function () {
 
   function openInsurancePlanDropdown($widget, carrierName) {
     if (!$widget || !$widget.length) return;
-    if (!$widget.find("#insurance-condensed_filter").length) return;
+    if (!findLocal($widget, "#insurance-condensed_filter").length) return;
     if (!Object.prototype.hasOwnProperty.call(insurancePlanOptions, carrierName)) {
       return;
     }
 
-    var $planToggle = $widget.find("#insurance_plan").first();
+    var $planToggle = findLocal($widget, "#insurance_plan").first();
     if (!$planToggle.length) {
       return;
     }
@@ -2905,6 +3035,14 @@ $(function () {
         params.append("variationName", vp.variationName);
     }
 
+    var landingPageModuleType = getLandingPageModuleType(
+      $widget,
+      isInsuranceCheck
+    );
+    if (landingPageModuleType) {
+      params.append("landingPageModuleType", landingPageModuleType);
+    }
+
     if (selectedInsurance) {
       var normalized = normalizeValue(selectedInsurance);
       if (normalized === "i'm paying for myself") {
@@ -2922,24 +3060,24 @@ $(function () {
     }
 
     if (selectedInsurancePlan) {
-      params.append("insurancePlanName", selectedInsurancePlan);
+      params.append("planName", selectedInsurancePlan);
     }
 
     if (selectedState) {
-      params.append("state", selectedState);
+      params.append("state", normalizeStateForSignup(selectedState));
     }
 
     if (isInsuranceCheck) {
       window.InsuranceSearchInput = true;
-      var firstName = $widget.find("#first-name").val();
+      var firstName = findLocal($widget, "#first-name").val();
       if (firstName) {
         params.append("firstName", firstName);
       }
-      var lastName = $widget.find("#last-name").val();
+      var lastName = findLocal($widget, "#last-name").val();
       if (lastName) {
         params.append("lastName", lastName);
       }
-      var dob = $widget.find("#dob").val();
+      var dob = findLocal($widget, "#dob").val();
       if (dob && dob.length === 10) {
         var convertedDOB = convertDOBForQuery(dob);
         if (convertedDOB) {
@@ -2980,13 +3118,24 @@ $(function () {
           return;
         }
         url.searchParams.set("InsuranceSearchInput", "false");
+        var module = this.closest
+          ? this.closest("[data-landing-page-module-type]")
+          : null;
+        var moduleType =
+          module && module.getAttribute("data-landing-page-module-type");
+        if (
+          isValidLandingPageModuleType(moduleType) &&
+          !url.searchParams.has("landingPageModuleType")
+        ) {
+          url.searchParams.set("landingPageModuleType", moduleType);
+        }
         $link.attr("href", url.toString());
       }
     );
   }
 
   function bindDobHandlers($widget) {
-    var $dobInput = $widget.find("#dob");
+    var $dobInput = findLocal($widget, "#dob");
     if (!$dobInput.length || $dobInput.data("heroFilterDobBound")) return;
     $dobInput.data("heroFilterDobBound", true);
 
@@ -3265,7 +3414,7 @@ $(function () {
     ];
 
     for (var i = 0; i < selectors.length; i++) {
-      $widget.find(selectors[i]).each(function () {
+      findLocal($widget, selectors[i]).each(function () {
         setupToggleA11y($(this));
       });
     }
@@ -3383,7 +3532,7 @@ $(function () {
       }
     );
 
-    $widget.on("click", "#insurance_plan.disabled", function (e) {
+    $widget.on("click", '[id="insurance_plan"].disabled', function (e) {
       e.preventDefault();
       e.stopImmediatePropagation();
       updateInsurancePlanDisabledState($widget, state.insurance);
@@ -3457,7 +3606,7 @@ $(function () {
       }
     );
 
-    $widget.on("input", "#first-name, #last-name", function () {
+    $widget.on("input", '[id="first-name"], [id="last-name"]', function () {
       updateWidgetCTA($widget);
     });
 
@@ -3508,6 +3657,7 @@ $(function () {
   );
 
   var $widgets = getAllWidgets();
+  applyConfiguredLandingPageModuleType();
   $widgets.each(function (index) {
     $(this).data("heroFilterInstance", index);
     initWidget($(this));
@@ -3517,7 +3667,7 @@ $(function () {
     $(document).on("click.heroFilterState", function (event) {
       $widgets.each(function () {
         var $widget = $(this);
-        var $toggle = $widget.find("#state_filter").first();
+        var $toggle = findLocal($widget, "#state_filter").first();
         var $list = $widget.find('[id="dropdown-list-1"]').first();
         if (!$toggle.length || !$list.length) return;
 
@@ -3539,10 +3689,28 @@ $(function () {
   }
 
   setTimeout(function () {
+    applyConfiguredLandingPageModuleType();
     $widgets.each(function () {
       updateWidgetCTA($(this));
     });
   }, 100);
+
+  setTimeout(applyConfiguredLandingPageModuleType, 500);
+  setTimeout(applyConfiguredLandingPageModuleType, 1500);
+
+  if (typeof MutationObserver !== "undefined" && document.body) {
+    var quizModuleRewriteTimer;
+    new MutationObserver(function () {
+      clearTimeout(quizModuleRewriteTimer);
+      quizModuleRewriteTimer = setTimeout(
+        applyConfiguredLandingPageModuleType,
+        100
+      );
+    }).observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
 
   fetchPayersData()
     .then(function () {

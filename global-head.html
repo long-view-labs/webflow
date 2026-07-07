@@ -1,0 +1,58 @@
+<script>
+(function () {
+  var TIMEOUT_MS = 4000;
+
+  // Shared readiness contract other scripts await.
+  var resolveReady;
+  window.statsigReady = new Promise(function (res) { resolveReady = res; });
+  window.__nourishStatsig = window.__nourishStatsig || {};
+  window.__nourishStatsig.sidecarExperimentIds = window.__nourishStatsig.sidecarExperimentIds || [];
+
+  window.__statsigReveal = function (reason) {
+    if (window.__statsigRevealed) return;
+    window.__statsigRevealed = true;
+    resolveReady(reason || "unknown");
+  };
+
+  // statsig-sidecar@2.0.12 calls this after runAllExperiments.
+  var previousPostExperimentCallback = window.postExperimentCallback;
+  window.postExperimentCallback = function (statsigInstance, expIds) {
+    window.__nourishStatsig.sidecarExperimentIds = expIds || [];
+    try {
+      if (typeof previousPostExperimentCallback === "function") {
+        previousPostExperimentCallback(statsigInstance, expIds);
+      }
+    } catch (error) {
+      console.error("[Statsig] postExperimentCallback failed", error);
+    }
+    window.__statsigReveal("statsig");
+  };
+
+  // Hard fallback so dependent scripts never wait forever on a blocked SDK.
+  setTimeout(function () { window.__statsigReveal("timeout"); }, TIMEOUT_MS);
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/statsig-sidecar/dist/index.min.js?apikey=client-WQtYDbXSKdHeLKM7WlavcbKXn19ve6OlMdFhQUfxtcH"></script>
+<link rel="preload" href="https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a371b4d5768bfb372ac285a_CircularXXSub-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a371af3fbce730b4b0f91b4_CircularXXSub-Book.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a371bb98573a340a27bd4fa_CircularXXSub-Medium.woff2" as="font" type="font/woff2" crossorigin>
+
+<meta name="google-site-verification" content="_GDjv2BdCyEBrbPdrxmJ4dw7r7PFq1WhUcf1DEF0Mq8" />
+<script src="https://cmp.osano.com/bu3rzhL59o/e64e9d37-9944-420c-aa74-2a7277de3203/osano.js"></script>
+
+<meta property="og:site_name" content="Nourish" />
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "url": "https://www.nourish.com/",
+  "name": "Nourish",
+  "alternateName": "Nourish"
+}
+</script>

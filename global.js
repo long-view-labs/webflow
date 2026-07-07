@@ -925,6 +925,11 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   function getVariationParams(path) {
     path = normPath(path);
     if (path === "/") return { landingPageVariation: "Organic_Homepage" };
+    if (
+      path.indexOf("/home-b-no-wordmark") === 0 ||
+      path.indexOf("/home-new") === 0
+    )
+      return { landingPageVariation: "landing-page" };
     if (path.indexOf("/blog") === 0) return { landingPageVariation: "blog" };
     if (path.indexOf("/landing-page") === 0)
       return { landingPageVariation: "landing-page" };
