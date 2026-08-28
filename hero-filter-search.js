@@ -3151,7 +3151,6 @@ $(function () {
         inputmode: "numeric",
         pattern: "[0-9]*",
         autocomplete: "bday",
-        placeholder: "MM/DD/YYYY",
       });
       $dobInput.addClass("mobile-dob-input");
     }

@@ -1,3 +1,77 @@
+<!-- Statsig js-client: this page instantiates StatsigClient below for the
+     quiz experiment. The bundle used to load from the global footer on every
+     page; it now lives here, on the only page that uses it. -->
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/@statsig/js-client@3/build/statsig-js-client+session-replay+web-analytics.min.js"
+  onload="window.__installStatsigGuard && window.__installStatsigGuard()"
+></script>
+<script>
+  (function () {
+    function isSidecarOwnedExperiment(name) {
+      var ids = window.__nourishStatsig?.sidecarExperimentIds || [];
+      return ids.indexOf(name) !== -1;
+    }
+
+    function fallbackExperiment(name) {
+      return {
+        name: name,
+        ruleID: "blocked_by_sidecar_owner",
+        get: function (_key, fallback) {
+          return fallback;
+        },
+      };
+    }
+
+    function installStatsigJsClientGuard() {
+      var StatsigClient = window.Statsig?.StatsigClient;
+      if (!StatsigClient?.prototype) return false;
+
+      var proto = StatsigClient.prototype;
+      if (proto.__nourishHomepageGuardInstalled) return true;
+
+      var originalGetExperiment = proto.getExperiment;
+      if (typeof originalGetExperiment === "function") {
+        proto.getExperiment = function (name) {
+          if (isSidecarOwnedExperiment(name)) {
+            console.warn(
+              "[Statsig] Experiment is owned by Sidecar; skipped js-client getExperiment:",
+              name,
+            );
+            return fallbackExperiment(name);
+          }
+          return originalGetExperiment.apply(this, arguments);
+        };
+      }
+
+      var originalCheckGate = proto.checkGate;
+      if (typeof originalCheckGate === "function") {
+        proto.checkGate = function (name) {
+          if (isSidecarOwnedExperiment(name)) {
+            console.warn(
+              "[Statsig] Experiment is owned by Sidecar; skipped js-client checkGate:",
+              name,
+            );
+            return false;
+          }
+          return originalCheckGate.apply(this, arguments);
+        };
+      }
+
+      proto.__nourishHomepageGuardInstalled = true;
+      return true;
+    }
+
+    window.__installStatsigGuard = installStatsigJsClientGuard;
+
+    if (!installStatsigJsClientGuard()) {
+      window.addEventListener("load", installStatsigJsClientGuard, {
+        once: true,
+      });
+    }
+  })();
+</script>
+
 <script
   async
   src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.610.23/hero-filter-search.js"

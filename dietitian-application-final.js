@@ -100,12 +100,16 @@
   }
 
   // ---------- DRAFT INIT ----------
-  async function initDraft() {
+  async function initDraft(options = {}) {
+    const ignoreStoredApplicationPublicId =
+      options.ignoreStoredApplicationPublicId === true;
     const body = {
       pageQueryString: window.location.search || "",
     };
 
-    const storedId = readStoredApplicationPublicId();
+    const storedId = ignoreStoredApplicationPublicId
+      ? null
+      : readStoredApplicationPublicId();
     if (storedId) body.applicationPublicId = storedId;
 
     const anonymousId = getRudderAnonymousId();
@@ -125,6 +129,10 @@
 
     // v3: iframeUrl is now required. There is no legacy fallback.
     if (!data || !data.applicationPublicId || !data.iframeUrl) {
+      if (storedId) {
+        removeStoredApplicationPublicId();
+        return initDraft({ ignoreStoredApplicationPublicId: true });
+      }
       throw new Error("Draft init response missing required fields");
     }
 

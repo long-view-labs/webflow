@@ -1,0 +1,360 @@
+/*----- Team Video Testimonials -----*/
+/* Layout + behaviour that is awkward to build in the Designer.
+   Colours and type are intentionally minimal so Webflow classes still win. */
+
+/* Keyed off the attribute, not a class, so your existing `section_team-video`
+   naming keeps working — the section only needs `data-team-video` added. */
+[data-team-video] {
+  /* The mobile rail bleeds -20px to reach the viewport edge. Page padding is
+     19.5px, so the half-pixel either side would otherwise give the document a
+     1px horizontal scrollbar. `clip` contains it without creating a scroll
+     container, so the rail still scrolls sideways inside. */
+  overflow-x: clip;
+
+  --team-video-accent: #f05a28;
+  --team-video-thumb: 80px;
+  --team-video-ring-gap: 6px;
+  --team-video-ring-width: 5;
+
+  /* Starting width only. On desktop the thumbnail grid anchors the section
+     height and the script rewrites this variable to railHeight * 9/16, so the
+     stage ends flush with the grid while staying a true 9:16. Mobile ignores
+     it (single-column layout). */
+  --team-video-stage-w: clamp(260px, 25vw, 400px);
+}
+
+/* ---------- layout ---------- */
+
+.team-video_layout {
+  display: grid;
+  grid-template-columns: var(--team-video-stage-w) minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+.team-video_player {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- video stage ---------- */
+
+.team-video_stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: #e9e6e1;
+  cursor: pointer;
+}
+
+.team-video_media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.team-video_media.is-active {
+  opacity: 1;
+}
+
+/* ---------- name / role ---------- */
+
+.team-video_meta {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 2;
+  color: #fff;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+/* ---------- controls ---------- */
+
+.team-video_sound,
+.team-video_play {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background-color: rgba(23, 23, 23, 0.55);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.team-video_sound:hover,
+.team-video_play:hover {
+  background-color: rgba(23, 23, 23, 0.75);
+}
+
+.team-video_sound {
+  bottom: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+}
+
+.team-video_play {
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-team-video].is-paused .team-video_play {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Show one icon at a time — put both inside .team-video_sound */
+.team-video_icon-muted,
+.team-video_icon-unmuted {
+  display: none;
+  line-height: 0;
+}
+
+[data-team-video].is-muted .team-video_icon-muted,
+[data-team-video]:not(.is-muted) .team-video_icon-unmuted {
+  display: block;
+}
+
+/* ---------- thumbnail rail ---------- */
+
+/* Grows to fit every row — no height cap, no internal scrolling. The section
+   gets taller as people are added. container-type is kept purely so the column
+   count below can respond to the rail's own width. */
+.team-video_rail {
+  box-sizing: border-box;
+  container-type: inline-size;
+}
+
+.team-video_list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* Row gap only needs to clear the progress ring (6px gap + stroke), so 18px
+     keeps rings from touching while pulling the rows tighter together. */
+  gap: 18px 16px;
+}
+
+/* Column count follows the rail's own width, not the viewport — the rail is a
+   grid track, so a viewport breakpoint would be guessing at its real size.
+   Thresholds are the width at which "Engineering" stops fitting in a column:
+   roughly 88px of label plus the 16px gap, per column. */
+@container (max-width: 520px) {
+  .team-video_list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@container (max-width: 412px) {
+  .team-video_list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container (max-width: 304px) {
+  .team-video_list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.team-video_item {
+  text-align: center;
+}
+
+.team-video_btn {
+  position: relative;
+  display: block;
+  width: var(--team-video-thumb);
+  height: var(--team-video-thumb);
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.8;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.team-video_btn:hover,
+.team-video_btn.is-active {
+  opacity: 1;
+}
+
+.team-video_btn.is-active {
+  transform: scale(1.04);
+}
+
+/* Works whether .team-video_thumb is the <img> itself or a Webflow Image
+   wrapped in a div — which is what the Designer produces. */
+.team-video_thumb,
+.team-video_thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.team-video_thumb {
+  overflow: hidden;
+}
+
+/* ---------- progress ring ---------- */
+
+/* Sized in absolute px off the same variable as the thumbnail — never with
+   `inset` or percentages. An <svg> is a replaced element: if an engine resolves
+   its width from its intrinsic size it then ignores `right`/`bottom`, and the
+   ring renders at the photo's diameter offset up-left by the gap. That is what
+   iOS was doing. This form has nothing left to resolve, so every engine agrees. */
+.team-video_ring {
+  position: absolute;
+  top: calc(var(--team-video-ring-gap) * -1);
+  left: calc(var(--team-video-ring-gap) * -1);
+  width: calc(var(--team-video-thumb) + var(--team-video-ring-gap) * 2);
+  height: calc(var(--team-video-thumb) + var(--team-video-ring-gap) * 2);
+  display: block;
+  transform: rotate(-90deg);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.team-video_ring circle {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: var(--team-video-ring-width);
+}
+
+.team-video_ring-track {
+  stroke: rgba(0, 0, 0, 0.08);
+}
+
+.team-video_ring-arc {
+  stroke: var(--team-video-accent);
+}
+
+/* ---------- mobile ---------- */
+
+@media screen and (max-width: 767px) {
+  .team-video_layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  /* Rail sits above the player on mobile and scrolls sideways instead —
+     one row, no height cap. */
+  .team-video_rail {
+    order: -1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* bleed to the section edges; vertical padding keeps the ring unclipped */
+    margin-inline: -20px;
+    padding: 9px 20px;
+  }
+
+  .team-video_rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .team-video_list {
+    display: flex;
+    /* Wider than the 12px the ring needs either side, so an active tile's ring
+       never reaches its neighbours. */
+    gap: 24px;
+    width: max-content;
+    min-height: 0;
+  }
+
+  /* Must be at least as wide as the circle. At 76px the 80px button no longer
+     fit, so its auto margins collapsed to 0/-4px — the circle sat flush left,
+     overflowed to the right, and ended up 2px off-centre from its own label. */
+  .team-video_item {
+    scroll-snap-align: center;
+    flex: 0 0 auto;
+    width: var(--team-video-thumb);
+  }
+
+  /* Phones: full-bleed to the container, but never so tall that the video runs
+     off the screen. The height cap is expressed as a width because the stage is
+     9:16 — capping height directly would fight aspect-ratio. svh (not vh) so a
+     visible mobile URL bar is accounted for; the vh line above it is the
+     fallback for browsers without svh. */
+  [data-team-video] {
+    --team-video-mobile-w: min(100%, calc(80vh * 9 / 16));
+    --team-video-mobile-w: min(100%, calc(80svh * 9 / 16));
+  }
+
+  /* Single column: nothing to stretch against, so hold a true 9:16. */
+  .team-video_stage {
+    flex: 0 0 auto;
+    order: 1;
+    width: var(--team-video-mobile-w);
+    margin-inline: auto;
+  }
+
+  /* The corner is free on mobile — the meta block moves below the video — and
+     the top of the stage is what's on screen before the user scrolls, so the
+     mute control moves up there to stay visible. */
+  .team-video_sound {
+    top: 16px;
+    bottom: auto;
+  }
+
+  /* Name + role move below the video. `order` rather than DOM order, so the
+     meta block can sit either side of the stage in the Designer.
+     Tracks the stage's width so the text stays flush with the video's left
+     edge; text-align is explicit because the section may sit inside a centred
+     title wrapper. */
+  .team-video_meta {
+    position: static;
+    order: 2;
+    /* Same computed width and centring as the stage, so the text stays flush
+       with the video's left edge whether or not the cap is in effect. An
+       explicit width is required: the player is a flex column, so auto side
+       margins would otherwise shrink-wrap this to the text. */
+    width: var(--team-video-mobile-w);
+    margin: 16px auto 0;
+    color: inherit;
+    text-align: left;
+    text-shadow: none;
+  }
+}
+
+/* Big phones and small tablets: stop going full-bleed — a 728px-wide 9:16 video
+   is taller than the screen. Height cap still applies, whichever is smaller. */
+@media screen and (min-width: 480px) and (max-width: 767px) {
+  [data-team-video] {
+    --team-video-mobile-w: min(420px, calc(80vh * 9 / 16));
+    --team-video-mobile-w: min(420px, calc(80svh * 9 / 16));
+  }
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .team-video_media,
+  .team-video_btn,
+  .team-video_sound,
+  .team-video_play {
+    transition: none;
+  }
+}

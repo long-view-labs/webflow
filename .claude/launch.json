@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "team-video-test",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8734",
+        "--directory",
+        "/private/tmp/claude-501/-Users-geminpak-Documents-Github-Webflow-nourish-long-view-labs/950961a9-8932-46ae-9180-55d58a7f82f7/scratchpad/team-video-test"
+      ],
+      "port": 8734
+    }
+  ]
+}

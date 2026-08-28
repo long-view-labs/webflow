@@ -1,3 +1,32 @@
+<!-- LCP hero image preloads: the mobile image renders at <=479px, the
+     desktop image everywhere else (see .header_background-image.cc-mobile
+     media queries in the site stylesheet). Keep these srcsets in sync with
+     the hero <img> elements in the Designer. -->
+<link
+  rel="preload"
+  as="image"
+  fetchpriority="high"
+  media="(max-width: 479px)"
+  imagesrcset="
+    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile-p-500.jpg 500w,
+    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile-p-800.jpg 800w,
+    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile.jpg 941w"
+  imagesizes="100vw"
+/>
+<link
+  rel="preload"
+  as="image"
+  fetchpriority="high"
+  media="(min-width: 480px)"
+  imagesrcset="
+    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-800.avif 800w,
+    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-1080.avif 1080w,
+    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-1600.avif 1600w,
+    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-2000.avif 2000w,
+    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero.avif 2548w"
+  imagesizes="100vw"
+/>
+
 <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -6,10 +35,7 @@
     "url": "https://www.nourish.com",
     "logo": "https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/699ce714348d0db6b664123b_Nourish%20Logo.svg",
     "description": "Nourish connects patients with registered dietitians for personalized nutrition counseling covered by insurance.",
-    "medicalSpecialty": [
-      "Nutrition",
-      "Dietetics"
-    ],
+    "medicalSpecialty": ["Nutrition", "Dietetics"],
     "availableService": {
       "@type": "MedicalTherapy",
       "name": "Telehealth Nutrition Counseling",
@@ -105,21 +131,74 @@
      HOME HEAD CUSTOM CODE
      Paste into Webflow Page Settings -> Custom Code -> Head
 ============================================================================ -->
-<link href="https://fengyuanchen.github.io/datepicker/css/datepicker.css" rel="stylesheet">
-<script defer src="https://fengyuanchen.github.io/datepicker/js/datepicker.js"></script>
 
 <style>
   html.exp-guard body {
     opacity: 0;
+  }
+
+  @media screen and (min-width: 768px) {
+    .section_sticky-phone.is-desktop {
+      --nav-h: 65px;
+      --phone-gap: 24px; /* breathing room, top and bottom */
+      --phone-frame-h: calc(100dvh - var(--nav-h) - (var(--phone-gap) * 2));
+    }
+
+    .section_sticky-phone.is-desktop .sticky-steps__sticky {
+      top: calc(var(--nav-h) + var(--phone-gap));
+      min-height: var(--phone-frame-h);
+    }
+
+    .section_sticky-phone.is-desktop .phone-screen {
+      width: min(30%, 336px, var(--phone-frame-h) * 336 / 731);
+      max-width: none;
+      max-height: none;
+      height: auto;
+    }
+  }
+
+  @media screen and (min-width: 768px) and (max-width: 991px) {
+    .section_sticky-phone.is-desktop .phone-screen {
+      width: min(60%, 336px, var(--phone-frame-h) * 336 / 731);
+    }
+  }
+  @media screen and (min-width: 768px) {
+    [data-sticky-steps-item-status] .sticky-steps__media {
+      transition:
+        opacity 0.5s ease-in-out,
+        visibility 0.5s ease-in-out;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    [data-sticky-steps-item-status="before"] .sticky-steps__media,
+    [data-sticky-steps-item-status="active"] .sticky-steps__media {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    [data-sticky-steps-item-status] .sticky-steps__text {
+      transition: opacity 0.5s ease-in-out;
+      opacity: 0.25;
+    }
+
+    [data-sticky-steps-item-status="active"] .sticky-steps__text {
+      opacity: 1;
+    }
   }
 </style>
 
 <script>
   (function () {
     const qs = new URLSearchParams(location.search);
-    const exp = qs.get('exp');
-    const variation = qs.get('var') || qs.get('variation');
-    if (exp && variation) document.documentElement.classList.add('exp-guard', 'exp-' + exp, 'var-' + variation);
+    const exp = qs.get("exp");
+    const variation = qs.get("var") || qs.get("variation");
+    if (exp && variation)
+      document.documentElement.classList.add(
+        "exp-guard",
+        "exp-" + exp,
+        "var-" + variation,
+      );
   })();
 </script>
 
@@ -141,34 +220,12 @@
     }
   }
 
-  @keyframes slide-up-1 {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes slide-up-2 {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
   .auto-tabs_pane-desktop._1.w--tab-active .bio-1_wrap {
-    animation: slide-up-1 0.5s;
+    animation: slide-up 0.5s;
   }
 
   .auto-tabs_pane-desktop._1.w--tab-active .auto-tabs_chat-1 {
-    animation: slide-up-2 0.5s 0.2s forwards;
+    animation: slide-up 0.5s 0.2s forwards;
   }
 
   .auto-tabs_pane-desktop._2.w--tab-active > * {
@@ -179,30 +236,8 @@
     animation: slide-up 0.5s;
   }
 
-  @media screen and (min-width: 992px) {
-    [data-sticky-steps-item-status] .sticky-steps__media {
-      transition:
-        opacity 0.5s ease-in-out,
-        visibility 0.5s ease-in-out;
-      opacity: 0;
-      visibility: hidden;
-    }
-
-    [data-sticky-steps-item-status='before'] .sticky-steps__media,
-    [data-sticky-steps-item-status='active'] .sticky-steps__media {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    [data-sticky-steps-item-status] .sticky-steps__text {
-      transition: opacity 0.5s ease-in-out;
-      opacity: 0.25;
-    }
-
-    [data-sticky-steps-item-status='active'] .sticky-steps__text {
-      opacity: 1;
-    }
-  }
+  /* NOTE: the sticky-steps status rules live in the min-width:768px block at
+     the top of this file; a duplicate min-width:992px copy was removed. */
 </style>
 
 <style>
@@ -248,7 +283,8 @@
   .tinyflow-slide__background__element {
     transform: scale(1.05);
     object-fit: cover;
-    transition: transform calc(var(--data-speed, 300) * 1ms) linear calc(var(--data-speed, 300) * 1ms);
+    transition: transform calc(var(--data-speed, 300) * 1ms) linear
+      calc(var(--data-speed, 300) * 1ms);
     user-select: none;
     pointer-events: none;
   }
@@ -351,72 +387,5 @@
 
   .swiper.is-team[data-team-ready="true"] {
     visibility: visible !important;
-  }
-
-  .nav-2 .logo-embed {
-    color: #ffffff !important;
-  }
-
-  .nav-2 .toggle-menu-2 .m-line-2,
-  .nav-2 .toggle-menu-2 .m-line-2-2,
-  .nav-2 .toggle-menu-2 .m-line-3-2 {
-    background-color: #ffffff !important;
-  }
-
-  .nav-2,
-  .nav-2.bottom-border {
-    border-bottom-color: transparent !important;
-    transition: border-bottom-color 0s ease !important;
-  }
-
-  .nav-2.cc-solid {
-    border-bottom-color: #e5dfd9 !important;
-  }
-
-  .nav-2 .nav_container-2.cc-solid .logo-embed,
-  .nav-2.is-mobile-drawer-open .logo-embed {
-    color: #fe5000 !important;
-  }
-
-  .nav-2 .nav_container-2.cc-solid .toggle-menu-2 .m-line-2,
-  .nav-2 .nav_container-2.cc-solid .toggle-menu-2 .m-line-2-2,
-  .nav-2 .nav_container-2.cc-solid .toggle-menu-2 .m-line-3-2,
-  .nav-2.is-mobile-drawer-open .toggle-menu-2 .m-line-2,
-  .nav-2.is-mobile-drawer-open .toggle-menu-2 .m-line-2-2,
-  .nav-2.is-mobile-drawer-open .toggle-menu-2 .m-line-3-2 {
-    background-color: #000000 !important;
-  }
-
-  @media only screen and (max-width: 1190px) and (min-width: 992px) {
-    .nav-2 .toggle-menu-2 {
-      margin-right: 0 !important;
-    }
-  }
-
-  @media only screen and (max-width: 1130px) and (min-width: 991px) {
-    .nav-2 .menu_right-wrap {
-      display: flex !important;
-    }
-
-    .nav-2 .toggle-menu-2,
-    .nav-2 #mobile-nav-getstarted {
-      display: none !important;
-    }
-
-    .nav-2 .nav-menu-2 {
-      display: flex !important;
-    }
-
-    .nav-2 .nav_links-wrapper,
-    .nav-2 .nav_links-wrapper-2 {
-      flex-direction: row !important;
-      align-items: center !important;
-      display: flex !important;
-    }
-
-    .nav-2 .nav_mobile-menu {
-      display: none !important;
-      transform: translateX(100%) !important;
-    }
   }
 </style>
