@@ -169,6 +169,51 @@ class ReleaseManager {
     console.log(chalk.green(`✓ Updated version to ${newVersion}`));
   }
 
+  // Rewrites cdn.jsdelivr.net/gh/long-view-labs/webflow@vX.Y.Z references to
+  // the new release version, so the Webflow paste stubs always point at the
+  // tag this release creates. Allowlist only: paid.html is deliberately
+  // excluded — it pins hero-filter-search.js@v2.610.23, which is far behind
+  // repo HEAD, and auto-bumping it would change the /paid page's behavior.
+  updateJsdelivrRefs(newVersion) {
+    const REF_FILES = [
+      "global-footer.html",
+      "home-footer.html",
+      "global-head.html",
+      "home-head.html",
+      "footer.js",
+      "home-footer.js",
+    ];
+    const refPattern =
+      /(cdn\.jsdelivr\.net\/gh\/long-view-labs\/webflow@v)\d+\.\d+\.\d+(?:-[\w.]+)?(?=\/)/g;
+
+    const updated = [];
+    for (const file of REF_FILES) {
+      const filePath = path.join(__dirname, file);
+      if (!fs.existsSync(filePath)) continue;
+
+      const before = fs.readFileSync(filePath, "utf8");
+      const after = before.replace(refPattern, `$1${newVersion}`);
+      if (after !== before) {
+        fs.writeFileSync(filePath, after);
+        updated.push(file);
+      }
+    }
+
+    if (updated.length) {
+      console.log(
+        chalk.green(
+          `✓ Updated jsDelivr refs to v${newVersion} in: ${updated.join(", ")}`
+        )
+      );
+      console.log(
+        chalk.yellow(
+          "  Reminder: re-paste any updated stub into Webflow and publish for it to take effect."
+        )
+      );
+    }
+    return updated;
+  }
+
   updateChangelog(version, notes) {
     const date = new Date().toISOString().split("T")[0];
     const changelogEntry = `## [${version}] - ${date}\n\n${
@@ -197,9 +242,13 @@ class ReleaseManager {
     console.log(chalk.green(`✓ Updated CHANGELOG.md`));
   }
 
-  commitChanges(version) {
+  commitChanges(version, extraFiles = []) {
     try {
-      execSync("git add package.json CHANGELOG.md", { stdio: "inherit" });
+      const files = ["package.json", "CHANGELOG.md"]
+        .concat(extraFiles)
+        .map((f) => `"${f}"`)
+        .join(" ");
+      execSync(`git add ${files}`, { stdio: "inherit" });
       execSync(`git commit -m "chore: bump version to ${version}"`, {
         stdio: "inherit",
       });
@@ -335,8 +384,11 @@ class ReleaseManager {
       // Update changelog
       this.updateChangelog(nextVersion, notes);
 
+      // Point the Webflow stub mirrors at the tag this release creates
+      const updatedRefFiles = this.updateJsdelivrRefs(nextVersion);
+
       // Commit changes
-      this.commitChanges(nextVersion);
+      this.commitChanges(nextVersion, updatedRefFiles);
 
       // Create tag
       this.createTag(nextVersion, notes);

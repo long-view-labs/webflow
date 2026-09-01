@@ -171,7 +171,6 @@
       src: root.getAttribute("data-video-src") || "",
       name: root.getAttribute("data-video-name") || "",
       role: root.getAttribute("data-video-role") || "",
-      poster: root.getAttribute("data-video-poster") || "",
     };
 
     // Attributes may sit on .team-video_btn or on the Collection Item wrapping
@@ -226,19 +225,40 @@
 
     function itemData(index) {
       var button = buttons[index];
-      var image = button.querySelector("img");
 
       return {
         button: button,
         src: attrFrom(button, "data-video-src") || fallback.src,
         name: attrFrom(button, "data-video-name") || fallback.name,
         role: attrFrom(button, "data-video-role") || fallback.role,
-        poster:
-          attrFrom(button, "data-video-poster") ||
-          fallback.poster ||
-          (image && (image.currentSrc || image.src)) ||
-          "",
       };
+    }
+
+    // No posters — a still flashing in the stage before playback reads as a
+    // glitch. The active clip stays visible (paused on its last frame) until
+    // the incoming one has a frame of its own, so the stage only ever shows
+    // video. Keyed off activeBuffer so a reveal queued for a clip the user has
+    // already clicked away from is a no-op.
+    function revealActive() {
+      buffers.forEach(function (video) {
+        video.classList.toggle("is-active", video === buffers[activeBuffer]);
+      });
+    }
+
+    function revealWhenReady(video) {
+      // HAVE_CURRENT_DATA: there is a frame to paint.
+      if (video.readyState >= 2) {
+        revealActive();
+        return;
+      }
+
+      var handler = function () {
+        video.removeEventListener("loadeddata", handler);
+        if (video === buffers[activeBuffer]) {
+          revealActive();
+        }
+      };
+      video.addEventListener("loadeddata", handler);
     }
 
     function nextIndex(index) {
@@ -315,7 +335,6 @@
 
       if (idle.getAttribute("src") !== data.src) {
         idle.setAttribute("src", data.src);
-        idle.poster = data.poster;
         idle.load();
       }
     }
@@ -366,7 +385,6 @@
 
       if (video.getAttribute("src") !== data.src) {
         video.setAttribute("src", data.src);
-        video.poster = data.poster;
       }
 
       if (video.readyState > 0) {
@@ -381,11 +399,10 @@
 
       if (previous !== video) {
         previous.pause();
-        previous.classList.remove("is-active");
       }
 
       activeBuffer = target;
-      video.classList.add("is-active");
+      revealWhenReady(video);
       setPreload();
 
       buttons.forEach(function (button, i) {

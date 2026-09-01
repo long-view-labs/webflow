@@ -116,6 +116,14 @@
   src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"
 ></script>
 
+<!-- NOTE: the js-anim scroll-reveal hiding CSS must NOT live here until the
+     footer.js release with initScrollReveals is tagged, live on jsDelivr, and
+     loaded by the global footer stub. Pages like /for-health-plans carry
+     data-slide-up attributes with no reveal code — global hiding CSS strands
+     their content invisible. Until then the block lives in the page heads
+     (home-head.html + the paid-google page head) next to the page footers
+     that do the revealing. -->
+
 <script type="application/ld+json">
   {
     "@context": "https://schema.org",

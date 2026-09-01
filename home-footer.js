@@ -1,21 +1,19 @@
-<!-- =========================================================================
-     HOME PAGE CUSTOM CODE
-     -------------------------------------------------------------------------
-     Organization:
-     1. Shared footer helpers
-     2. FAQ deep-link helper
-     3. Unified component initializer
+// ============================================================================
+// HOME PAGE FOOTER LOGIC (served from GitHub via jsDelivr, loaded with defer)
+// ----------------------------------------------------------------------------
+// This file holds everything that used to be inline in the homepage's
+// Page Settings -> Footer custom code. The Webflow paste is now a one-tag
+// stub (see home-footer.html). Ship changes by tagging a release and bumping
+// the version in the stub's script URL (same flow as footer.js/global.js).
+//
+// Contents:
+//   1. Shared helpers (onReady, waitFor, hasHomeDeps)
+//   2. FAQ guarantee deep-link helper
+//   3. Unified component initializer (sliders, nav scroll state, sticky
+//      phone, animations) — supports duplicated page wrappers for the
+//      4-leg home test.
+// ============================================================================
 
-     For the 4-leg home test, all duplicated page wrappers can be present on
-     the page. This code initializes every rendered instance of each supported
-     component and avoids relying on unique IDs.
-============================================================================ -->
-
-<!-- =========================================================================
-     1. FOOTER: shared helpers
-     Paste first in Webflow Footer custom code, before the component init block.
-============================================================================ -->
-<script>
   function onReady(fn) {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", fn, { once: true });
@@ -41,12 +39,7 @@
       window.Swiper && window.gsap && window.ScrollTrigger && window.jQuery
     );
   }
-</script>
 
-<!-- =========================================================================
-     2. FOOTER: FAQ guarantee deep-link helper
-============================================================================ -->
-<script>
   if (location.hash === "#faqs-guarantee") {
     sessionStorage.setItem("deferredHash", "#faqs-guarantee");
   }
@@ -107,13 +100,7 @@
       }
     });
   });
-</script>
 
-<!-- =========================================================================
-     3. FOOTER: unified component initializer
-     Supports multiple rendered copies of the same page/components.
-============================================================================ -->
-<script>
   (function () {
     function rendered(el) {
       if (!el || !el.isConnected) return false;
@@ -146,27 +133,6 @@
 
       var rect = el.getBoundingClientRect();
       return rect.width > 20 && rect.height > 20;
-    }
-
-    function initDob() {
-      if (!jQuery.fn.datepicker) return;
-      if (!window.matchMedia("(max-width: 767px)").matches) return;
-
-      jQuery('[id="dob"]').each(function () {
-        var $dob = jQuery(this);
-        if ($dob.data("dobPickerInit")) return;
-
-        $dob.data("dobPickerInit", true);
-        $dob.datepicker({
-          format: "mm/dd/yyyy",
-          autoHide: true,
-          endDate: new Date(),
-          startView: 2,
-        });
-        $dob.on("focus click", function () {
-          $dob.datepicker("show");
-        });
-      });
     }
 
     function initNavScrollState() {
@@ -756,15 +722,20 @@
       if (!window.gsap || !window.ScrollTrigger || !window.Swiper) return;
       gsap.registerPlugin(ScrollTrigger);
 
+      // Touch browsers show/hide their toolbar while scrolling, changing innerHeight.
+      // This component is sized in dvh, so that resizes the whole section and
+      // invalidates cached scroll positions. Ignore toolbar-only resizes.
+      ScrollTrigger.config({ ignoreMobileResize: true });
+
       document
         .querySelectorAll(".section_sticky-phone.is-desktop")
         .forEach(function (section) {
-          if (!rendered(section) && section._stickyPhoneDesktopCleanup) {
-            section._stickyPhoneDesktopCleanup();
+          if (!rendered(section)) {
+            if (section._stickyPhoneDesktopCleanup) {
+              section._stickyPhoneDesktopCleanup();
+            }
             return;
           }
-          if (!rendered(section)) return;
-
           if (section._stickyPhoneRefresh) {
             section._stickyPhoneRefresh();
             return;
@@ -780,8 +751,12 @@
 
           section.dataset.initStickyDesktop = "true";
 
+          var currentIndex = -1;
+
           function activate(index) {
             index = Math.max(0, Math.min(items.length - 1, index));
+            if (index === currentIndex) return;
+            currentIndex = index;
             items.forEach(function (item, i) {
               setStickyStatus(
                 item,
@@ -799,9 +774,7 @@
               var anchor =
                 item.querySelector("[data-sticky-steps-anchor]") || item;
               var rect = anchor.getBoundingClientRect();
-              var center = rect.top + rect.height * 0.5;
-              var distance = Math.abs(center - targetY);
-
+              var distance = Math.abs(rect.top + rect.height * 0.5 - targetY);
               if (distance < bestDistance) {
                 bestDistance = distance;
                 bestIndex = index;
@@ -811,60 +784,31 @@
             return bestIndex;
           }
 
-          var triggers = [];
+          // Measured live every frame, so there is nothing cached to go stale when
+          // the dvh-based layout changes underneath us.
+          var ticking = false;
+          function update() {
+            ticking = false;
+            activate(closestIndex());
+          }
+          function requestUpdate() {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(update);
+          }
 
-          triggers.push(
-            ScrollTrigger.create({
-              trigger: container,
-              start: "top bottom",
-              end: "bottom top",
-              invalidateOnRefresh: true,
-              onEnter: function () {
-                activate(closestIndex());
-              },
-              onEnterBack: function () {
-                activate(closestIndex());
-              },
-              onUpdate: function () {
-                activate(closestIndex());
-              },
-              onRefresh: function () {
-                activate(closestIndex());
-              },
-            }),
-          );
+          window.addEventListener("scroll", requestUpdate, { passive: true });
+          window.addEventListener("resize", requestUpdate);
+          window.addEventListener("orientationchange", requestUpdate);
 
-          items.forEach(function (item, index) {
-            var anchor =
-              item.querySelector("[data-sticky-steps-anchor]") || item;
-            triggers.push(
-              ScrollTrigger.create({
-                trigger: anchor,
-                start: "top 65%",
-                end: "bottom 35%",
-                invalidateOnRefresh: true,
-                onEnter: function () {
-                  activate(index);
-                },
-                onEnterBack: function () {
-                  activate(index);
-                },
-              }),
-            );
-          });
+          update();
 
-          activate(0);
-          section._stickyPhoneRefresh = function () {
-            requestAnimationFrame(function () {
-              activate(closestIndex());
-              if (window.ScrollTrigger) ScrollTrigger.refresh(true);
-            });
-          };
+          section._stickyPhoneRefresh = requestUpdate;
+
           section._stickyPhoneDesktopCleanup = function () {
-            triggers.forEach(function (trigger) {
-              if (trigger && typeof trigger.kill === "function") trigger.kill();
-            });
-            triggers = [];
+            window.removeEventListener("scroll", requestUpdate);
+            window.removeEventListener("resize", requestUpdate);
+            window.removeEventListener("orientationchange", requestUpdate);
             section._stickyPhoneRefresh = null;
             section._stickyPhoneDesktopCleanup = null;
             delete section.dataset.initStickyDesktop;
@@ -1004,12 +948,7 @@
     }
 
     function initAnimations() {
-      if (!window.gsap || !window.ScrollTrigger) {
-        // The js-anim head CSS hides [data-slide-up]/[data-fade-in] elements
-        // until GSAP reveals them; without GSAP, unhide everything.
-        document.documentElement.classList.remove("js-anim");
-        return;
-      }
+      if (!window.gsap || !window.ScrollTrigger) return;
       gsap.registerPlugin(ScrollTrigger);
 
       document.querySelectorAll("[data-fade-in]").forEach(function (group) {
@@ -1228,7 +1167,6 @@
 
     function initAll() {
       initNavScrollState();
-      initDob();
       initFsSlider5();
       initHomeTrustPilotCards();
       initConditionStories();
@@ -1242,7 +1180,7 @@
       initTeamSliderReadyGuard();
 
       requestAnimationFrame(function () {
-        if (window.ScrollTrigger) ScrollTrigger.refresh(true);
+        if (window.ScrollTrigger) ScrollTrigger.refresh();
         refreshRenderedSwipers();
         initTeamSliderReadyGuard();
       });
@@ -1251,7 +1189,15 @@
     window.initAllPageComponents = initAll;
 
     var resizeInitTimer = null;
-    function scheduleComponentRefresh() {
+    var lastInitWidth = window.innerWidth;
+
+    function scheduleComponentRefresh(e) {
+      // Toolbar show/hide fires resize with an unchanged width. Re-running the full
+      // init there is what left the sticky steps with stale scroll positions.
+      if (e && e.type === "resize" && window.innerWidth === lastInitWidth)
+        return;
+      lastInitWidth = window.innerWidth;
+
       clearTimeout(resizeInitTimer);
       resizeInitTimer = setTimeout(function () {
         if (typeof window.initAllPageComponents === "function") {
@@ -1283,4 +1229,3 @@
       initTeamSliderReadyGuard();
     });
   })();
-</script>

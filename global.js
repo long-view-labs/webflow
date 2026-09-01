@@ -1,5 +1,28 @@
 // ============================================================================
-// DOMAIN DETECTION (nourish.com / usenourish.com dual-domain support)
+// GLOBAL.JS — site-wide utility library for the Nourish Webflow site
+// ----------------------------------------------------------------------------
+// Served from GitHub via jsDelivr (version-pinned in the global footer stub)
+// and loaded with `defer` on every page. jQuery is available by the time this
+// runs (Webflow loads it synchronously earlier in the page).
+//
+// SECTION MAP (top-level blocks run in this order — do not reorder; later
+// sections read globals set by earlier ones, e.g. __nourish_apex):
+//   1. DOMAIN DETECTION        sets window.__nourish_apex (everything uses it)
+//   2. SCRIPT LOADING UTILS    legacy [data-script-src] lazy loader  ⚠ likely dead
+//   3. (dead) CONVERT LOADER   no-op scroll listener                 ⚠ safe to delete
+//   4. MENU/NAV UTILITIES      state-link ?state= suffixer
+//   5. UTM TRACKING            capture/persist/inject UTMs (the big one)
+//   6. ANALYTICS ENRICHMENT    injects UTMs into RudderStack track/page calls
+//   7. SEO/DOM UTILITIES       canonical for pagination, hidden-element cleanup
+//   8. GET STARTED TRACKING    signup click tracking + link param injection
+// ============================================================================
+
+// ============================================================================
+// 1. DOMAIN DETECTION (nourish.com / usenourish.com dual-domain support)
+// ----------------------------------------------------------------------------
+// Sets window.__nourish_apex, which nearly every other block (and the footer
+// stub's RudderStack snippet) reads. NOTE: the footer stub also has an inline
+// copy of this logic because it must run before this deferred file loads.
 // ============================================================================
 (function () {
   var h = window.location.hostname;
@@ -13,7 +36,18 @@
 })();
 
 // ============================================================================
-// SCRIPT LOADING UTILITIES
+// 2. SCRIPT LOADING UTILITIES — legacy [data-script-src] lazy loader
+// ----------------------------------------------------------------------------
+// Loads a script when an element carrying a `data-script-src` attribute
+// scrolls into view. Includes a special case for swiper@8 that calls
+// initializeSwiper() — a function that is NOT DEFINED anywhere in this file
+// or the footer, so that callback would throw if it ever ran.
+//
+// ⚠ REMOVAL CANDIDATE: no [data-script-src] attributes were found on the
+// homepage or sampled pages (Aug 2026 audit), and the site now loads swiper@12
+// globally from the head. Before deleting, search the Webflow Designer for
+// any embed/element using data-script-src. If none exist, delete this whole
+// section including the scroll listeners below.
 // ============================================================================
 
 /**
@@ -108,13 +142,24 @@ window.addEventListener("scroll", function onScroll() {
   });
 });
 
-// Load Convert Script on first scroll
+// ============================================================================
+// 3. (DEAD CODE) CONVERT SCRIPT LOADER
+// ----------------------------------------------------------------------------
+// ⚠ SAFE TO DELETE: this listener adds itself and removes itself without
+// doing anything. The Convert.com script it used to load was removed at some
+// point but the empty husk stayed behind.
+// ============================================================================
 window.addEventListener("scroll", function onFirstScroll() {
   window.removeEventListener("scroll", onFirstScroll);
 });
 
 // ============================================================================
-// MENU AND NAVIGATION UTILITIES
+// 4. MENU AND NAVIGATION UTILITIES
+// ----------------------------------------------------------------------------
+// Appends ?state=<name> to the state links in the nav's "Find a dietitian by
+// state" menu, reading the state name from the adjacent .menu_slug element.
+// Runs immediately (not on DOMContentLoaded): safe because this file is
+// deferred, so the nav markup is already parsed.
 // ============================================================================
 
 // Iterate over each .menu_slug element (For the States links)
@@ -131,7 +176,21 @@ $(".menu_slug").each(function () {
 });
 
 // ============================================================================
-// UTM PARAMETER TRACKING AND PERSISTENCE
+// 5. UTM PARAMETER TRACKING AND PERSISTENCE
+// ----------------------------------------------------------------------------
+// The attribution backbone. Captures utm_*/gclid/fbclid/etc. from the URL,
+// persists them in sessionStorage (30-min sessions) + cookies, and injects
+// them into every outbound link and signup iframe (including ones added to
+// the DOM later, via MutationObserver).
+//
+// Exposes for other scripts:
+//   window.NOURISH_UTM_PARAMS  — list of tracked param names
+//   window.NOURISH_GET_UTMS()  — snapshot of active params
+//   window.NOURISH_WITH_UTMS() — merge active params into an object
+// Consumed by section 6 (RudderStack enrichment) and section 8 (Get Started).
+//
+// ⚠ ANALYTICS-CRITICAL: changes here affect attribution data. Get data-team
+// review before modifying.
 // ============================================================================
 
 /**
@@ -556,7 +615,21 @@ $(".menu_slug").each(function () {
 })();
 
 // ============================================================================
-// ANALYTICS AND TRACKING
+// 6. ANALYTICS ENRICHMENT — UTMs on every RudderStack track/page call
+// ----------------------------------------------------------------------------
+// Guarantees every RudderStack `track` and `page` call carries the persisted
+// UTM params, no matter when or how it is made, by patching all three shapes
+// the SDK can take:
+//   - the stub queue array (rewrites already-queued entries + wraps push)
+//   - a property interceptor that catches the SDK replacing the stub
+//   - the live SDK object (wraps .track/.page), with a retry poll
+// Also fires the "Viewed Page" track event once per page at DOMContentLoaded.
+//
+// The nourish* functions are top-level (not IIFE-wrapped) because section 8
+// reuses nourishMergeUtmsIntoProps. Treat them as this file's internal API.
+//
+// ⚠ ANALYTICS-CRITICAL: changes here affect Viewed Page / attribution data.
+// Get data-team review before modifying.
 // ============================================================================
 
 function nourishGetUtms() {
@@ -863,7 +936,11 @@ function nourishQueueViewedPageEvent() {
 })();
 
 // ============================================================================
-// SEO AND DOM UTILITIES
+// 7. SEO AND DOM UTILITIES
+// ----------------------------------------------------------------------------
+// - Canonical link override for paginated CMS lists (?..._page=N)
+// - eraseHidden: removes Webflow conditionally-hidden elements from the DOM
+//   at DOMContentLoaded so hidden CMS content doesn't bloat the page
 // ============================================================================
 
 // Handle canonical URLs for paginated content
@@ -891,12 +968,19 @@ const eraseHidden = () => {
 };
 document.addEventListener("DOMContentLoaded", eraseHidden);
 
-/**
- * Global "Get Started" tracking + param injection
- * - Fires on ANY click that goes to signup.usenourish.com
- * - Tracks with 5 props: location, element (pref data-cta), cta copy, url, deviceType
- * - Appends ?landingPageVariation=... from path mapping
- */
+// ============================================================================
+// 8. "GET STARTED" TRACKING + SIGNUP LINK PARAM INJECTION
+// ----------------------------------------------------------------------------
+// - Tracks "Get Started Clicked" on ANY click that goes to signup.<apex>
+//   (5 props: location, element (prefers data-cta), cta copy, url, deviceType)
+// - Rewrites every signup link to carry ?landingPageVariation=<mapped value>
+//   (see getVariationParams for the path→variation table) plus the persisted
+//   UTMs, so attribution survives new-tab opens and the signup handoff.
+// - Covers late-rendered links via delayed passes + a MutationObserver.
+//
+// ⚠ ANALYTICS-CRITICAL: the variation mapping and event schema feed signup
+// attribution. Get data-team review before modifying.
+// ============================================================================
 (function () {
   var SIGNUP_HOST = "signup." + window.__nourish_apex;
   var EVENT = "Get Started Clicked";
@@ -1028,6 +1112,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     } catch (e) {}
   }
 
+  // NOTE: intentional duplicate of section 5's param list, used only as a
+  // fallback when window.NOURISH_UTM_PARAMS is unavailable (e.g. if the UTM
+  // IIFE failed). Keep the two lists in sync when adding params.
   var DEFAULT_UTM_KEYS = [
     "utm_source",
     "utm_medium",

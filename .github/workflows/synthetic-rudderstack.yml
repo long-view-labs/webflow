@@ -1,0 +1,30 @@
+name: Synthetic RudderStack check
+
+on:
+  schedule:
+    # Every 30 minutes
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install playwright && npx playwright install --with-deps chromium
+      - name: Run zero-interaction page-view check
+        run: node synthetic-rudderstack-check.js
+      - name: Notify Slack on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_ALERT_WEBHOOK }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            curl -s -X POST -H 'Content-type: application/json' \
+              --data '{"text":"🚨 Synthetic check failed: RudderStack is not capturing page views for non-interacting visitors on www.nourish.com. Check the latest global-footer publish. <'"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"'|Run details>"}' \
+              "$SLACK_WEBHOOK"
+          fi

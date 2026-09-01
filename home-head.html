@@ -8,9 +8,9 @@
   fetchpriority="high"
   media="(max-width: 479px)"
   imagesrcset="
-    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile-p-500.jpg 500w,
-    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile-p-800.jpg 800w,
-    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile.jpg 941w"
+       https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile-p-500.jpg 500w,
+       https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile-p-800.jpg 800w,
+       https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c4ab32105999017d3db55_095890bfec6bf5ee495e206220177324_home-hero-mobile.jpg 941w"
   imagesizes="100vw"
 />
 <link
@@ -19,11 +19,11 @@
   fetchpriority="high"
   media="(min-width: 480px)"
   imagesrcset="
-    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-800.avif 800w,
-    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-1080.avif 1080w,
-    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-1600.avif 1600w,
-    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-2000.avif 2000w,
-    https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero.avif 2548w"
+       https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-800.avif 800w,
+       https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-1080.avif 1080w,
+       https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-1600.avif 1600w,
+       https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero-p-2000.avif 2000w,
+       https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a3c496839981de267ff1cc5_8b51e4a2bc8fb4d2a55e45a7ef365b15_desktop-hero.avif 2548w"
   imagesizes="100vw"
 />
 
@@ -128,9 +128,9 @@
 </script>
 
 <!-- =========================================================================
-     HOME HEAD CUSTOM CODE
-     Paste into Webflow Page Settings -> Custom Code -> Head
-============================================================================ -->
+        HOME HEAD CUSTOM CODE
+        Paste into Webflow Page Settings -> Custom Code -> Head
+   ============================================================================ -->
 
 <style>
   html.exp-guard body {
@@ -220,12 +220,34 @@
     }
   }
 
+  @keyframes slide-up-1 {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-up-2 {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .auto-tabs_pane-desktop._1.w--tab-active .bio-1_wrap {
-    animation: slide-up 0.5s;
+    animation: slide-up-1 0.5s;
   }
 
   .auto-tabs_pane-desktop._1.w--tab-active .auto-tabs_chat-1 {
-    animation: slide-up 0.5s 0.2s forwards;
+    animation: slide-up-2 0.5s 0.2s forwards;
   }
 
   .auto-tabs_pane-desktop._2.w--tab-active > * {
@@ -236,8 +258,30 @@
     animation: slide-up 0.5s;
   }
 
-  /* NOTE: the sticky-steps status rules live in the min-width:768px block at
-     the top of this file; a duplicate min-width:992px copy was removed. */
+  @media screen and (min-width: 992px) {
+    [data-sticky-steps-item-status] .sticky-steps__media {
+      transition:
+        opacity 0.5s ease-in-out,
+        visibility 0.5s ease-in-out;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    [data-sticky-steps-item-status="before"] .sticky-steps__media,
+    [data-sticky-steps-item-status="active"] .sticky-steps__media {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    [data-sticky-steps-item-status] .sticky-steps__text {
+      transition: opacity 0.5s ease-in-out;
+      opacity: 0.25;
+    }
+
+    [data-sticky-steps-item-status="active"] .sticky-steps__text {
+      opacity: 1;
+    }
+  }
 </style>
 
 <style>
