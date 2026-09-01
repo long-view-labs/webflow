@@ -448,7 +448,7 @@
 
     updateCopyrightYear();
     loadScript(
-      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.8/timed-tabs.js",
+      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.44/timed-tabs.js",
     );
   }
 
