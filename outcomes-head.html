@@ -1,0 +1,255 @@
+<!-- =========================================================================
+     OUTCOMES HEAD CUSTOM CODE
+     Paste into Webflow Page Settings -> Custom Code -> Head
+
+     NOT in this file (loaded by the global head — do not re-add here):
+     - Swiper CSS + JS, GSAP + ScrollTrigger (global-head.html loads all four
+       with defer on every page)
+
+     JSON-LD schema lives in Page Settings -> SEO -> Schema markup;
+     repo mirror: outcomes-schema.html
+============================================================================ -->
+
+<!-- TODO: add an LCP preload for the Outcomes hero image once the final asset
+     is confirmed (copy the pattern from home-head.html). The old page's
+     preloads pointed at the previous Webflow project's CDN
+     (623de5fee0c46d3440a5ff42/...home-hergirl.webp — homepage images), so
+     they were dropped rather than carried over. -->
+
+<style>
+  /* ---- Auto-tabs pane entrance animations ------------------------------ */
+
+  @media (min-width: 992px) {
+    .auto-tabs_chat-1 {
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .auto-tabs_pane-desktop._1.w--tab-active .bio-1_wrap {
+    animation: slide-up 0.5s;
+  }
+
+  .auto-tabs_pane-desktop._1.w--tab-active .auto-tabs_chat-1 {
+    animation: slide-up 0.5s 0.2s forwards; /* starts after .2s delay */
+  }
+
+  .auto-tabs_pane-desktop._2.w--tab-active > *,
+  .auto-tabs_pane-desktop._3.w--tab-active > * {
+    animation: slide-up 0.5s;
+  }
+
+  /* ---- Sticky steps scroll states (set by sticky-steps JS) ------------- */
+
+  @media screen and (min-width: 992px) {
+    [data-sticky-steps-item-status] .sticky-steps__media {
+      transition:
+        opacity 0.5s ease-in-out,
+        visibility 0.5s ease-in-out;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    [data-sticky-steps-item-status="before"] .sticky-steps__media,
+    [data-sticky-steps-item-status="active"] .sticky-steps__media {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    [data-sticky-steps-item-status] .sticky-steps__text {
+      transition: opacity 0.5s ease-in-out;
+      opacity: 0.25;
+    }
+
+    [data-sticky-steps-item-status="active"] .sticky-steps__text {
+      opacity: 1;
+    }
+  }
+
+  /* ---- Tinyflow slider ------------------------------------------------- */
+
+  .tinyflow-slider {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tinyflow-slider .swiper-wrapper {
+    align-items: stretch;
+  }
+
+  .tinyflow-slider .swiper-slide {
+    height: auto;
+    opacity: 0 !important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .tinyflow-slider .swiper-slide.swiper-slide-active {
+    opacity: 1 !important;
+    visibility: visible;
+    pointer-events: auto;
+    z-index: 2;
+  }
+
+  .tinyflow-slide {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .tinyflow-slide__card {
+    position: relative;
+    z-index: 1;
+  }
+
+  .tinyflow-slide__background {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tinyflow-slide__background__element {
+    transform: scale(1.05);
+    object-fit: cover;
+    transition: transform calc(var(--data-speed, 300) * 1ms) linear
+      calc(var(--data-speed, 300) * 1ms);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .swiper-slide-active .tinyflow-slide__background__element {
+    transform: scale(1);
+    transition-delay: 0ms;
+  }
+
+  .tinyflow-slide__content {
+    position: relative;
+    opacity: 0;
+    visibility: hidden;
+    transform: none;
+    transition:
+      opacity calc((var(--data-speed, 300) / 2) * 1ms) ease,
+      visibility calc((var(--data-speed, 300) / 2) * 1ms) ease;
+  }
+
+  .swiper-slide-active .tinyflow-slide__content {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  .swiper-slide:not(.swiper-slide-active) .tinyflow-slide__content {
+    user-select: none;
+    pointer-events: none;
+  }
+
+  html.wf-design-mode .tinyflow-slider .swiper-slide,
+  html.wf-design-mode .tinyflow-slide__content {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+
+  /* Profile icons */
+  .tinyflow-slider_profile-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 3;
+  }
+
+  .swiper-slide:not(.swiper-slide-active) .tinyflow-slider_profile-wrap {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .tinyflow_profile-trigger {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999rem;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.28;
+    position: relative;
+    transition: opacity 200ms ease;
+  }
+
+  .tinyflow_profile-trigger.is-active {
+    opacity: 1;
+  }
+
+  .tinyflow_profile-trigger img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 999rem;
+    object-fit: cover;
+    position: relative;
+    z-index: 1;
+    box-shadow: none;
+  }
+
+  .tinyflow_profile-progress {
+    width: calc(100% + 3px);
+    height: calc(100% + 3px);
+    position: absolute;
+    inset: -1.5px;
+    z-index: 2;
+    overflow: visible;
+    pointer-events: none;
+    transform: rotate(-90deg);
+    opacity: 0;
+  }
+
+  .tinyflow_profile-trigger.is-active .tinyflow_profile-progress {
+    opacity: 1;
+  }
+
+  .tinyflow_profile-progress__circle {
+    fill: none;
+    stroke: #00b67a;
+    stroke-width: 2.5;
+    stroke-linecap: butt;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .tinyflow_profile-trigger:focus-visible {
+    outline: 2px solid #00b67a;
+    outline-offset: 4px;
+  }
+
+  /* ---- Scroll-reveal first-paint hiding --------------------------------
+     Revealed by initScrollReveals in the global footer.js. Gated on
+     html.js-anim (added by the script below) because footer.js removes
+     that class if GSAP never loads — without the gate, a failed GSAP
+     load would strand this content invisible forever. Keep the selectors
+     in sync with initScrollReveals in footer.js. */
+
+  html.js-anim [data-fade-in] .swiper-slide {
+    opacity: 0;
+  }
+  html.js-anim [data-slide-up],
+  html.js-anim [data-slide-up-group] :is(h1, h2, h3, h4, h5, h6) {
+    opacity: 0;
+  }
+</style>
+
+<script>
+  document.documentElement.classList.add("js-anim");
+</script>

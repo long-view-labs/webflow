@@ -180,6 +180,7 @@ class ReleaseManager {
       "home-footer.html",
       "global-head.html",
       "home-head.html",
+      "outcomes-footer.html",
       "footer.js",
       "home-footer.js",
     ];

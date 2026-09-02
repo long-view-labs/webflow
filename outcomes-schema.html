@@ -1,0 +1,95 @@
+<!-- =========================================================================
+     OUTCOMES JSON-LD SCHEMA
+     Paste into Webflow Page Settings -> SEO -> Schema markup
+
+     Review quotes below mirror the testimonial carousel on the page — keep
+     them in sync when the Designer copy changes. Update the description /
+     stats if the page's headline outcomes claims change.
+============================================================================ -->
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "MedicalWebPage",
+    "name": "Patient Outcomes | Nourish",
+    "url": "https://www.nourish.com/outcomes",
+    "description": "Clinical outcomes and patient results from Nourish's insurance-covered nutrition counseling with registered dietitians.",
+    "about": {
+      "@type": "MedicalOrganization",
+      "name": "Nourish",
+      "url": "https://www.nourish.com",
+      "logo": "https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/699ce714348d0db6b664123b_Nourish%20Logo.svg",
+      "medicalSpecialty": ["Nutrition", "Dietetics"]
+    },
+    "medicalAudience": {
+      "@type": "MedicalAudience",
+      "audienceType": "Patient"
+    }
+  }
+</script>
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Nourish patient testimonials",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@type": "Review",
+          "reviewBody": "My dietitian is comprehensive and supportive. She offers clear advice on blood sugar control, blood pressure, and exercise. I've been pleasantly surprised with the holistic approach.",
+          "author": { "@type": "Person", "name": "Robert M" },
+          "itemReviewed": {
+            "@type": "MedicalOrganization",
+            "name": "Nourish",
+            "url": "https://www.nourish.com"
+          }
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "item": {
+          "@type": "Review",
+          "reviewBody": "I've worked with other providers before, but my Nourish dietitian was the first person who really listened. Every session felt tailored to me, not some one-size-fits-all plan.",
+          "author": { "@type": "Person", "name": "Tanya G." },
+          "itemReviewed": {
+            "@type": "MedicalOrganization",
+            "name": "Nourish",
+            "url": "https://www.nourish.com"
+          }
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@type": "Review",
+          "reviewBody": "I came in for help with weight loss, but I've gained so much more, including confidence, energy, and a healthier relationship with food.",
+          "author": { "@type": "Person", "name": "Elena R." },
+          "itemReviewed": {
+            "@type": "MedicalOrganization",
+            "name": "Nourish",
+            "url": "https://www.nourish.com"
+          }
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "item": {
+          "@type": "Review",
+          "reviewBody": "I used to think RDs just gave meal plans. I had no idea how supportive and encouraging this experience would be.",
+          "author": { "@type": "Person", "name": "Jillian K." },
+          "itemReviewed": {
+            "@type": "MedicalOrganization",
+            "name": "Nourish",
+            "url": "https://www.nourish.com"
+          }
+        }
+      }
+    ]
+  }
+</script>
