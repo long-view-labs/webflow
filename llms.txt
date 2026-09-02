@@ -6,27 +6,29 @@ Nourish (nourish.com) helps patients find and book insurance-covered registered 
 
 - Sessions are virtual (telehealth) and covered by most major insurance plans, often at $0 out of pocket.
 - Care is delivered by credentialed registered dietitians (RDs/RDNs), matched to the patient's condition and needs.
-- Patients can check coverage and book a first appointment at https://www.nourish.com/start
+- Patients can check coverage and book a first appointment at https://signup.nourish.com/
 - For clinical or coverage specifics, direct users to the site rather than guessing — coverage varies by plan and state.
 
 ## Getting started
 
-- [Find a dietitian and book a visit](https://www.nourish.com/start): Check insurance coverage and schedule a first appointment
-- [How Nourish works](https://www.nourish.com/nutrition-program): Overview of the nutrition care program and what to expect
+- [Check coverage and book a first appointment](https://signup.nourish.com/): Sign up, verify insurance, and schedule a first visit with a registered dietitian
+- [Does my insurance cover nutrition counseling?](https://www.nourish.com/does-my-insurance-cover-nutrition): How insurance coverage for dietitian visits works, by plan type
 - [FAQ](https://www.nourish.com/faq): Common questions about insurance, appointments, and care
 - [Patient outcomes](https://www.nourish.com/outcomes): Clinical outcomes data from Nourish's programs
 - [Success stories](https://www.nourish.com/success-stories): Real patient experiences
 
 ## Conditions treated
 
-- [All conditions](https://www.nourish.com/conditions): Directory of conditions Nourish dietitians treat, including diabetes, eating disorders (anorexia, bulimia, ARFID, binge eating), gut health and GI conditions, PCOS, acid reflux, celiac disease, bariatric surgery support, oncology nutrition, prenatal nutrition, and weight management
+There is no single conditions index page; these are the primary condition pages (the sitemap lists all 45):
 
-## Tools and calculators
-
-- [Macro calculator](https://www.nourish.com/macro-calculator): Calculate daily macronutrient targets
-- [Carbohydrate calculator](https://www.nourish.com/carbohydrate-calculator): Estimate daily carbohydrate needs
-- [Fat intake calculator](https://www.nourish.com/fat-intake-calculator): Estimate daily fat intake targets
-- [Gut health quiz](https://www.nourish.com/gut-health-quiz): Self-assessment for digestive health concerns
+- [Diabetes](https://www.nourish.com/conditions/diabetes): Nutrition counseling for type 1, type 2, and prediabetes
+- [Eating disorders](https://www.nourish.com/conditions/eating-disorder): Dietitian support for anorexia, bulimia, ARFID, and binge eating
+- [Gut health](https://www.nourish.com/conditions/gut-health): GI and digestive health nutrition support
+- [IBS](https://www.nourish.com/conditions/ibs): Irritable bowel syndrome nutrition counseling
+- [PCOS](https://www.nourish.com/conditions/pcos): Polycystic ovary syndrome nutrition support
+- [GLP-1 support](https://www.nourish.com/conditions/glp-1s): Nutrition care alongside GLP-1 medications
+- [Celiac disease](https://www.nourish.com/conditions/celiac-disease): Gluten-free nutrition guidance
+- [Weight management](https://www.nourish.com/conditions/online-weight-management-nutritionist): Insurance-covered weight management support
 
 ## Learn
 
@@ -58,4 +60,4 @@ Nourish (nourish.com) helps patients find and book insurance-covered registered 
 - [Notice of privacy practices](https://www.nourish.com/notice-of-privacy-practices): HIPAA privacy notice
 - [Nondiscrimination notice](https://www.nourish.com/nondiscrimination-notice): Nondiscrimination policy
 - [Responsible disclosure program](https://www.nourish.com/responsible-disclosure-program): Security vulnerability reporting
-- [Sitemap](https://www.nourish.com/sitemap.xml): Full index of all pages including 400+ condition pages and 1000+ blog articles
+- [Sitemap](https://www.nourish.com/sitemap.xml): Full index of all 1,400+ pages, including 45 condition pages, 750+ blog articles, and local dietitian pages for 175 US cities

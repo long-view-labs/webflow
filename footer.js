@@ -78,7 +78,7 @@
 
     var script = document.createElement("script");
     script.src =
-      "https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a4792118380c0cdc2f11fc6_hero-filter-search.txt";
+      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.46/hero-filter-search.js";
     script.async = true;
     document.body.appendChild(script);
   }
@@ -454,7 +454,7 @@
 
   function loadNavbarScripts() {
     loadScript(
-      "https://cdn.prod.website-files.com/699ce714348d0db6b6640eaf/6a2be4c48b51648e8c046961_navbar.txt",
+      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.46/navbar.js",
     );
   }
 

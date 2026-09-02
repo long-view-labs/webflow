@@ -119,3 +119,187 @@
     src="https://px.ads.linkedin.com/collect/?pid=8614857&fmt=gif"
   />
 </noscript>
+
+<!-- WebMCP: expose site actions to AI agents (navigator.modelContext) -->
+<script>
+  (function () {
+    if (!("modelContext" in window.navigator)) return;
+
+    var CONDITIONS = {
+      "acid-reflux": "/conditions/acid-reflux",
+      arfid: "/conditions/arfid",
+      "bariatric-surgery": "/conditions/bariatric-surgery",
+      "celiac-disease": "/conditions/celiac-disease",
+      diabetes: "/conditions/diabetes",
+      diverticulitis: "/conditions/diverticulitis",
+      "eating-disorder": "/conditions/eating-disorder",
+      "emotional-eating": "/conditions/emotional-eating",
+      endometriosis: "/conditions/endometriosis",
+      "glp-1s": "/conditions/glp-1s",
+      "gut-health": "/conditions/gut-health",
+      "hormone-health": "/conditions/hormone-health",
+      ibs: "/conditions/ibs",
+      menopause: "/conditions/menopause",
+      pcos: "/conditions/pcos",
+      sibo: "/conditions/sibo",
+      "ulcerative-colitis": "/conditions/ulcerative-colitis",
+      "weight-management": "/conditions/online-weight-management-nutritionist",
+    };
+
+    var INSURERS = {
+      aetna: "/insurance-dietitians/aetna",
+      anthem: "/insurance-dietitians/anthem",
+      "blue-cross-blue-shield": "/insurance-dietitians/blue-cross-blue-shield",
+      cigna: "/insurance-dietitians/cigna",
+      "devoted-health": "/insurance-dietitians/devoted-health",
+      "highmark-blue-cross-blue-shield":
+        "/insurance-dietitians/highmark-blue-cross-blue-shield",
+      medicare: "/insurance-dietitians/medicare",
+      "oxford-unitedhealthcare":
+        "/insurance-dietitians/oxford-unitedhealthcare",
+      unitedhealthcare: "/insurance-dietitians/unitedhealthcare",
+    };
+
+    function go(url) {
+      window.location.href = url;
+      return { status: "navigated", url: url };
+    }
+
+    navigator.modelContext.provideContext({
+      tools: [
+        {
+          name: "book_first_appointment",
+          description:
+            "Start booking a first appointment with a Nourish registered dietitian: sign up, verify insurance coverage, and schedule a virtual visit. Sessions are covered by most major insurance plans, often at $0 out of pocket. Use when the user wants to book, sign up, get started, or check their coverage and price.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async function () {
+            return go("https://signup.nourish.com/");
+          },
+        },
+        {
+          name: "check_insurance_coverage",
+          description:
+            'Open the Nourish coverage page for a specific insurer, or the general "Am I covered?" page if no insurer is given. Use when the user asks whether their insurance covers a dietitian or nutrition counseling.',
+          inputSchema: {
+            type: "object",
+            properties: {
+              insurer: {
+                type: "string",
+                enum: [
+                  "aetna",
+                  "anthem",
+                  "blue-cross-blue-shield",
+                  "cigna",
+                  "devoted-health",
+                  "highmark-blue-cross-blue-shield",
+                  "medicare",
+                  "oxford-unitedhealthcare",
+                  "unitedhealthcare",
+                ],
+                description:
+                  "Insurance carrier. Omit if unknown or not listed.",
+              },
+            },
+          },
+          execute: async function (args) {
+            var url =
+              (args && INSURERS[args.insurer]) ||
+              "/does-my-insurance-cover-nutrition";
+            return go(url);
+          },
+        },
+        {
+          name: "view_condition_page",
+          description:
+            "Open Nourish's page for a specific condition, describing how registered dietitians treat it and how to get covered care. Use when the user asks about nutrition support for a condition like diabetes, PCOS, IBS, eating disorders, GLP-1 medications, or gut health.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              condition: {
+                type: "string",
+                enum: [
+                  "acid-reflux",
+                  "arfid",
+                  "bariatric-surgery",
+                  "celiac-disease",
+                  "diabetes",
+                  "diverticulitis",
+                  "eating-disorder",
+                  "emotional-eating",
+                  "endometriosis",
+                  "glp-1s",
+                  "gut-health",
+                  "hormone-health",
+                  "ibs",
+                  "menopause",
+                  "pcos",
+                  "sibo",
+                  "ulcerative-colitis",
+                  "weight-management",
+                ],
+                description:
+                  "Condition identifier. Must be one of the listed values.",
+              },
+            },
+            required: ["condition"],
+          },
+          execute: async function (args) {
+            var url = CONDITIONS[args.condition];
+            if (!url) return { status: "error", message: "Unknown condition" };
+            return go(url);
+          },
+        },
+        {
+          name: "view_patient_outcomes",
+          description:
+            "Open Nourish's clinical outcomes page with data from its nutrition programs. Use when the user asks whether Nourish works, wants evidence, results, or clinical outcomes.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async function () {
+            return go("/outcomes");
+          },
+        },
+        {
+          name: "view_success_stories",
+          description:
+            "Open real patient success stories. Use when the user asks for reviews, testimonials, patient experiences, or social proof.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async function () {
+            return go("/success-stories");
+          },
+        },
+        {
+          name: "view_faq",
+          description:
+            "Open the Nourish FAQ covering insurance, appointments, pricing, and how care works. Use for general questions not covered by a more specific tool.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async function () {
+            return go("/faq");
+          },
+        },
+        {
+          name: "become_a_dietitian",
+          description:
+            "Open information for registered dietitians who want to join Nourish. Use when the user is a dietitian (RD/RDN) interested in working with Nourish, estimating pay, or applying.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              page: {
+                type: "string",
+                enum: ["overview", "pay-calculator", "apply"],
+                description: "Which page to open. Defaults to overview.",
+              },
+            },
+          },
+          execute: async function (args) {
+            var pages = {
+              overview: "/become-a-dietitian",
+              "pay-calculator": "/become-a-dietitian/pay-calculator",
+              apply: "/dietitian-application",
+            };
+            return go(pages[args && args.page] || "/become-a-dietitian");
+          },
+        },
+      ],
+    });
+  })();
+</script>
