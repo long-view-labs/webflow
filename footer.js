@@ -78,7 +78,7 @@
 
     var script = document.createElement("script");
     script.src =
-      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.46/hero-filter-search.js";
+      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.47/hero-filter-search.js";
     script.async = true;
     document.body.appendChild(script);
   }
@@ -448,13 +448,13 @@
 
     updateCopyrightYear();
     loadScript(
-      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.46/timed-tabs.js",
+      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.47/timed-tabs.js",
     );
   }
 
   function loadNavbarScripts() {
     loadScript(
-      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.46/navbar.js",
+      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.47/navbar.js",
     );
   }
 
