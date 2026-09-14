@@ -2206,6 +2206,7 @@ $(function () {
         var $node = $(node);
         if (
           findLocal($node, "#home-filter-cta").length ||
+          findLocal($node, "#provider-filter-cta").length ||
           findLocal($node, "#insurance_filter").length ||
           findLocal($node, "#insurance-condensed_filter").length ||
           findLocal($node, "#insurance_plan").length ||
@@ -2470,7 +2471,12 @@ $(function () {
   function findWidgetCTA($widget) {
     var $cta = findLocal($widget, "#home-filter-cta").first();
     if ($cta.length) return $cta;
-    return $widget.find('a[href*="' + getSignupHost() + '"]').first();
+    // Exclude the provider CTA — it keeps its /providers base and is
+    // handled separately in updateWidgetCTA.
+    return $widget
+      .find('a[href*="' + getSignupHost() + '"]')
+      .not("#provider-filter-cta")
+      .first();
   }
 
   function getDropdownListContainer($widget, toggleSelector) {
@@ -3098,22 +3104,38 @@ $(function () {
     appendUtmParams(params);
     params.append("InsuranceSearchInput", isInsuranceCheck ? "true" : "false");
 
-    var $cta = findWidgetCTA($widget);
-    if ($cta && $cta.length) {
+    // Merge params over any params already on the CTA's href (existing ones
+    // never win over freshly computed ones), then write the new href.
+    function applyCtaHref($cta, ctaBaseUrl) {
+      var merged = new URLSearchParams(params.toString());
       var currentHref = $cta.attr("href");
       if (currentHref && currentHref.indexOf(getSignupHost()) !== -1) {
         try {
           var existingUrl = new URL(currentHref, window.location.origin);
           existingUrl.searchParams.forEach(function (value, key) {
-            if (!params.has(key)) params.set(key, value);
+            if (!merged.has(key)) merged.set(key, value);
           });
         } catch (e) {}
       }
-      var finalUrl = baseUrl + "?" + params.toString();
-      $cta.attr("href", finalUrl);
+      $cta.attr("href", ctaBaseUrl + "?" + merged.toString());
     }
 
-    $('a[href*="' + getSignupHost() + '"]:not(#home-filter-cta)').each(
+    var $cta = findWidgetCTA($widget);
+    if ($cta && $cta.length) {
+      applyCtaHref($cta, baseUrl);
+    }
+
+    // Provider CTA: same params as the main CTA, but signs up as a provider
+    var $providerCta = findLocal($widget, "#provider-filter-cta").first();
+    if ($providerCta.length) {
+      applyCtaHref($providerCta, baseUrl + "providers");
+    }
+
+    $(
+      'a[href*="' +
+        getSignupHost() +
+        '"]:not(#home-filter-cta):not(#provider-filter-cta)',
+    ).each(
       function () {
         var $link = $(this);
         var currentHref = $link.attr("href");

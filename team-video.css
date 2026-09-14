@@ -17,10 +17,13 @@
   --team-video-ring-width: 5;
 
   /* Starting width only. On desktop the thumbnail grid anchors the section
-     height and the script rewrites this variable to railHeight * 9/16, so the
-     stage ends flush with the grid while staying a true 9:16. Mobile ignores
-     it (single-column layout). */
-  --team-video-stage-w: clamp(260px, 25vw, 400px);
+     height and the script rewrites this variable to railHeight * 9/16 capped
+     at 80% of the viewport height, so the stage ends flush with the grid while
+     staying a true 9:16 and never running off the bottom of the screen. The
+     same height cap here (as a width, because the stage is 9:16) keeps the
+     first paint from flashing oversized before the script runs. Mobile
+     ignores it (single-column layout). */
+  --team-video-stage-w: min(clamp(260px, 25vw, 400px), calc(80vh * 9 / 16));
 }
 
 /* ---------- layout ---------- */

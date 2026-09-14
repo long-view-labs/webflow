@@ -129,10 +129,15 @@
       }
 
       // Clamped so a sparse grid cannot collapse the player and a huge one
-      // cannot push the rail below half the section.
+      // cannot push the rail below half the section. Also capped against the
+      // viewport height: on narrow desktop windows the grid wraps tall enough
+      // that railHeight * 9/16 hits the width cap and the video runs off the
+      // bottom of the screen — 80% of the viewport, expressed as a width
+      // because the stage is 9:16, keeps the whole clip visible.
       var width = Math.min(
         Math.max(Math.round((railHeight * 9) / 16), 240),
-        Math.round(root.clientWidth * 0.48)
+        Math.round(root.clientWidth * 0.48),
+        Math.round((window.innerHeight * 0.8 * 9) / 16)
       );
       var current =
         parseFloat(root.style.getPropertyValue("--team-video-stage-w")) || 0;
@@ -143,6 +148,10 @@
     }
 
     new ResizeObserver(sync).observe(rail);
+
+    // The viewport-height cap can change without the rail resizing (e.g. the
+    // window is dragged shorter), which the observer never sees.
+    window.addEventListener("resize", sync);
 
     if (typeof mq.addEventListener === "function") {
       mq.addEventListener("change", sync);
@@ -245,20 +254,39 @@
       });
     }
 
+    // Polls readyState rather than waiting on loadeddata: a reused buffer (the
+    // A → B → back-to-A click path) never load()s again, so loadeddata never
+    // re-fires — waiting on it left the old clip on screen while the new one's
+    // audio played. readyState also recovers through several different paths
+    // (seek completing, data arriving, playback starting); the poll covers
+    // them all. setTimeout, not requestAnimationFrame — rAF freezes in hidden
+    // tabs, and the ended→advance chain keeps running there. Self-superseding:
+    // a new call cancels the previous poll.
+    var revealTimer = null;
+
     function revealWhenReady(video) {
-      // HAVE_CURRENT_DATA: there is a frame to paint.
-      if (video.readyState >= 2) {
-        revealActive();
-        return;
+      if (revealTimer !== null) {
+        clearTimeout(revealTimer);
+        revealTimer = null;
       }
 
-      var handler = function () {
-        video.removeEventListener("loadeddata", handler);
-        if (video === buffers[activeBuffer]) {
-          revealActive();
+      function check() {
+        revealTimer = null;
+
+        if (video !== buffers[activeBuffer]) {
+          return;
         }
-      };
-      video.addEventListener("loadeddata", handler);
+
+        // HAVE_CURRENT_DATA: there is a frame to paint.
+        if (video.readyState >= 2) {
+          revealActive();
+          return;
+        }
+
+        revealTimer = setTimeout(check, 50);
+      }
+
+      check();
     }
 
     function nextIndex(index) {
@@ -350,10 +378,21 @@
 
       attempt
         .then(function () {
-          setPausedState(false);
+          if (video === buffers[activeBuffer]) {
+            setPausedState(false);
+          }
         })
         .catch(function () {
-          // Autoplay refused (iOS Low Power Mode, reduced motion, etc.).
+          // A pending play() also rejects when a buffer swap pauses this
+          // element mid-start — that interruption is our own doing, not an
+          // autoplay refusal, and treating it as one froze the section after
+          // quick clicks. Only a rejection for the clip still on stage means
+          // playback is genuinely blocked (iOS Low Power Mode, reduced
+          // motion, etc.).
+          if (video !== buffers[activeBuffer]) {
+            return;
+          }
+
           autoplayBlocked = true;
           setPausedState(true);
           stopRing();
