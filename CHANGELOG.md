@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.620.49] - 2026-10-02
+
+Add a date of birth calendar picker on the hero filter and fix /paid script loading so the quiz initializes once.
+
+
 ## [2.620.48] - 2026-09-14
 
 No release notes provided.
