@@ -1,0 +1,223 @@
+<!-- =========================================================================
+     DOB DATE PICKER (FLATPICKR) — QA ONLY
+     Paste into the dev page: Page Settings -> Custom Code -> Before </body>.
+     Adds a flatpickr calendar to the hero filter's Date of birth field.
+     Typing MM/DD/YYYY keeps working (hero-filter-search.js still formats it).
+     Do not paste together with dob-picker-qa-custom.html.
+============================================================================ -->
+<script>
+  (function () {
+    var FLATPICKR_VERSION = "4.6.13";
+    var FLATPICKR_BASE =
+      "https://cdn.jsdelivr.net/npm/flatpickr@" + FLATPICKR_VERSION + "/dist/";
+    var widgetSelector =
+      ".home-filter_component, .provider-filter_component, .provider-filter_wrapper, .provider-filter_input-group, .provider-filter";
+
+    function isMobileDevice() {
+      return (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        ) ||
+        window.innerWidth <= 768 ||
+        "ontouchstart" in window
+      );
+    }
+
+    // Stand-in for the bindDobHandlers fix until hero-filter-search.js ships:
+    // the live handler moves the caret on every keydown/keyup, which collapses
+    // a select-all before the replacement digit lands. flatpickr's own input
+    // keydown listener only needs the keys in passKeys.
+    function patchDobCaretHandling(input) {
+      var wrap = input.parentNode;
+      if (!wrap || wrap.__dobCaretPatched) return;
+      wrap.__dobCaretPatched = true;
+      var passKeys = ["Escape", "Tab", "Enter", "ArrowUp", "ArrowDown"];
+      function guard(event) {
+        if (event.target !== input) return;
+        if (event.type === "keyup") {
+          event.stopPropagation();
+          return;
+        }
+        if (passKeys.indexOf(event.key) !== -1) return;
+        var hasRange = input.selectionStart !== input.selectionEnd;
+        if (!hasRange && (event.key === "Backspace" || event.key === "Delete")) {
+          return;
+        }
+        event.stopPropagation();
+      }
+      wrap.addEventListener("keydown", guard, true);
+      wrap.addEventListener("keyup", guard, true);
+    }
+
+    function isCompleteDob(value) {
+      return /^\d{2}\/\d{2}\/\d{4}$/.test(value);
+    }
+
+    function injectStyles() {
+      if (document.getElementById("hero-filter-dob-flatpickr-styles")) return;
+      var caret =
+        "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23151514' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")";
+      var style = document.createElement("style");
+      style.id = "hero-filter-dob-flatpickr-styles";
+      style.textContent = [
+        ".hf-fp.flatpickr-calendar{font-family:var(--_typography---font--primary-font,Circular,Verdana,sans-serif);color:#151514;border:1px solid #e5dfd9;border-radius:16px;box-shadow:0 12px 32px rgba(21,21,20,.16);padding:8px 8px 10px}",
+        ".hf-fp.flatpickr-calendar:before,.hf-fp.flatpickr-calendar:after{display:none}",
+        ".hf-fp .flatpickr-months{align-items:center;margin-bottom:6px}",
+        ".hf-fp .flatpickr-months .flatpickr-prev-month,.hf-fp .flatpickr-months .flatpickr-next-month{top:8px;border-radius:8px}",
+        ".hf-fp .flatpickr-months .flatpickr-prev-month:hover svg,.hf-fp .flatpickr-months .flatpickr-next-month:hover svg{fill:#fe5000}",
+        ".hf-fp .flatpickr-current-month{display:flex;align-items:center;justify-content:center;gap:6px;padding-top:4px;font-size:16px}",
+        ".hf-fp .flatpickr-current-month .numInputWrapper{display:none}",
+        ".hf-fp .flatpickr-current-month .flatpickr-monthDropdown-months,.hf-fp .hf-fp-year{height:32px;margin:0;padding:0 24px 0 10px;border:1px solid #e5dfd9;border-radius:8px;background:#fff " +
+          caret +
+          " no-repeat right 9px center;-webkit-appearance:none;appearance:none;font:inherit;font-size:16px;font-weight:400;color:inherit;cursor:pointer}",
+        ".hf-fp .flatpickr-current-month .flatpickr-monthDropdown-months:hover{background-color:#fff}",
+        ".hf-fp span.flatpickr-weekday{color:#a29d99;font-weight:400}",
+        ".hf-fp .flatpickr-day{color:#151514;border-radius:999px}",
+        ".hf-fp .flatpickr-day:hover,.hf-fp .flatpickr-day:focus{background:#f5f2ef;border-color:#f5f2ef}",
+        ".hf-fp .flatpickr-day.selected,.hf-fp .flatpickr-day.selected:hover,.hf-fp .flatpickr-day.selected:focus{background:#fe5000;border-color:#fe5000;color:#fff}",
+        ".hf-fp .flatpickr-day.prevMonthDay,.hf-fp .flatpickr-day.nextMonthDay{color:#a29d99}",
+        ".hf-fp .flatpickr-day.flatpickr-disabled{color:rgba(21,21,20,.2)}",
+        ".hf-dob-anchor .provider-filter_field-icon{z-index:2;cursor:pointer}",
+      ].join("");
+      document.head.appendChild(style);
+    }
+
+    function loadFlatpickr(callback) {
+      if (window.flatpickr) {
+        callback();
+        return;
+      }
+      if (!document.querySelector('link[href^="' + FLATPICKR_BASE + '"]')) {
+        var link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = FLATPICKR_BASE + "flatpickr.min.css";
+        document.head.appendChild(link);
+      }
+      var script = document.createElement("script");
+      script.src = FLATPICKR_BASE + "flatpickr.min.js";
+      script.onload = callback;
+      document.head.appendChild(script);
+    }
+
+    function addYearSelect(instance, minYear, maxYear) {
+      var container = instance.calendarContainer.querySelector(
+        ".flatpickr-current-month",
+      );
+      if (!container || container.querySelector(".hf-fp-year")) return;
+
+      var select = document.createElement("select");
+      select.className = "hf-fp-year";
+      select.setAttribute("aria-label", "Year");
+      for (var y = maxYear; y >= minYear; y--) {
+        select.appendChild(new Option(String(y), String(y)));
+      }
+      select.addEventListener("change", function () {
+        instance.changeYear(parseInt(select.value, 10));
+      });
+      container.appendChild(select);
+
+      function sync() {
+        select.value = String(instance.currentYear);
+      }
+      instance.config.onOpen.push(sync);
+      instance.config.onMonthChange.push(sync);
+      instance.config.onYearChange.push(sync);
+      sync();
+    }
+
+    function bindFlatpickr(input) {
+      var $input = window.jQuery(input);
+      if (input._flatpickr || $input.data("heroFilterDobPickerBound")) return;
+      $input.data("heroFilterDobPickerBound", true);
+
+      var anchor = $input.closest(".ms-input-wrap")[0] || input.parentNode;
+      anchor.classList.add("hf-dob-anchor");
+      var icon = anchor.querySelector(".provider-filter_field-icon");
+      var touch = isMobileDevice();
+
+      // Same year bounds hero-filter-search.js clamps typed values to.
+      var currentYear = new Date().getFullYear();
+      var maxYear = currentYear - 1;
+      var minYear = currentYear - 120;
+
+      var instance = window.flatpickr(input, {
+        dateFormat: "m/d/Y",
+        allowInput: true,
+        disableMobile: true,
+        clickOpens: !touch,
+        monthSelectorType: "dropdown",
+        minDate: new Date(minYear, 0, 1),
+        maxDate: new Date(maxYear, 11, 31),
+        positionElement: anchor,
+        onReady: function (_dates, _str, fp) {
+          fp.calendarContainer.classList.add("hf-fp");
+          addYearSelect(fp, minYear, maxYear);
+        },
+        onOpen: function (dates, _str, fp) {
+          if (!dates.length) fp.jumpToDate(new Date(currentYear - 30, 0, 1));
+        },
+      });
+
+      // flatpickr clears the field on blur/Enter when the typed text isn't a
+      // full date, which would wipe a half-typed DOB.
+      anchor.addEventListener(
+        "blur",
+        function (event) {
+          if (event.target !== input) return;
+          var typed = input.value;
+          if (!typed || isCompleteDob(typed)) return;
+          setTimeout(function () {
+            if (!input.value) input.value = typed;
+          }, 0);
+        },
+        true,
+      );
+
+      if (icon) {
+        icon.setAttribute("role", "button");
+        icon.setAttribute("aria-label", "Open calendar");
+
+        // flatpickr closes on outside mousedown before the icon's click fires.
+        var wasOpen = false;
+        function rememberOpen() {
+          wasOpen = instance.isOpen;
+        }
+        icon.addEventListener("mousedown", rememberOpen);
+        icon.addEventListener("touchstart", rememberOpen, { passive: true });
+        icon.addEventListener("click", function (event) {
+          event.preventDefault();
+          if (wasOpen) return;
+          if (touch) input.blur();
+          instance.open();
+        });
+      }
+    }
+
+    function start() {
+      if (!window.jQuery) {
+        setTimeout(start, 100);
+        return;
+      }
+      var inputs = window.jQuery('[id="dob"]').filter(function () {
+        return window.jQuery(this).closest(widgetSelector).length > 0;
+      });
+      if (!inputs.length) return;
+
+      inputs.each(function () {
+        patchDobCaretHandling(this);
+      });
+      injectStyles();
+      loadFlatpickr(function () {
+        inputs.each(function () {
+          bindFlatpickr(this);
+        });
+      });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", start, { once: true });
+    } else {
+      start();
+    }
+  })();
+</script>

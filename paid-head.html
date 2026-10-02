@@ -1,0 +1,179 @@
+<!-- =========================================================================
+     /paid — Page Settings → Custom Code → HEAD  (replace the whole slot)
+     ---------------------------------------------------------------------
+     multi-step.js and every raw `$(document).ready(...)` block must NOT
+     live here: jQuery loads mid-body on this site, so head copies throw
+     "$ is not defined" — and a failed head copy of multi-step.js leaves
+     its top-level `let` bindings behind, which kills every later footer
+     copy with "Identifier has already been declared". That combination is
+     what broke the quiz and the FAQ see-more link.
+
+     The lp-paid A/B test (old vs new page build) is assigned by the
+     FIRST script below, synchronously, before first paint — Statsig is
+     deliberately OUT of the render path (waiting on the sidecar to
+     inject arm CSS delayed every paint; same reason paid-tt.js dropped
+     its Statsig dependency). The lp-paid experiment in the Statsig
+     console must therefore be PAUSED / have no inject actions, or its
+     CSS will fight this assignment. Exposure goes to Rudderstack as
+     "Experiment Viewed" from the footer slot (paid.html), which also
+     removes the losing build before loading multi-step.js.
+========================================================================== -->
+
+<!-- ===== lp-paid assignment + pre-paint swap (keep FIRST in this slot,
+     keep inline). ALLOCATION of visitors enter the experiment, split
+     50/50 into control / test_1 (both tracked); everyone else is a sticky
+     "none" holdout that sees the OLD (current) build with no event — the
+     site CSS default shows the NEW build, so the holdout needs the swap
+     CSS just like control does. Priority: ?lp_paid=control|test_1|none
+     (QA override, sticky once visited) → localStorage → random roll.
+     The published default (script blocked) shows the new build: site CSS
+     ships `.cc-paid-old { display: none }`. -->
+<script>
+  (function () {
+    var EXPERIMENT = "lp-paid";
+    var STORAGE_KEY = "lp_paid_variant";
+    // Share of /paid traffic entering the experiment; entrants split 50/50
+    // into control / test_1, so treatment share = ALLOCATION / 2.
+    // 0.4 = the requested 20% to treatment (20% control tracked, 60%
+    // untracked holdout on the old build). 0 = test off: everyone sees the
+    // old build and only the ?lp_paid= override links assign anything.
+    var ALLOCATION = 0.4;
+    var WRAPPERS = {
+      control: ".page-wrapper.cc-paid-old",
+      test_1: ".page-wrapper.cc-paid-new",
+      none: ".page-wrapper.cc-paid-old", // holdout = current experience
+    };
+
+    function getVariant() {
+      try {
+        return localStorage.getItem(STORAGE_KEY);
+      } catch (e) {
+        return null;
+      }
+    }
+    function setVariant(v) {
+      try {
+        localStorage.setItem(STORAGE_KEY, v);
+      } catch (e) {}
+    }
+
+    try {
+      var qp = new URLSearchParams(window.location.search).get("lp_paid");
+      if (WRAPPERS[qp]) setVariant(qp);
+    } catch (e) {}
+
+    var variant = getVariant();
+    if (!WRAPPERS[variant]) {
+      variant =
+        Math.random() < ALLOCATION
+          ? Math.random() < 0.5
+            ? "control"
+            : "test_1"
+          : "none";
+      // Persist "none" only while the test is live (ALLOCATION > 0).
+      // Pre-launch visitors must not be pinned to the holdout, or they
+      // could never enter the experiment once it launches.
+      if (variant !== "none" || ALLOCATION > 0) setVariant(variant);
+    }
+
+    // The footer slot (tracking + wrapper cleanup) reads this.
+    window.__lpPaid = {
+      experiment: EXPERIMENT,
+      variant: variant,
+      inExperiment: variant !== "none",
+    };
+
+    var winner = WRAPPERS[variant];
+    var loser =
+      variant === "test_1" ? WRAPPERS.control : WRAPPERS.test_1;
+
+    // Pre-paint swap: zero flicker, no library wait. Site CSS defaults are
+    // asymmetric (old hidden, new shown), so the winner must be forced
+    // visible — hiding the loser alone leaves control a blank page.
+    var style = document.createElement("style");
+    style.id = "lp-paid-ab";
+    style.textContent =
+      loser +
+      " { display: none !important; } " +
+      winner +
+      " { display: block !important; }";
+    document.head.appendChild(style);
+
+    // Failsafe: if the chosen build is missing (page edited?), undo the
+    // swap and fall back to the published default instead of a blank page.
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+        if (!document.querySelector(winner)) {
+          style.remove();
+          window.__lpPaid.fallback = true;
+        }
+      },
+      { once: true }
+    );
+  })();
+</script>
+
+<style>
+@media (min-width: 992px) {
+	.auto-tabs_chat-1 {
+		opacity: 0;
+	}
+}
+
+/* Define the animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up-1 {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up-2 {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auto-tabs_pane-desktop._1.w--tab-active .bio-1_wrap {
+  animation: slide-up-1 0.5s;
+}
+
+.auto-tabs_pane-desktop._1.w--tab-active .auto-tabs_chat-1 {
+  animation: slide-up-2 0.5s 0.2s forwards; /* starts after .5s delay */
+}
+
+.auto-tabs_pane-desktop._2.w--tab-active > * {
+  animation: slide-up 0.5s;
+}
+
+.auto-tabs_pane-desktop._3.w--tab-active > * {
+  animation: slide-up 0.5s;
+}
+</style>
+
+<!-- `defer` = non-blocking download, GUARANTEED execution order, and all
+     three finish BEFORE DOMContentLoaded. Do NOT use `async` here. -->
+<script defer src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>

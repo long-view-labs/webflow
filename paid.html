@@ -1,121 +1,474 @@
-<!-- Statsig js-client: this page instantiates StatsigClient below for the
-     quiz experiment. The bundle used to load from the global footer on every
-     page; it now lives here, on the only page that uses it. -->
-<script
-  defer
-  src="https://cdn.jsdelivr.net/npm/@statsig/js-client@3/build/statsig-js-client+session-replay+web-analytics.min.js"
-  onload="window.__installStatsigGuard && window.__installStatsigGuard()"
-></script>
+<!-- =========================================================================
+     /paid — Page Settings → Custom Code → FOOTER  (replace the whole slot)
+     ---------------------------------------------------------------------
+     This is the ONLY place any of these blocks may appear. The previous
+     slots carried the whole bundle twice (once in the HEAD, where jQuery
+     does not exist yet) and multi-step.js three times — the head copy
+     crashed on `$` but left its top-level `let` bindings behind, so both
+     footer copies died on "already been declared" and the quiz never
+     initialized. The FAQ see-more link broke for a second reason: both
+     page builds (.page-wrapper.cc-paid-old / .cc-paid-new) duplicate ids
+     (#see-more, #quiz, the multi-step form), and getElementById always
+     answers with the FIRST — hidden — copy.
+
+     Fix, in the "lp-paid wrapper cleanup" block below (which must stay
+     FIRST after the helpers): the losing page build — decided pre-paint
+     by the assignment script in the HEAD slot (paid-head.html) — is
+     REMOVED from the DOM at DOMContentLoaded before any other onReady
+     block runs, so the GSAP fade-ins, ScrollTriggers and sliders
+     initialize against a single build (both builds initializing and then
+     one being removed is what made components flash/animate twice), and
+     only then is multi-step.js loaded — exactly once, with jQuery
+     present and a single form to bind.
+
+     The Statsig js-client bundle + sidecar guard that used to live here
+     were removed with the retired quiz-insurance-form-2 experiment;
+     nothing on this page instantiates StatsigClient anymore. Exposure
+     tracking for lp-paid is injected per-arm from the Statsig console,
+     not from this file. Restore the js-client blocks from git history if
+     a js-client experiment ever comes back to /paid.
+========================================================================== -->
+
+<!-- ===== Shared init helpers (every block below uses them) ===== -->
 <script>
-  (function () {
-    function isSidecarOwnedExperiment(name) {
-      var ids = window.__nourishStatsig?.sidecarExperimentIds || [];
-      return ids.indexOf(name) !== -1;
+  function onReady(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+      fn();
+    }
+  }
+
+  // Polls `test` until truthy, then runs `cb`. Resolves instantly when the
+  // dependency is already present (the normal case with defer). The retries
+  // are insurance for anything that loads on its own clock.
+  function waitFor(test, cb, tries) {
+    tries = tries == null ? 100 : tries; // 100 * 50ms = 5s ceiling
+    if (test()) return cb();
+    if (tries <= 0) {
+      console.warn('[init] dependency never appeared:', test.toString());
+      return;
+    }
+    setTimeout(function () { waitFor(test, cb, tries - 1); }, 50);
+  }
+
+  var hasGsap   = function () { return window.gsap && window.ScrollTrigger; };
+  var hasSwiper = function () { return typeof window.Swiper !== 'undefined'; };
+  var hasJq     = function () { return typeof window.jQuery !== 'undefined'; };
+</script>
+
+
+<!-- ===== lp-paid wrapper cleanup + multi-step loader =====
+     KEEP THIS FIRST after the helpers: its onReady handler must run
+     before every other block's, so the fade-ins, ScrollTriggers and
+     sliders below initialize against a single page build (initializing
+     both and removing one afterwards makes components flash twice).
+     The page ships BOTH builds: .page-wrapper.cc-paid-old (control) and
+     .page-wrapper.cc-paid-new (test_1/default). The head-slot assignment
+     script (paid-head.html) already applied the winning arm's CSS before
+     paint, so at DOMContentLoaded the losing build is simply REMOVED —
+     the surviving build then owns #see-more, #quiz and the multi-step
+     form — and only THEN is multi-step.js loaded. multi-step.js snapshots
+     $('[data-form="step"]') at execution time, so loading it while both
+     forms exist wires the quiz to 8 steps across two forms and breaks it.
+     It must appear exactly ONCE on the page: a second copy dies at parse
+     on its top-level `let` declarations. -->
+<script>
+  onReady(function () {
+    var OLD = ".page-wrapper.cc-paid-old";
+    var NEW = ".page-wrapper.cc-paid-new";
+
+    // Prefer the head script's assignment (deterministic — immune to any
+    // stray stylesheet, e.g. a Statsig sidecar experiment left running).
+    // Fall back to computed styles only if the head slot is missing.
+    var loserSel = null;
+    var exp = window.__lpPaid;
+    if (exp && !exp.fallback) {
+      loserSel = exp.variant === "test_1" ? OLD : NEW;
     }
 
-    function fallbackExperiment(name) {
-      return {
-        name: name,
-        ruleID: "blocked_by_sidecar_owner",
-        get: function (_key, fallback) {
-          return fallback;
+    if (loserSel) {
+      var winnerSel = loserSel === OLD ? NEW : OLD;
+      if (document.querySelector(winnerSel)) {
+        document.querySelectorAll(loserSel).forEach(function (w) {
+          w.remove();
+        });
+      }
+    } else {
+      var wrappers = document.querySelectorAll(OLD + ", " + NEW);
+      if (wrappers.length > 1) {
+        var hidden = Array.prototype.filter.call(wrappers, function (w) {
+          return getComputedStyle(w).display === "none";
+        });
+        // Never remove every build (e.g. both hidden by a bad style state).
+        if (hidden.length < wrappers.length) {
+          hidden.forEach(function (w) { w.remove(); });
+        }
+      }
+    }
+
+    // Pin the surviving build visible with an INLINE !important style:
+    // inline beats every stylesheet, so a stray late-arriving rule (e.g.
+    // from a Statsig sidecar experiment nobody paused) can never blank
+    // the page again.
+    var survivors = document.querySelectorAll(OLD + ", " + NEW);
+    if (survivors.length === 1) {
+      survivors[0].style.setProperty("display", "block", "important");
+    }
+
+    var s = document.createElement("script");
+    s.src =
+      "https://cdn.jsdelivr.net/gh/videsigns/webflow-tools@latest/multi-step.js";
+    document.body.appendChild(s);
+  });
+</script>
+
+
+<!-- ===== Nav: scroll state (blur, color swap, pills) ===== -->
+<script>
+onReady(function () {
+  waitFor(hasGsap, function () {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const SCROLL_THRESHOLD = 50;
+
+    // Start blur at 0 so it animates cleanly both directions
+    gsap.set('.nav_container-2', {
+      backdropFilter: 'blur(0px)',
+      webkitBackdropFilter: 'blur(0px)',
+    });
+
+    // Scrolled-state timeline (paused, we play/reverse on scroll)
+    const navTL = gsap.timeline({
+      paused: true,
+      defaults: { duration: 0.4, ease: 'power2.out' },
+    });
+
+    navTL
+      .to('.nav_container-2', {
+        backgroundColor: 'rgba(254, 254, 254, 0.9)',
+        backdropFilter: 'blur(80px)',
+        webkitBackdropFilter: 'blur(80px)',
+      }, 0)
+      .to('.logo-embed', { color: '#fe5000' }, 0)
+      .to(['.menu_link-text', '.menu_link-padding'], { color: '#151514' }, 0)
+      .to('.btn.alternate.is-round.cc-start', {
+        borderColor: '#151514',
+        color: '#151514',
+      }, 0)
+      .to('.m-line-2.cc-white', { backgroundColor: '#000000' }, 0)
+      .to('.m-line-2-2.cc-white', { backgroundColor: '#000000' }, 0)
+      .to('.m-line-3-2.cc-white', { backgroundColor: '#000000' }, 0);
+
+    // Pill targets: menu_link-padding elements, excluding any that are
+    // (or sit directly next to) a .cc-dropdown
+    const pillTargets = gsap.utils.toArray('.menu_link-padding').filter((el) => {
+      const selfIsDropdown = el.classList.contains('cc-dropdown');
+      const siblingIsDropdown =
+        (el.nextElementSibling && el.nextElementSibling.classList.contains('cc-dropdown')) ||
+        (el.previousElementSibling && el.previousElementSibling.classList.contains('cc-dropdown'));
+      return !selfIsDropdown && !siblingIsDropdown;
+    });
+
+    const addPill = () => pillTargets.forEach((el) => el.classList.add('cc-pill'));
+    const removePill = () => pillTargets.forEach((el) => el.classList.remove('cc-pill'));
+
+    // Single source of truth. Idempotent: only acts when state changes.
+    let navScrolled = false;
+
+    function syncNav(animate) {
+      const scrolled = window.scrollY > SCROLL_THRESHOLD;
+      if (scrolled === navScrolled) return;
+      navScrolled = scrolled;
+
+      if (scrolled) {
+        animate ? navTL.play() : navTL.progress(1).pause();
+        removePill();
+      } else {
+        animate ? navTL.reverse() : navTL.progress(0).pause();
+        addPill();
+      }
+    }
+
+    // Initialize in the top/transparent state (matches head CSS, no flash).
+    navTL.progress(0).pause();
+    addPill();
+
+    ScrollTrigger.create({
+      start: SCROLL_THRESHOLD,
+      end: 'max',
+      onEnter: () => syncNav(true),     // scrolled down past threshold
+      onLeaveBack: () => syncNav(true), // scrolled back to the top
+    });
+
+    // Resolve the real state only after the browser has finished restoring
+    // scroll position. Kills the intermittent "scrolled at top" bug.
+    window.addEventListener('load', () => {
+      ScrollTrigger.refresh();
+      syncNav(false);                              // snap instantly to correct state
+      requestAnimationFrame(() => syncNav(false)); // re-confirm next frame
+    });
+  });
+});
+</script>
+
+
+<!-- ===== FAQ see-more / see-less toggle =====
+     Delegated handlers on purpose: both page builds duplicate #see-more /
+     #see-less, and direct `$('#see-more').on(...)` binds only the first —
+     hidden — copy (it also races the lp-paid cleanup below, which removes
+     the losing build asynchronously after DOMContentLoaded). Delegation
+     matches the clicked element itself, so it works whichever build
+     survives and whenever the cleanup lands. -->
+<script>
+onReady(function () {
+  waitFor(hasJq, function () {
+    $(document).on('click', '#see-more', function () {
+      $('.see-more-faq').hide();
+      $('.see-less-faq').css('display', 'flex');
+    });
+    $(document).on('click', '#see-less', function () {
+      $('.see-more-faq').css('display', 'flex');
+      $('.see-less-faq').hide();
+    });
+  });
+});
+</script>
+
+
+<!-- ===== Program slider ===== -->
+<script>
+onReady(function () {
+  waitFor(hasSwiper, function () {
+    document.querySelectorAll('.program-slider').forEach(function (el) {
+      var speed = parseInt(el.dataset.speed, 10) || 600;
+      el.style.setProperty('--data-speed', speed);
+
+      // scope arrows to THIS section only (element refs, not global selectors)
+      var pscope = el.closest('.program-slider_component') || el.closest('.section_program-slider') || document;
+      var pPrev = Array.from(pscope.querySelectorAll('.team_button-wrap .slider_button.is-prev'));
+      var pNext = Array.from(pscope.querySelectorAll('.team_button-wrap .slider_button.is-next'));
+
+      new Swiper(el, {
+        speed: speed,
+        grabCursor: true,
+        slidesPerView: 1.2,
+        spaceBetween: 20,
+        loop: false,
+        navigation: { nextEl: pNext, prevEl: pPrev },
+        breakpoints: {
+          479: { slidesPerView: 1.8, spaceBetween: 20 },
+          768: { slidesPerView: 2, spaceBetween: 20 },
+          992: { slidesPerView: 3, spaceBetween: 24 },
         },
-      };
+      });
+    });
+  });
+});
+</script>
+
+
+<!-- ===== FAQ Guarantee deep-link / dropdown opener ===== -->
+<script>
+  // Pure DOM + sessionStorage — no library dependency, safe at parse time.
+  if (location.hash === '#faqs-guarantee') {
+    sessionStorage.setItem('deferredHash', '#faqs-guarantee');
+  }
+
+  function openGuaranteeDropdown() {
+    const dropdowns = document.querySelectorAll('.faq_dropdown-toggle-2');
+    const dropdown = dropdowns[6];
+    if (!dropdown) {
+      console.error('Dropdown at index 6 not found. Available dropdowns:', dropdowns.length);
+      return;
     }
-
-    function installStatsigJsClientGuard() {
-      var StatsigClient = window.Statsig?.StatsigClient;
-      if (!StatsigClient?.prototype) return false;
-
-      var proto = StatsigClient.prototype;
-      if (proto.__nourishHomepageGuardInstalled) return true;
-
-      var originalGetExperiment = proto.getExperiment;
-      if (typeof originalGetExperiment === "function") {
-        proto.getExperiment = function (name) {
-          if (isSidecarOwnedExperiment(name)) {
-            console.warn(
-              "[Statsig] Experiment is owned by Sidecar; skipped js-client getExperiment:",
-              name,
-            );
-            return fallbackExperiment(name);
-          }
-          return originalGetExperiment.apply(this, arguments);
-        };
-      }
-
-      var originalCheckGate = proto.checkGate;
-      if (typeof originalCheckGate === "function") {
-        proto.checkGate = function (name) {
-          if (isSidecarOwnedExperiment(name)) {
-            console.warn(
-              "[Statsig] Experiment is owned by Sidecar; skipped js-client checkGate:",
-              name,
-            );
-            return false;
-          }
-          return originalCheckGate.apply(this, arguments);
-        };
-      }
-
-      proto.__nourishHomepageGuardInstalled = true;
-      return true;
+    dropdown.classList.add('w--open');
+    dropdown.setAttribute('aria-expanded', 'true');
+    const dropdownList = dropdown.nextElementSibling;
+    if (dropdownList) {
+      dropdownList.classList.add('faq_dropdown-list-3', 'w-dropdown-list', 'w--open');
+      dropdownList.style.height = 'auto';
+    } else {
+      console.error('Dropdown list not found');
     }
+    const icon = dropdown.querySelector('.faq_icon-2');
+    if (icon) {
+      icon.style.transform = 'translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(-45deg) skew(0deg, 0deg)';
+      icon.style.transformStyle = 'preserve-3d';
+    }
+    dropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 
-    window.__installStatsigGuard = installStatsigJsClientGuard;
+  onReady(function () {
+    setTimeout(() => {
+      if (window.location.hash.toLowerCase().includes('#faqs-guarantee')) {
+        openGuaranteeDropdown();
+      }
+    }, 500);
 
-    if (!installStatsigJsClientGuard()) {
-      window.addEventListener("load", installStatsigJsClientGuard, {
-        once: true,
+    document.addEventListener('click', function (e) {
+      const link = e.target.closest('a[href*="#faqs-guarantee"]');
+      if (link) {
+        e.preventDefault();
+        window.location.hash = '#faqs-guarantee';
+        openGuaranteeDropdown();
+      }
+    });
+
+    window.addEventListener('hashchange', function () {
+      if (window.location.hash.toLowerCase().includes('#faqs-guarantee')) {
+        openGuaranteeDropdown();
+      }
+    });
+  });
+</script>
+
+
+<!-- ===== Trust Pilot slider, auto progress ===== -->
+<script>
+onReady(function () {
+  waitFor(function () { return hasJq() && hasSwiper(); }, function () {
+    $('.tinyflow-slider_profile-wrap').each(function () {
+      $(this)
+        .find('.tinyflow_profile-icon')
+        .each(function (index) {
+          const $img = $(this);
+          if (!$img.parent().hasClass('tinyflow_profile-trigger')) {
+            $img.wrap(`<button type="button" class="tinyflow_profile-trigger" data-profile-index="${index}" aria-label="Show testimonial ${index + 1}"></button>`);
+          }
+          const $trigger = $img.parent('.tinyflow_profile-trigger');
+          $trigger.attr('data-profile-index', index);
+          $trigger.find('.tinyflow_profile-progress').remove();
+          $img.before(`
+          <svg class="tinyflow_profile-progress" viewBox="0 0 40 40" aria-hidden="true">
+            <circle class="tinyflow_profile-progress__circle" cx="20" cy="20" r="19" pathLength="100"></circle>
+          </svg>
+        `);
+        });
+    });
+
+    const swiper = new Swiper('.tinyflow-slider', {
+      slidesPerView: 1,
+      effect: 'fade',
+      fadeEffect: { crossFade: true },
+      loop: true,
+      autoplay: { disableOnInteraction: false },
+      keyboard: { enabled: true, onlyInViewport: true },
+      navigation: {
+        nextEl: '[data-slider-arrow="next"]',
+        prevEl: '[data-slider-arrow="prev"]',
+      },
+      on: {
+        beforeInit(swiper) {
+          const speed = Number(swiper.el.dataset.speed) || swiper.params.speed;
+          const delay = Number(swiper.el.dataset.autoplayDelay) || swiper.params.autoplay.delay;
+          swiper.el.style.setProperty('--data-speed', speed);
+          swiper.params.speed = speed;
+          swiper.params.autoplay.delay = delay;
+        },
+        init(swiper) {
+          swiper.autoplay.stop(); // don't run until in view
+          resetProfileProgress();
+          updateProfileIcons(swiper, 0);
+        },
+        slideChangeTransitionStart(swiper) {
+          resetProfileProgress();
+          updateProfileIcons(swiper, 0);
+        },
+        slideChangeTransitionEnd(swiper) {
+          resetProfileProgress();
+          updateProfileIcons(swiper, 0);
+        },
+        autoplayTimeLeft(swiper, time, progress) {
+          updateProfileIcons(swiper, (1 - progress) * 100);
+        },
+      },
+    });
+
+    // Start autoplay only when the slider scrolls into view
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            swiper.autoplay.start();
+          } else {
+            swiper.autoplay.stop();
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+    io.observe(swiper.el);
+
+    $(document).on('click', '.tinyflow_profile-trigger', function () {
+      const index = Number($(this).attr('data-profile-index'));
+      resetProfileProgress();
+      swiper.slideToLoop(index);
+    });
+
+    function resetProfileProgress() {
+      $('.tinyflow_profile-trigger').removeClass('is-active');
+      $('.tinyflow_profile-progress__circle').css('stroke-dashoffset', 100);
+    }
+    function updateProfileIcons(swiper, progress) {
+      const activeIndex = swiper.realIndex;
+      $('.tinyflow_profile-trigger').each(function () {
+        const $trigger = $(this);
+        const iconIndex = Number($trigger.attr('data-profile-index'));
+        const isActive = iconIndex === activeIndex;
+        const dashOffset = isActive ? 100 - progress : 100;
+        $trigger.toggleClass('is-active', isActive);
+        $trigger.find('.tinyflow_profile-progress__circle').css('stroke-dashoffset', dashOffset);
       });
     }
-  })();
+  });
+});
+</script>
+
+
+<!-- NOTE: no "Children fade in" / "Text fade in" blocks here on purpose.
+     footer.js (loaded site-wide from the global footer) owns the GSAP
+     scroll reveals for [data-fade-in] / [data-slide-up] /
+     [data-slide-up-group], with idempotency guards (dataset.initFade /
+     initSlide) this page's older copies lacked. Carrying page-level
+     copies too gave every element two competing tweens + ScrollTriggers,
+     which made components flash / animate twice. -->
+
+
+<!-- ===== lp-paid exposure event =====
+     Assignment happens pre-paint in paid-head.html; this only reports it
+     to Rudderstack (the Statsig console experiment is paused / not in the
+     render path). -->
+<script>
+  onReady(function () {
+    var exp = window.__lpPaid;
+    // Holdout ("none") visitors are outside the experiment: no event.
+    if (!exp || exp.fallback || !exp.inExperiment) return;
+    (function trackWhenReady(attempts) {
+      attempts = attempts || 0;
+      if (
+        window.rudderanalytics &&
+        typeof window.rudderanalytics.track === "function"
+      ) {
+        window.rudderanalytics.track("Experiment Viewed", {
+          experiment_name: exp.experiment,
+          variation: exp.variant,
+        });
+      } else if (attempts < 20) {
+        setTimeout(function () {
+          trackWhenReady(attempts + 1);
+        }, 250);
+      } else {
+        console.error("Rudderanalytics not available for lp-paid exposure");
+      }
+    })();
+  });
 </script>
 
 <script
   async
   src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.610.23/hero-filter-search.js"
 ></script>
-<script src="https://cdn.jsdelivr.net/gh/videsigns/webflow-tools@latest/multi-step.js"></script>
-
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    window.rudderanalytics?.ready(async () => {
-      const u = window.statsigUser;
-      try {
-        JSON.stringify(u); // should not throw
-      } catch (err) {
-        console.error("user not JSON-safe", u, err);
-      }
-      const { StatsigClient } = window.Statsig;
-      const client = new StatsigClient(
-        "client-WQtYDbXSKdHeLKM7WlavcbKXn19ve6OlMdFhQUfxtcH",
-        user // <-- pass entire object, not userID
-      );
-
-      await client.initializeAsync();
-
-      const exp = client.getExperiment("quiz-insurance-form-2");
-      const variant = exp.get("variant");
-
-      console.log("StatsigUser:", user);
-      console.log("Experiment variant:", variant);
-
-      window.rudderanalytics?.track("Experiment Viewed", {
-        experiment_name: "quiz-insurance-form",
-        variation: variant,
-      });
-
-      if (variant === "test") {
-        $("#quiz-control").hide();
-        $("#quiz-variant").show();
-      } else {
-        $("#quiz-control").show();
-        $("#quiz-variant").hide();
-      }
-    });
-  });
-</script>
 
 <script>
   $(document).ready(function () {
@@ -140,17 +493,6 @@
     function initRadioAttributes() {
       $(".f-form-radio-wrapper").attr("data-radio-skip", "true");
       $(".f-form-radio-wrapper").attr("data-radio-delay", "500");
-    }
-
-    function initFaqToggle() {
-      $("#see-more").on("click", function () {
-        $(".see-more-faq").hide();
-        $(".see-less-faq").css("display", "flex");
-      });
-      $("#see-less").on("click", function () {
-        $(".see-more-faq").css("display", "flex");
-        $(".see-less-faq").hide();
-      });
     }
 
     function runAfterInteraction(fn, delay = 2000) {
@@ -319,7 +661,6 @@
 
     initStepWatcher();
     initRadioAttributes();
-    initFaqToggle();
 
     runAfterInteraction(initializeLazySwiper);
     runAfterInteraction(initializeTolstoy, 1500);
