@@ -145,6 +145,20 @@
       gsap.registerPlugin(ScrollTrigger);
 
       var scrollThreshold = 50;
+
+      // "Start solid" flag. A `class="cc-solid"` custom attribute on the
+      // .nav-2 root (set per page in the Designer) pins the scrolled/solid
+      // variant from first paint on tablet/mobile (<= 991px) — used when
+      // the bottom cookie banner eats viewport and the hero form must sit
+      // on a solid nav. Read once here, because setSolidState() rewrites
+      // the class later. Desktop keeps the transparent -> solid scroll
+      // behavior. The matching no-flash CSS lives in home-head.html.
+      var startSolid = nav.classList.contains("cc-solid");
+      var solidMq = window.matchMedia("(max-width: 991px)");
+      function forceSolid() {
+        return startSolid && solidMq.matches;
+      }
+
       var navContainers = nav.querySelectorAll(".nav_container-2");
       var logos = nav.querySelectorAll(".logo-embed");
       var menuText = nav.querySelectorAll(
@@ -239,7 +253,7 @@
       }
 
       function syncNav(animate) {
-        var scrolled = window.scrollY > scrollThreshold;
+        var scrolled = forceSolid() || window.scrollY > scrollThreshold;
         setSolidState(scrolled);
 
         if (!scrolled && !animate) {
@@ -280,6 +294,16 @@
           syncNav(true);
         },
       });
+
+      // Re-evaluate the pinned state when crossing the 991px breakpoint.
+      var onSolidMqChange = function () {
+        syncNav(false);
+      };
+      if (solidMq.addEventListener) {
+        solidMq.addEventListener("change", onSolidMqChange);
+      } else if (solidMq.addListener) {
+        solidMq.addListener(onSolidMqChange);
+      }
 
       window.addEventListener("load", function () {
         ScrollTrigger.refresh();

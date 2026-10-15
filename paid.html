@@ -134,6 +134,18 @@ onReady(function () {
 
     const SCROLL_THRESHOLD = 50;
 
+    // "Start solid" flag. A `class="cc-solid"` custom attribute on the
+    // .nav-2 root (set per page in the Designer) pins the scrolled/solid
+    // variant from first paint on tablet/mobile (<= 991px) — used when the
+    // bottom cookie banner eats viewport and the hero form must sit on a
+    // solid nav. Read once here (the class is harmless on its own; the
+    // no-flash CSS keyed on .nav-2.cc-solid lives in global-head.html).
+    // Desktop keeps the transparent -> solid scroll behavior.
+    const navRoot = document.querySelector('.nav-2');
+    const startSolid = !!navRoot && navRoot.classList.contains('cc-solid');
+    const solidMq = window.matchMedia('(max-width: 991px)');
+    const forceSolid = () => startSolid && solidMq.matches;
+
     // Start blur at 0 so it animates cleanly both directions
     gsap.set('.nav_container-2', {
       backdropFilter: 'blur(0px)',
@@ -179,7 +191,7 @@ onReady(function () {
     let navScrolled = false;
 
     function syncNav(animate) {
-      const scrolled = window.scrollY > SCROLL_THRESHOLD;
+      const scrolled = forceSolid() || window.scrollY > SCROLL_THRESHOLD;
       if (scrolled === navScrolled) return;
       navScrolled = scrolled;
 
@@ -202,6 +214,11 @@ onReady(function () {
       onEnter: () => syncNav(true),     // scrolled down past threshold
       onLeaveBack: () => syncNav(true), // scrolled back to the top
     });
+
+    // Re-evaluate the pinned state when crossing the 991px breakpoint.
+    const onSolidMqChange = () => syncNav(false);
+    if (solidMq.addEventListener) solidMq.addEventListener('change', onSolidMqChange);
+    else if (solidMq.addListener) solidMq.addListener(onSolidMqChange);
 
     // Resolve the real state only after the browser has finished restoring
     // scroll position. Kills the intermittent "scrolled at top" bug.

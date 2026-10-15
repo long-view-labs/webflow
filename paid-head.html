@@ -30,6 +30,38 @@
   .page-wrapper.cc-paid-old { display: block !important; }
 </style>
 
+<!-- Nav "start solid" variant (this page only — not in the global head yet).
+     Add a custom attribute `class` = `cc-solid` to the .nav-2 root in the
+     Designer; this paints the solid/scrolled nav on <= 991px before any JS
+     runs, and the page's nav scroll script reads the class and keeps it
+     pinned. Desktop keeps the transparent -> solid scroll behavior. Values
+     mirror the .nav_container-2.cc-solid rules in the navbar's embedded
+     <style>. -->
+<style>
+  @media screen and (max-width: 991px) {
+    .nav-2.cc-solid .nav_container-2 {
+      background-color: rgba(254, 254, 254, 0.9);
+      -webkit-backdrop-filter: blur(80px);
+      backdrop-filter: blur(80px);
+    }
+    .nav-2.cc-solid .logo-embed {
+      color: #fe5000;
+    }
+    .nav-2.cc-solid .menu_link-text,
+    .nav-2.cc-solid .menu_link-padding {
+      color: #151514;
+    }
+    .nav-2.cc-solid .btn.alternate.is-round.cc-start {
+      border-color: #151514;
+      color: #151514;
+    }
+    .nav-2.cc-solid .m-line-2.cc-white,
+    .nav-2.cc-solid .m-line-2-2.cc-white,
+    .nav-2.cc-solid .m-line-3-2.cc-white {
+      background-color: #000000;
+    }
+  }
+</style>
 
 <style>
 @media (min-width: 992px) {
