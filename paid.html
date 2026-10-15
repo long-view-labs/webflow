@@ -11,11 +11,11 @@
      (#see-more, #quiz, the multi-step form), and getElementById always
      answers with the FIRST — hidden — copy.
 
-     Fix, in the "lp-paid wrapper cleanup" block below (which must stay
-     FIRST after the helpers): the losing page build — decided pre-paint
-     by the assignment script in the HEAD slot (paid-head.html) — is
-     REMOVED from the DOM at DOMContentLoaded before any other onReady
-     block runs, so the GSAP fade-ins, ScrollTriggers and sliders
+     Fix, in the "retired-build cleanup" block below (which must stay
+     FIRST after the helpers): the retired NEW page build — hidden
+     pre-paint by site CSS and the <style> at the top of the HEAD slot
+     (paid-head.html) — is REMOVED from the DOM at DOMContentLoaded before
+     any other onReady block runs, so the GSAP fade-ins, ScrollTriggers and sliders
      initialize against a single build (both builds initializing and then
      one being removed is what made components flash/animate twice), and
      only then is multi-step.js loaded — exactly once, with jQuery
@@ -23,10 +23,11 @@
 
      The Statsig js-client bundle + sidecar guard that used to live here
      were removed with the retired quiz-insurance-form-2 experiment;
-     nothing on this page instantiates StatsigClient anymore. Exposure
-     tracking for lp-paid is injected per-arm from the Statsig console,
-     not from this file. Restore the js-client blocks from git history if
-     a js-client experiment ever comes back to /paid.
+     nothing on this page instantiates StatsigClient anymore. The lp-paid
+     A/B test (old vs new build) ended Oct 2026; the OLD build stays live.
+     Its head assignment script and the footer "Experiment Viewed" block
+     were removed (git history has both). Restore the js-client blocks
+     from git history if a js-client experiment ever comes back to /paid.
 ========================================================================== -->
 
 <!-- ===== Shared init helpers (every block below uses them) ===== -->
@@ -58,17 +59,18 @@
 </script>
 
 
-<!-- ===== lp-paid wrapper cleanup + multi-step loader =====
+<!-- ===== retired-build cleanup + multi-step loader =====
      KEEP THIS FIRST after the helpers: its onReady handler must run
      before every other block's, so the fade-ins, ScrollTriggers and
      sliders below initialize against a single page build (initializing
      both and removing one afterwards makes components flash twice).
-     The page ships BOTH builds: .page-wrapper.cc-paid-old (control) and
-     .page-wrapper.cc-paid-new (test_1/default). The head-slot assignment
-     script (paid-head.html) already applied the winning arm's CSS before
-     paint, so at DOMContentLoaded the losing build is simply REMOVED —
-     the surviving build then owns #see-more, #quiz and the multi-step
-     form — and only THEN is multi-step.js loaded. multi-step.js snapshots
+     Until the new build is deleted in the Designer the page ships BOTH:
+     .page-wrapper.cc-paid-old (the live page) and .page-wrapper.cc-paid-new
+     (retired test arm, hidden pre-paint by site CSS + the head-slot
+     <style>). With no head assignment script, window.__lpPaid is
+     undefined and the computed-style path below removes whichever build
+     is display:none (the new one) at DOMContentLoaded — the survivor then owns #see-more, #quiz and the
+     multi-step form — and only THEN is multi-step.js loaded. multi-step.js snapshots
      $('[data-form="step"]') at execution time, so loading it while both
      forms exist wires the quiz to 8 steps across two forms and breaks it.
      It must appear exactly ONCE on the page: a second copy dies at parse
@@ -268,6 +270,44 @@ onReady(function () {
 </script>
 
 
+<!-- ===== "Do more with the Nourish app" step-cards slider (mobile) =====
+     The .fs-slider-5_* markup is the old Finsweet slider structure, but
+     nothing on this page drove it: the homepage initializes it from
+     home-footer.js (initFsSlider5), which /paid never loads, so the three
+     cards sat side by side in a flex row with everything past the first
+     clipped and the two static bullets dead. Mirrors the homepage config. -->
+<script>
+onReady(function () {
+  waitFor(hasSwiper, function () {
+    document.querySelectorAll('.fs-slider-5_instance').forEach(function (instance) {
+      var wrapper = instance.querySelector('.fs-slider-5_list-wrapper');
+      if (!wrapper || wrapper.swiper) return;
+
+      new Swiper(wrapper, {
+        slidesPerView: 1,
+        speed: 600,
+        spaceBetween: 16,
+        initialSlide: 0,
+        slideToClickedSlide: true,
+        centeredSlides: false,
+        loop: false,
+        slideClass: 'fs-slider-5_slide',
+        wrapperClass: 'fs-slider-5_list',
+        slideActiveClass: 'is-slide-active',
+        pagination: {
+          el: instance.querySelector('.fs-slider-5_pagination'),
+          bulletElement: 'div',
+          bulletClass: 'fs-slider-5_pagination_bullet',
+          bulletActiveClass: 'is-bullet-active',
+          clickable: true,
+        },
+      });
+    });
+  });
+});
+</script>
+
+
 <!-- ===== FAQ Guarantee deep-link / dropdown opener ===== -->
 <script>
   // Pure DOM + sessionStorage — no library dependency, safe at parse time.
@@ -434,36 +474,6 @@ onReady(function () {
      copies too gave every element two competing tweens + ScrollTriggers,
      which made components flash / animate twice. -->
 
-
-<!-- ===== lp-paid exposure event =====
-     Assignment happens pre-paint in paid-head.html; this only reports it
-     to Rudderstack (the Statsig console experiment is paused / not in the
-     render path). -->
-<script>
-  onReady(function () {
-    var exp = window.__lpPaid;
-    // Holdout ("none") visitors are outside the experiment: no event.
-    if (!exp || exp.fallback || !exp.inExperiment) return;
-    (function trackWhenReady(attempts) {
-      attempts = attempts || 0;
-      if (
-        window.rudderanalytics &&
-        typeof window.rudderanalytics.track === "function"
-      ) {
-        window.rudderanalytics.track("Experiment Viewed", {
-          experiment_name: exp.experiment,
-          variation: exp.variant,
-        });
-      } else if (attempts < 20) {
-        setTimeout(function () {
-          trackWhenReady(attempts + 1);
-        }, 250);
-      } else {
-        console.error("Rudderanalytics not available for lp-paid exposure");
-      }
-    })();
-  });
-</script>
 
 <script
   async

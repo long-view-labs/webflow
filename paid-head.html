@@ -8,111 +8,28 @@
      copy with "Identifier has already been declared". That combination is
      what broke the quiz and the FAQ see-more link.
 
-     The lp-paid A/B test (old vs new page build) is assigned by the
-     FIRST script below, synchronously, before first paint — Statsig is
-     deliberately OUT of the render path (waiting on the sidecar to
-     inject arm CSS delayed every paint; same reason paid-tt.js dropped
-     its Statsig dependency). The lp-paid experiment in the Statsig
-     console must therefore be PAUSED / have no inject actions, or its
-     CSS will fight this assignment. Exposure goes to Rudderstack as
-     "Experiment Viewed" from the footer slot (paid.html), which also
-     removes the losing build before loading multi-step.js.
+     The lp-paid A/B test (old vs new page build) ENDED Oct 2026; the
+     OLD build (.page-wrapper.cc-paid-old) stays as the live page. Its
+     pre-paint assignment script is gone from this slot. Site CSS already
+     ships the old build visible / new hidden; the small <style> below
+     pins that so a Designer CSS change or a stale localStorage pin can
+     never swap builds. The footer slot (paid.html) then removes the hidden
+     new build from the DOM before loading multi-step.js. Delete
+     .page-wrapper.cc-paid-new in the Designer when convenient — the
+     <style> is harmless once that's done. The lp-paid experiment in the
+     Statsig console must stay PAUSED / carry no inject actions.
 ========================================================================== -->
 
-<!-- ===== lp-paid assignment + pre-paint swap (keep FIRST in this slot,
-     keep inline). ALLOCATION of visitors enter the experiment, split
-     50/50 into control / test_1 (both tracked); everyone else is a sticky
-     "none" holdout that sees the OLD (current) build with no event — the
-     site CSS default shows the NEW build, so the holdout needs the swap
-     CSS just like control does. Priority: ?lp_paid=control|test_1|none
-     (QA override, sticky once visited) → localStorage → random roll.
-     The published default (script blocked) shows the new build: site CSS
-     ships `.cc-paid-old { display: none }`. -->
-<script>
-  (function () {
-    var EXPERIMENT = "lp-paid";
-    var STORAGE_KEY = "lp_paid_variant";
-    // Share of /paid traffic entering the experiment; entrants split 50/50
-    // into control / test_1, so treatment share = ALLOCATION / 2.
-    // 0.4 = the requested 20% to treatment (20% control tracked, 60%
-    // untracked holdout on the old build). 0 = test off: everyone sees the
-    // old build and only the ?lp_paid= override links assign anything.
-    var ALLOCATION = 0.4;
-    var WRAPPERS = {
-      control: ".page-wrapper.cc-paid-old",
-      test_1: ".page-wrapper.cc-paid-new",
-      none: ".page-wrapper.cc-paid-old", // holdout = current experience
-    };
+<!-- ===== Pin the old build pre-paint (keep FIRST in this slot) =====
+     Belt and braces over the site CSS default (old visible / new hidden):
+     no JS, so no flash and no dependency on localStorage pins left over
+     from the lp-paid test. Remove together with .page-wrapper.cc-paid-new
+     once it is deleted in the Designer. -->
+<style>
+  .page-wrapper.cc-paid-new { display: none !important; }
+  .page-wrapper.cc-paid-old { display: block !important; }
+</style>
 
-    function getVariant() {
-      try {
-        return localStorage.getItem(STORAGE_KEY);
-      } catch (e) {
-        return null;
-      }
-    }
-    function setVariant(v) {
-      try {
-        localStorage.setItem(STORAGE_KEY, v);
-      } catch (e) {}
-    }
-
-    try {
-      var qp = new URLSearchParams(window.location.search).get("lp_paid");
-      if (WRAPPERS[qp]) setVariant(qp);
-    } catch (e) {}
-
-    var variant = getVariant();
-    if (!WRAPPERS[variant]) {
-      variant =
-        Math.random() < ALLOCATION
-          ? Math.random() < 0.5
-            ? "control"
-            : "test_1"
-          : "none";
-      // Persist "none" only while the test is live (ALLOCATION > 0).
-      // Pre-launch visitors must not be pinned to the holdout, or they
-      // could never enter the experiment once it launches.
-      if (variant !== "none" || ALLOCATION > 0) setVariant(variant);
-    }
-
-    // The footer slot (tracking + wrapper cleanup) reads this.
-    window.__lpPaid = {
-      experiment: EXPERIMENT,
-      variant: variant,
-      inExperiment: variant !== "none",
-    };
-
-    var winner = WRAPPERS[variant];
-    var loser =
-      variant === "test_1" ? WRAPPERS.control : WRAPPERS.test_1;
-
-    // Pre-paint swap: zero flicker, no library wait. Site CSS defaults are
-    // asymmetric (old hidden, new shown), so the winner must be forced
-    // visible — hiding the loser alone leaves control a blank page.
-    var style = document.createElement("style");
-    style.id = "lp-paid-ab";
-    style.textContent =
-      loser +
-      " { display: none !important; } " +
-      winner +
-      " { display: block !important; }";
-    document.head.appendChild(style);
-
-    // Failsafe: if the chosen build is missing (page edited?), undo the
-    // swap and fall back to the published default instead of a blank page.
-    document.addEventListener(
-      "DOMContentLoaded",
-      function () {
-        if (!document.querySelector(winner)) {
-          style.remove();
-          window.__lpPaid.fallback = true;
-        }
-      },
-      { once: true }
-    );
-  })();
-</script>
 
 <style>
 @media (min-width: 992px) {
