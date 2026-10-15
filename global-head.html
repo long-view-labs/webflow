@@ -4,16 +4,24 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" />
 <link rel="preconnect" href="https://cdn.cookielaw.org" />
 
-<!-- OneTrust Cookies Consent Notice start for nourish.com -->
-<script
-  src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js"
-  type="text/javascript"
-  charset="UTF-8"
-  data-domain-script="019e6eb7-ce82-700d-ab43-3a3e0ff71ffc"
-  defer
-></script>
+<!-- OneTrust Cookies Consent Notice start for nourish.com
+     Production domains load the published script (data-domain-script =
+     <id>). The Webflow staging domain (*.webflow.io) loads the OneTrust
+     TEST script (<id>-test) so banner/config changes can be QA'd on staging
+     before they are published in OneTrust. The id is chosen at runtime
+     from the hostname, so one head snippet serves both environments. -->
 <script type="text/javascript">
   function OptanonWrapper() {}
+  (function () {
+    var id = "019e6eb7-ce82-700d-ab43-3a3e0ff71ffc";
+    if (/\.webflow\.io$/i.test(window.location.hostname)) id += "-test";
+    var s = document.createElement("script");
+    s.src = "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js";
+    s.type = "text/javascript";
+    s.charset = "UTF-8";
+    s.setAttribute("data-domain-script", id);
+    document.head.appendChild(s);
+  })();
 </script>
 <!-- OneTrust Cookies Consent Notice end for nourish.com -->
 
