@@ -8,6 +8,72 @@
      URL, republish the page. NOTE: outcomes.js first exists in v2.620.45 —
      don't point this stub at any earlier tag.
 ============================================================================ -->
+<!-- ===== Scroll-reveal policy (page-level; newer pages only for now) =====
+     Must stay INLINE in this footer slot: it runs while the page parses,
+     before the deferred footer.js / page scripts, and pre-sets the same
+     data-* flags their initScrollReveals / initAnimations check.
+     - phones (<= 767px) and prefers-reduced-motion: no reveals at all
+     - anything already inside the viewport on load: shown immediately
+     - below-the-fold content: fades in as soon as its top edge enters the
+       viewport ("top bottom") instead of at 80-85%, which left blank space
+       at the bottom of tall viewports until the user scrolled.
+     Keep the copies in home-footer.html, outcomes-footer.html and
+     paid.html identical; this moves into footer.js at the sitewide go-live. -->
+<script>
+  (function () {
+    var off = window.matchMedia(
+      "(max-width: 767px), (prefers-reduced-motion: reduce)",
+    ).matches;
+    var vh = window.innerHeight;
+    function inView(el) {
+      var r = el.getBoundingClientRect();
+      return r.top < vh && r.bottom > 0;
+    }
+    function show(el) {
+      el.style.opacity = "1"; // beats any html.js-anim first-paint hiding CSS
+    }
+    if (off) document.documentElement.classList.remove("js-anim");
+
+    document.querySelectorAll("[data-slide-up]").forEach(function (el) {
+      if (off || inView(el)) {
+        el.dataset.initSlide = "true"; // reveal scripts skip it
+        show(el);
+        return;
+      }
+      if (!el.dataset.slideStart) el.dataset.slideStart = "top bottom";
+    });
+
+    document.querySelectorAll("[data-slide-up-group]").forEach(function (g) {
+      var items = g.querySelectorAll(
+        g.getAttribute("data-slide-target") || "h1,h2,h3,h4,h5,h6",
+      );
+      if (off) {
+        g.dataset.initSlideGroup = "true";
+        items.forEach(show);
+        return;
+      }
+      if (!g.dataset.slideStart) g.dataset.slideStart = "top bottom";
+      items.forEach(function (el) {
+        if (inView(el)) {
+          el.dataset.initSlide = "true";
+          show(el);
+        }
+      });
+    });
+
+    document.querySelectorAll("[data-fade-in]").forEach(function (g) {
+      var sel = g.getAttribute("data-fade-target");
+      var items = sel ? g.querySelectorAll(sel) : g.children;
+      if (off || inView(g)) {
+        g.dataset.initFade = "true";
+        Array.prototype.forEach.call(items, show);
+        return;
+      }
+      if (!g.dataset.fadeStart) g.dataset.fadeStart = "top bottom";
+    });
+  })();
+</script>
+
 <script
   defer
   src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.620.49/outcomes.js"
