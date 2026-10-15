@@ -199,7 +199,7 @@ $(".menu_slug").each(function () {
  * - Sets cookies for backward compatibility
  * - Automatically injects UTM parameters into all outbound links and signup iframes
  * - Clears old UTMs when coming from external referrers
- * - Supports all tracking parameters (utm_*, gclid, gbraid, gad_source, gad_campaignid, fbclid, msclkid, ttclid, im_ref, nsh_cam)
+ * - Supports all tracking parameters (utm_*, gclid, gbraid, gad_source, gad_campaignid, fbclid, msclkid, ttclid, oppref, im_ref, nsh_cam)
  */
 (function () {
   const SESSION_KEY = "persistedUTMs";
@@ -239,6 +239,7 @@ $(".menu_slug").each(function () {
     "fbclid",
     "msclkid",
     "ttclid",
+    "oppref",
     "im_ref",
     "nsh_cam",
   ];
@@ -1130,6 +1131,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     "fbclid",
     "msclkid",
     "ttclid",
+    "oppref",
     "im_ref",
     "nsh_cam",
   ];

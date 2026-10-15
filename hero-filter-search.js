@@ -1997,6 +1997,7 @@ $(function () {
         "fbclid",
         "msclkid",
         "ttclid",
+        "oppref",
         "im_ref",
         "matchtype",
       ];
