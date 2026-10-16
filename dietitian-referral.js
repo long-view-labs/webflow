@@ -17,6 +17,12 @@
   const MOBILE_HEIGHT = 720;
   const MOBILE_QUERY = "(max-width:767px)";
 
+  // A height drop to this fraction of the previous height (or less) is
+  // treated as the form -> confirmation screen transition.
+  const SHRINK_RATIO = 0.75;
+  // Gap between the fixed nav and the iframe top after scrolling.
+  const SCROLL_GAP = 16;
+
   let referralIframe = null;
   let referralOrigin = null;
 
@@ -31,6 +37,10 @@
           justify-content:center;
         }
         #${MOUNT_ID} .nourish-referral-iframe{
+          /* Webflow sets border-box globally; the posted height is the
+             form's content height, so keep the 1px borders outside it or
+             the form gets a 2px internal scroll. */
+          box-sizing:content-box;
           width:712px;
           height:${DEFAULT_HEIGHT}px;
           border:1px solid rgba(16,24,40,0.12);
@@ -107,11 +117,47 @@
     return Math.ceil(h);
   }
 
+  /**
+   * Height of anything fixed to the top of the viewport (the site nav), so
+   * a scroll-to-iframe lands below it instead of underneath it.
+   */
+  function getFixedTopOffset() {
+    const nav = document.querySelector(".w-nav");
+    if (!nav) return 0;
+    const style = getComputedStyle(nav);
+    if (style.position !== "fixed" && style.position !== "sticky") return 0;
+    const rect = nav.getBoundingClientRect();
+    return rect.top <= 0 ? rect.bottom : 0;
+  }
+
+  /**
+   * After submit the form shrinks to the confirmation screen. On mobile the
+   * user has usually scrolled past the top of the iframe to reach the submit
+   * button, so once the iframe shrinks they land on whatever was below it.
+   * Bring the top of the iframe back into view so they see the confirmation.
+   * Only big shrinks count: a validation message clearing is a few px and
+   * must not yank the page while someone is still filling in the form.
+   */
+  function scrollIframeIntoViewAfterShrink(prevHeight, nextHeight) {
+    if (!referralIframe) return;
+    if (!(prevHeight > 0) || nextHeight > prevHeight * SHRINK_RATIO) return;
+    const offset = getFixedTopOffset() + SCROLL_GAP;
+    const top = referralIframe.getBoundingClientRect().top;
+    if (top >= offset) return; // iframe top already visible
+    const reduce = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+    window.scrollTo({
+      top: Math.max(0, window.scrollY + top - offset),
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }
+
   function handleReferralMessage(event) {
     if (!isMessageFromReferralIframe(event)) return;
     const height = readIframeHeight(event.data);
     if (height == null) return;
+    const prevHeight = parseFloat(referralIframe.style.height) || 0;
     referralIframe.style.height = `${height}px`;
+    scrollIframeIntoViewAfterShrink(prevHeight, height);
   }
 
   window.addEventListener("message", handleReferralMessage);
