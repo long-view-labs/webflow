@@ -181,6 +181,7 @@ class ReleaseManager {
       "global-head.html",
       "home-head.html",
       "outcomes-footer.html",
+      "dietitian-referral-footer.html",
       "footer.js",
       "home-footer.js",
     ];
