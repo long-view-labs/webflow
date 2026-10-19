@@ -2319,6 +2319,22 @@ $(function () {
     appendUtmParams(params);
     params.append("InsuranceSearchInput", isInsuranceCheck ? "true" : "false");
 
+    // Params this widget computes. A stale value for one of these must not
+    // survive on the href once the selection that produced it is cleared
+    // (e.g. planName after switching away from a no-plan carrier).
+    var widgetOwnedParams = [
+      "landingPageVariation",
+      "variationName",
+      "landingPageModuleType",
+      "nourishPayerId",
+      "planName",
+      "state",
+      "firstName",
+      "lastName",
+      "patientBirthday",
+      "InsuranceSearchInput",
+    ];
+
     // Merge params over any params already on the CTA's href (existing ones
     // never win over freshly computed ones), then write the new href.
     function applyCtaHref($cta, ctaBaseUrl) {
@@ -2328,6 +2344,7 @@ $(function () {
         try {
           var existingUrl = new URL(currentHref, window.location.origin);
           existingUrl.searchParams.forEach(function (value, key) {
+            if (widgetOwnedParams.indexOf(key) !== -1) return;
             if (!merged.has(key)) merged.set(key, value);
           });
         } catch (e) {}

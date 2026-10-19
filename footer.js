@@ -78,7 +78,7 @@
 
     var script = document.createElement("script");
     script.src =
-      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.621.1/hero-filter-search.js";
+      "https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.621.2/hero-filter-search.js";
     script.async = true;
     document.body.appendChild(script);
   }

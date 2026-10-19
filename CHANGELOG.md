@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.621.2] - 2026-10-19
+
+Fix stale CTA params: planName (and other cleared selections) no longer stick on the signup link after switching carriers. Remove Aetna from the homepage FAQ schema.
+
+
 ## [2.621.1] - 2026-10-19
 
 Load the hero insurance list from displayGroups=PRIMARY, drop Aetna, Aetna Medicare, and Meritain, send nourishPayerId=-3 for "My insurance is not listed", and match the employer-page (condensed) list and the API fallback list to the PRIMARY payers.
