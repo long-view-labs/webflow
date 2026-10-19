@@ -1,0 +1,20 @@
+<!-- =========================================================================
+     LANDING-PAGE TEMPLATE HEAD — LOADER STUB
+     Paste into Webflow: CMS Collection "Landing Page" template
+     (landing-page/{template}) -> Page Settings -> Custom Code -> Inside <head>.
+
+     Loads weight-concerns-split.js SYNCHRONOUSLY so the 50/50 redirect for
+     /landing-page/weight-concerns happens before first paint. The script is
+     path-guarded and inert on every other item in this template
+     (dietitian-b, dietitian-c, diabetes, ...). Keep it as the FIRST tag in
+     this slot.
+
+     The same file is also loaded deferred from
+     weight-concerns-variant-footer.html, pasted on each of the eight static
+     variant pages; that copy fires the variant-side event. To ship a change:
+     merge, tag a release, bump the version in this URL and in that stub,
+     re-paste all nine slots, publish.
+     NOTE: weight-concerns-split.js first exists in the tag after v2.621.2 —
+     don't point this stub at any earlier tag.
+============================================================================ -->
+<script src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.621.2/weight-concerns-split.js"></script>

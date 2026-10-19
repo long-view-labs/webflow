@@ -1,0 +1,25 @@
+<!-- =========================================================================
+     WEIGHT CONCERNS VARIANT PAGES — LOADER STUB (paste on all EIGHT pages)
+     Webflow: Page Settings -> Custom Code -> Before </body> tag on each of:
+       /landing-pages/weight-concerns-b
+       /landing-pages/weight-concerns/glp1
+       /landing-pages/weight-concerns/bariatric
+       /landing-pages/weight-concerns/macros
+       /landing-pages/weight-concerns/insurance
+       /landing-pages/weight-concerns/fitness
+       /landing-pages/weight-concerns/dietitian
+       /landing-pages/weight-concerns/diet
+     -b is included on purpose: the control sends visitors whose utm_term
+     matches nothing there, and they still count as variant. If a group page
+     is added, it needs this stub AND an entry in the keyword map inside
+     weight-concerns-split.js, or its visitors go untracked / unrouted.
+
+     Fires the variant-side "Experiment Viewed" (lp-weight-concerns-b) for
+     visitors the control page bucketed as "variant". Same file as the
+     control redirect in landing-page-head.html; keep both versions in step.
+     To ship a change: merge, tag a release, bump the version here and in
+     landing-page-head.html, re-paste all nine slots, publish.
+     NOTE: weight-concerns-split.js first exists in the tag after v2.621.2 —
+     don't point this stub at any earlier tag.
+============================================================================ -->
+<script defer src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.621.2/weight-concerns-split.js"></script>
