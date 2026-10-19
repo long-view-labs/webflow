@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.621.3] - 2026-10-19
+
+Weight Concerns LP 50/50 split test (lp-weight-concerns-b): single-hop redirect from the control to the utm_term group page, RudderStack Experiment Viewed on both arms. New stubs landing-page-head.html and weight-concerns-variant-footer.html.
+
+
 ## [2.621.2] - 2026-10-19
 
 Fix stale CTA params: planName (and other cleared selections) no longer stick on the signup link after switching carriers. Remove Aetna from the homepage FAQ schema.
