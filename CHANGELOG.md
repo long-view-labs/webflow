@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.621.4] - 2026-10-20
+
+Dietitian Apply Clicked: RudderStack click tracking for the Apply now CTAs on /become-a-dietitian (global.js section 8). Attribute-driven (data-cta-action/id/name/location), page-scoped, same property schema as Get Started Clicked plus additive cta_* / destination_* / locale. Mocked Chromium test suite in tests/.
+
+
 ## [2.621.3] - 2026-10-19
 
 Weight Concerns LP 50/50 split test (lp-weight-concerns-b): single-hop redirect from the control to the utm_term group page, RudderStack Experiment Viewed on both arms. New stubs landing-page-head.html and weight-concerns-variant-footer.html.

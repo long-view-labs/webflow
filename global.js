@@ -14,7 +14,8 @@
 //   5. UTM TRACKING            capture/persist/inject UTMs (the big one)
 //   6. ANALYTICS ENRICHMENT    injects UTMs into RudderStack track/page calls
 //   7. SEO/DOM UTILITIES       canonical for pagination, hidden-element cleanup
-//   8. GET STARTED TRACKING    signup click tracking + link param injection
+//   8. GET STARTED TRACKING    signup click tracking + link param injection,
+//                              plus "Dietitian Apply Clicked" on /become-a-dietitian
 // ============================================================================
 
 // ============================================================================
@@ -978,6 +979,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
 //   (see getVariationParams for the path→variation table) plus the persisted
 //   UTMs, so attribution survives new-tab opens and the signup handoff.
 // - Covers late-rendered links via delayed passes + a MutationObserver.
+// - Tracks "Dietitian Apply Clicked" (same 5-prop schema plus additive cta_*
+//   properties) on anchors carrying the data-cta-* contract, on
+//   /become-a-dietitian only — see the block at the end of this IIFE.
 //
 // ⚠ ANALYTICS-CRITICAL: the variation mapping and event schema feed signup
 // attribution. Get data-team review before modifying.
@@ -1078,20 +1082,27 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   }
 
   /**
-   * Track "Get Started" click event
+   * Track a CTA click event (defaults to "Get Started Clicked")
    * @param {Element} el - Clicked element
    * @param {string} href - URL that was clicked
+   * @param {string} [eventName] - RudderStack event name (defaults to EVENT)
+   * @param {Object} [extraProps] - Additional/override properties. When it
+   *   supplies "cta copy", the element's DOM text is not read at all.
    */
-  function track(el, href) {
+  function track(el, href, eventName, extraProps) {
     if (
       !window.rudderanalytics ||
       typeof window.rudderanalytics.track !== "function"
     )
       return;
 
-    var $el = jQuery(el);
-    var text =
-      ($el.text() || "").trim().replace(/\s+/g, " ").slice(0, 120) || null;
+    var extra = extraProps || {};
+    var text = null;
+    if (!Object.prototype.hasOwnProperty.call(extra, "cta copy")) {
+      var $el = jQuery(el);
+      text =
+        ($el.text() || "").trim().replace(/\s+/g, " ").slice(0, 120) || null;
+    }
 
     var elementId =
       el.getAttribute("data-cta") ||
@@ -1101,15 +1112,20 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
         : el.tagName.toLowerCase());
 
     try {
-      var payload = nourishMergeUtmsIntoProps({
-        location: window.location.pathname || "/",
-        element: elementId,
-        "cta copy": text,
-        url: href || null,
-        deviceType: deviceType(),
-      });
+      var payload = nourishMergeUtmsIntoProps(
+        Object.assign(
+          {
+            location: window.location.pathname || "/",
+            element: elementId,
+            "cta copy": text,
+            url: href || null,
+            deviceType: deviceType(),
+          },
+          extra,
+        ),
+      );
 
-      window.rudderanalytics.track(EVENT, payload);
+      window.rudderanalytics.track(eventName || EVENT, payload);
     } catch (e) {}
   }
 
@@ -1228,4 +1244,111 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     maybeAppendVariation(u);
     if (u.toString() !== before) a.setAttribute("href", u.toString());
   });
+
+  // --------------------------------------------------------------------------
+  // "Dietitian Apply Clicked" — Apply now CTAs on /become-a-dietitian
+  // --------------------------------------------------------------------------
+  // Attribute-driven: a CTA is recognised ONLY by the data-cta-* contract that
+  // Webflow carries on the anchor — never by copy, classes or href substrings,
+  // so translations, restyles and link changes cannot silently drop or add
+  // events. data-cta-action is an allowlist that maps to a fixed event name;
+  // anything missing, unknown or malformed emits nothing.
+  //
+  //   data-cta-action    "apply-dietitian"            -> event name below
+  //   data-cta-id        one of CTA_IDS[action]       stable, never reassigned
+  //   data-cta-name      human-readable, <=120 chars  (also used as "cta copy")
+  //   data-cta-location  one of CTA_LOCATIONS
+  //
+  // Reuses track() above, so the Get Started schema is preserved (location,
+  // element, cta copy, url, deviceType + persisted UTMs), with additive
+  // cta_id, cta_name, cta_location, cta_action, page_path, destination_host,
+  // destination_path and locale. url / destination_* are origin + pathname
+  // only (no query, no hash); nothing is read from form fields or DOM text.
+  // The "earnings" CTA says Apply now but opens the pay calculator: that is
+  // calculator engagement, not an application start — distinguish it by
+  // cta_location / destination_path, never by dropping the event.
+  // Scoped to the page itself (normalised path, so trailing slash counts);
+  // delegated from document so repeated, mobile and late-inserted CTAs are
+  // covered; one listener (idempotence flag); never calls preventDefault; and
+  // track() swallows SDK errors, so navigation is untouched. Consent gating
+  // stays with the RudderStack SDK (OneTrust consentManagement in the footer
+  // stub). Signup-host links stay with Get Started Clicked: one event per
+  // click, never both.
+  // --------------------------------------------------------------------------
+  var APPLY_PAGE = "/become-a-dietitian";
+  var CTA_ACTION_EVENTS = { "apply-dietitian": "Dietitian Apply Clicked" };
+  var CTA_IDS = {
+    "apply-dietitian": [
+      "dietitian-apply-hero",
+      "dietitian-apply-earnings",
+      "dietitian-apply-platform",
+      "dietitian-apply-footer",
+    ],
+  };
+  var CTA_LOCATIONS = ["hero", "earnings", "platform", "footer"];
+  var CTA_NAME_RE = /^[A-Za-z0-9 .,&'()\/_-]{1,120}$/;
+
+  /**
+   * Read and validate the data-cta-* contract on an anchor.
+   * @param {Element} a
+   * @returns {{event:string, action:string, id:string, name:string, location:string}|null}
+   */
+  function readCtaContract(a) {
+    var action = a.getAttribute("data-cta-action");
+    if (
+      !action ||
+      !Object.prototype.hasOwnProperty.call(CTA_ACTION_EVENTS, action)
+    )
+      return null;
+    var id = a.getAttribute("data-cta-id");
+    if (!id || CTA_IDS[action].indexOf(id) === -1) return null;
+    var location = a.getAttribute("data-cta-location");
+    if (!location || CTA_LOCATIONS.indexOf(location) === -1) return null;
+    var name = (a.getAttribute("data-cta-name") || "")
+      .trim()
+      .replace(/\s+/g, " ");
+    if (!CTA_NAME_RE.test(name)) return null;
+    return {
+      event: CTA_ACTION_EVENTS[action],
+      action: action,
+      id: id,
+      name: name,
+      location: location,
+    };
+  }
+
+  function pageLocale() {
+    var lang = document.documentElement.getAttribute("lang");
+    return lang && /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(lang) ? lang : null;
+  }
+
+  if (
+    normPath(window.location.pathname) === APPLY_PAGE &&
+    !window.__nourishApplyTrackingBound
+  ) {
+    window.__nourishApplyTrackingBound = true;
+    $doc.on("click", function (e) {
+      var a = e.target.closest && e.target.closest("a[href]");
+      if (!a) return;
+      var cta = readCtaContract(a);
+      if (!cta) return;
+      var rawHref = (a.getAttribute("href") || "").trim();
+      if (!rawHref || rawHref.charAt(0) === "#") return; // not a navigation
+      var u = safeURL(rawHref);
+      if (!u || (u.protocol !== "http:" && u.protocol !== "https:")) return;
+      if (isSignupURL(u)) return; // handled by Get Started Clicked above
+      var destination = u.origin + u.pathname; // no query, no hash
+      track(a, destination, cta.event, {
+        "cta copy": cta.name,
+        cta_id: cta.id,
+        cta_name: cta.name,
+        cta_location: cta.location,
+        cta_action: cta.action,
+        page_path: window.location.pathname || "/",
+        destination_host: u.hostname,
+        destination_path: u.pathname,
+        locale: pageLocale(),
+      });
+    });
+  }
 })();
