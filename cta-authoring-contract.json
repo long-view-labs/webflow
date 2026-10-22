@@ -1,5 +1,5 @@
 {
-  "status": "implemented_in_staging_candidate",
+  "status": "saved_and_published_staging_only",
   "identity": {
     "cta_id": "Stable, language-independent semantic identity assigned in reviewed mapping. Never derive from CSS classes, DOM position or rendered copy.",
     "cta_name": "Reviewed human-readable reporting label; separate from identity and translated rendered text.",
@@ -42,12 +42,18 @@
     "versions": "Increment explicit template/component CTA revision when changing its CTA wording/design/behavior; document affected consumers. Page-specific overrides require their own explicit revision/mapping. Do not assume changing a global release reference alone establishes every page's CTA version.",
     "verification": "Inspect rendered attributes on at least representative item pages and shared-component instances, including dynamic content and mobile variants. Compare IDs, placement and revision with the mapping. Propagation behavior is proposed authoring guidance; it has not been implemented or verified across this Nourish site."
   },
-  "deployment_state": "Source commit 6a7e6a0871e55537e05c6d3fa070c93286dfa61e is saved in Webflow footer; staging-only publication is in progress. Production loader remains v2.621.4.",
+  "deployment_state": "Webflow sitewide footer pins global.js to cf76182f8f98ede15d501684ccf5f17f489b44e9. Staging publication completed; production retains v2.621.4. Existing current drafts were included only in staging with explicit owner approval. No unrelated draft edits were made.",
   "events": {
     "direct-signup": "Get Started Clicked",
     "directory-navigation": "Dietitian Directory Clicked",
     "apply-dietitian": "Dietitian Apply Clicked",
     "privacy-settings": null
   },
-  "rollout": "Use release_version=cta-cleanup-2026-10-22-1 for schema cutoff. Staging-only rollout does not constitute a production cutoff. Existing Get Started funnels historically included directory clicks; compare new direct signup separately and use directory event -> Provider Directory Loaded for the directory journey. No dual sending."
+  "rollout": "Use release_version=cta-cleanup-2026-10-22-1 for schema cutoff. Staging-only rollout does not constitute a production cutoff. Existing Get Started funnels historically included directory clicks; compare new direct signup separately and use directory event -> Provider Directory Loaded for the directory journey. No dual sending.",
+  "implementation_notes": {
+    "placement_migration": "Existing inspected markup is mapped through an explicit finite selector table to declared semantic IDs. Selectors locate markup; IDs/versions are never computed from CSS/text. New placements should use authored data-cta-* attributes. Unannotated genuine signup text links remain tracked with cta_mapping_status=unmapped.",
+    "page_version": "Read only from an explicit data-page-version attribute. Missing page version is null/omitted; never fabricated. release_version identifies this tracking release independently.",
+    "metadata_safety": "CTA events bypass broad UTM enrichment to prevent arbitrary persisted UTM_* properties reappearing. Navigation attribution rewriting remains preserved; unrelated event enrichment is unchanged. URLs and SDK page/tab/referrer context omit query/hash. No raw form values are read.",
+    "historical_compatibility": "Legacy property keys remain. Dietitian element labels, IDs and cta_location values remain. Patient element labels now use semantic IDs. Directory navigation sends only Dietitian Directory Clicked. Existing historical Get Started charts are not rewritten and need explicit release-aware comparison."
+  }
 }
