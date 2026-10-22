@@ -1164,8 +1164,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   function cleanCtaContext() {
     var ref = safeURL(document.referrer || "");
     return { page: { url: window.location.origin + window.location.pathname,
+      tab_url: window.location.origin + window.location.pathname,
       path: window.location.pathname, search: "",
-      referrer: document.referrer && ref ? ref.origin + ref.pathname : "" } };
+      referrer: document.referrer && ref ? ref.origin + ref.pathname : "",
+      initial_referrer: document.referrer && ref ? ref.origin + ref.pathname : "$direct",
+      referring_domain: document.referrer && ref ? ref.hostname : "",
+      initial_referring_domain: document.referrer && ref ? ref.hostname : "" } };
   }
 
   function track(el, href, eventName, extraProps) {
