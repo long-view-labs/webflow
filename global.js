@@ -1117,6 +1117,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   var CTA_LOCATIONS_V2 = ["nav", "hero", "content", "footer", "sticky_bar", "modal"];
 
   function patientAction(u) {
+    // Reviewed production redirect: /find-a-provider -> signup.nourish.com/providers.
+    // Keep this exact; other marketing hosts/paths need separate routing review.
+    if (u && !u.username && !u.password && u.protocol === "https:" &&
+        u.host === "www.nourish.com" && u.pathname === "/find-a-provider") {
+      return "directory-navigation";
+    }
     if (!isSignupURL(u)) return null;
     var path = normPath(u.pathname);
     if (path === "/") return "direct-signup";
@@ -1281,7 +1287,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   function rewriteSignupLinks() {
     jQuery('a[href]').each(function () {
       var u = safeURL(this.getAttribute("href"));
-      if (!patientAction(u)) return;
+      if (!isSignupURL(u) || !patientAction(u)) return;
       maybeAppendVariation(u);
       this.setAttribute("href", u.toString());
     });
@@ -1319,7 +1325,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     if (patientAction(u)) {
       track(a, u.toString());
       var before = u.toString();
-      maybeAppendVariation(u);
+      if (isSignupURL(u)) maybeAppendVariation(u);
       if (u.toString() !== before) a.setAttribute("href", u.toString());
       return;
     }
