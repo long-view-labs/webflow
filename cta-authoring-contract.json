@@ -1,0 +1,62 @@
+{
+  "status": "draft_pr_pending_deployment",
+  "identity": {
+    "cta_id": "Stable, language-independent semantic identity assigned in reviewed mapping. Never derive from CSS classes, DOM position or rendered copy.",
+    "cta_name": "Reviewed human-readable reporting label; separate from identity and translated rendered text.",
+    "cta_location": "Explicit semantic placement, such as nav, hero, platform, earnings, footer or a named new section.",
+    "cta_section": "Required stable semantic section token, using lowercase letters/numbers separated by hyphens or underscores; never derive from rendered headings.",
+    "cta_version": "Explicit revision for the existing CTA's wording, design or behavior. Assigned by the author; never guessed from CSS or text.",
+    "release_version": "Explicit page/release revision. A new section changes the page/release revision even when existing CTAs are untouched.",
+    "tracking_schema_version": "Revision of the event property contract, independent of CTA and page/release versions.",
+    "experiment_variant": "Separately preserved, reviewed experiment metadata; never inferred from visual styling."
+  },
+  "change_rules": [
+    {
+      "change": "Add a new section with a new CTA",
+      "rule": "Assign a new semantic cta_id and explicit cta_location, begin cta_version at 1, and advance the page/release version. Add a mapping row and validate event/action/destination. Do not reuse an existing CTA ID merely because the button looks the same."
+    },
+    {
+      "change": "Change existing CTA wording or design",
+      "rule": "Preserve cta_id, increment explicit cta_version and advance the page/release version. Update the reviewed human-readable name where appropriate. Keep experiment assignment separately."
+    },
+    {
+      "change": "Move an existing CTA",
+      "rule": "Make and record a placement/mapping decision. A genuinely new semantic CTA placement gets its own ID and explicit location, with CTA version starting at 1. Repositioning within the same semantic placement, or redesigning the section around the same CTA, preserves its ID and increments its explicit version. Unchanged CSS does not prove unchanged placement."
+    },
+    {
+      "change": "Add a second CTA to an existing section",
+      "rule": "Assign a distinct semantic ID, including a meaningful role suffix if needed. Never distinguish buttons by ordinal DOM index."
+    }
+  ],
+  "future_section_onboarding": [
+    "Decide whether this is a new logical CTA or a revision/move of an existing one; document the decision in the mapping.",
+    "Assign reviewed data-cta-id, data-cta-name, data-cta-location, data-cta-section, data-cta-action and data-cta-version on the actual interactive anchor/button; assign explicit page/release revision at the agreed page/template level.",
+    "Validate action against exact destination host/path. Patient direct signup uses Get Started Clicked with direct-signup; directory navigation remains separately labeled; privacy/settings emits no patient signup event. Preserve existing Dietitian Apply Clicked IDs and event name.",
+    "Use the existing single delegated handler. Do not add per-button listeners or another tracking embed.",
+    "Validate desktop/mobile, nested click targets, keyboard activation, dynamic insertions and repeated initialization, with exactly one event per intended action and consent respected.",
+    "Check sanitized payload properties and SDK context; never include raw query strings or form values. After isolated staging publication, verify uniquely QA-marked events in Amplitude rather than relying on browser dispatch alone."
+  ],
+  "cms_and_component_propagation": {
+    "template_attributes": "Attributes authored on the CTA in a CMS Collection Template propagate to each rendered item page using that template. The template's semantic CTA ID may be shared across those pages; page_path distinguishes the source page. Likewise reused global nav/footer CTAs retain stable role IDs while every event includes distinct page_path, locale and explicit page/release context. Do not manufacture IDs from item names or personal content.",
+    "collection_lists": "Repeated cards from one template can share a template CTA role ID when that is the intended reporting identity. If distinguishing content items is required, add a separately reviewed nonpersonal content identifier; do not encode freeform CMS copy into cta_id.",
+    "components": "Attributes set on a shared component definition propagate to instances unless overridden or bound differently. A component used in several semantic placements needs explicit instance props/bindings for placement and identity; a single hard-coded hero/footer label must not spread to every instance.",
+    "versions": "Increment explicit template/component CTA revision when changing its CTA wording/design/behavior; document affected consumers. Page-specific overrides require their own explicit revision/mapping. Do not assume changing a global release reference alone establishes every page's CTA version.",
+    "verification": "Inspect rendered attributes on at least representative item pages and shared-component instances, including dynamic content and mobile variants. Compare IDs, placement and revision with the mapping. Propagation behavior is proposed authoring guidance; it has not been implemented or verified across this Nourish site."
+  },
+  "deployment_state": "Latest production inspection served global.js at cf76182f8f98ede15d501684ccf5f17f489b44e9, byte-identical to the previously staged asset. That asset is not the current PR8 head. The current draft PR and these review fixes have not been published; updating this PR does not deploy or establish a production schema cutoff.",
+  "events": {
+    "direct-signup": "Get Started Clicked",
+    "directory-navigation": "Dietitian Directory Clicked",
+    "apply-dietitian": "Dietitian Apply Clicked",
+    "privacy-settings": null
+  },
+  "rollout": "Use release_version=cta-cleanup-2026-10-22-1 for schema cutoff. Staging-only rollout does not constitute a production cutoff. Existing Get Started funnels historically included directory clicks; compare new direct signup separately and use directory event -> Provider Directory Loaded for the directory journey. No dual sending.",
+  "implementation_notes": {
+    "placement_migration": "Existing inspected markup is mapped through an explicit finite selector table to declared semantic IDs. Selectors locate markup; IDs/versions are never computed from CSS/text. New placements should use authored data-cta-* attributes. Unannotated genuine signup text links remain tracked with cta_mapping_status=unmapped.",
+    "authored_validation": "Author all six patient fields (id, name, location, section, action, version) and validate rendered attributes before publication. Runtime explicit validation runs only for a nonempty data-cta-id whose data-cta-action is not apply-dietitian; invalid fields in that branch emit no event. Empty/missing IDs and apply-dietitian actions instead reach existing migration/unmapped fallback on recognized patient routes. These preexisting exceptions are not an authoring recommendation or a complete validation guarantee.",
+    "local_directory_redirect": "Only the verified HTTPS www.nourish.com/find-a-provider route is additionally classified as directory-navigation. Preserve its original href without adding signup attribution parameters. Destination fields describe the clicked marketing redirect, not its eventual signup destination. Other hosts, paths and trailing-slash variants require routing review. Directory taxonomy remains provisional.",
+    "page_version": "Read only from an explicit data-page-version attribute. Missing page version is null/omitted; never fabricated. release_version identifies this tracking release independently.",
+    "metadata_safety": "CTA events bypass broad UTM enrichment to prevent arbitrary persisted UTM_* properties reappearing. Navigation attribution rewriting remains preserved; unrelated event enrichment is unchanged. URLs and SDK page/tab/referrer context omit query/hash. No raw form values are read.",
+    "historical_compatibility": "Legacy property keys remain. Dietitian element labels, IDs and cta_location values remain. Patient element labels now use semantic IDs. Directory navigation sends only Dietitian Directory Clicked. Existing historical Get Started charts are not rewritten and need explicit release-aware comparison."
+  }
+}
