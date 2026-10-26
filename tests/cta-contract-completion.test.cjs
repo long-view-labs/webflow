@@ -104,6 +104,11 @@ test('explicit body page labels/revisions are reported without private copy or U
   assert.equal(p.tracking_schema_version, '2');
   assert.ok(!JSON.stringify(event).includes('SYNTHETIC_PRIVATE'));
   assert.ok(a.getAttribute('href').includes('token=SYNTHETIC_PRIVATE'));
+  const navigation = new URL(a.getAttribute('href'));
+  assert.equal(navigation.searchParams.get('utm_source'), 'SYNTHETIC_PRIVATE');
+  assert.equal(navigation.searchParams.has('patientBirthday'), false);
+  assert.equal(p.url, 'https://signup.nourish.com/');
+  assert.equal(event[2].context.page.search, '');
   assert.equal(h.identity.length, 0);
 });
 
