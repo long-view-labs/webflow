@@ -284,7 +284,6 @@ test("Dietitian Apply Clicked", async (t) => {
     try {
       const href = "/find-a-provider?email=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE";
       await page.evaluate(() => {
-        document.body.setAttribute("data-page-name", "Home");
         document.body.setAttribute("data-page-version", "2");
       });
       const sel = await insertAnchor(page, `<a data-cta-id="patient-directory-content" data-cta-name="Find a dietitian" data-cta-location="content" data-cta-section="provider_directory" data-cta-action="directory-navigation" data-cta-version="2" href="${href}"><span>Find a dietitian</span></a>`);
@@ -292,7 +291,8 @@ test("Dietitian Apply Clicked", async (t) => {
       const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
       assert.equal(events.length, 1);
       assert.equal(events[0].event, "Dietitian Directory Clicked");
-      assert.equal(events[0].props.page_name, "Home");
+      assert.equal(Object.hasOwn(events[0].props, "page_name"), false);
+      assert.equal(events[0].props.page_path, "/");
       assert.equal(events[0].props.page_version, "2");
       assert.equal(events[0].props.cta_version, "2");
       assert.equal(events[0].props.release_version, "cta-cleanup-2026-10-26-1");

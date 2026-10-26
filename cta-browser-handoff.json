@@ -14,25 +14,23 @@
     "release_version": "cta-cleanup-2026-10-26-1",
     "tracking_schema_version": "2",
     "patient_contract": "All six authored fields are required together; incomplete, empty or action-mismatched authored contracts will emit no event. Completely unannotated links retain reviewed migration/unmapped fallback.",
-    "page_contract": "Read reviewed data-page-name and data-page-version from html, with body fallback. Preserve an existing valid html value. Missing/invalid values remain null; never infer from document.title or headings.",
+    "page_contract": "Source page_path is automatic and is the canonical page dimension; readable reporting labels can be maintained centrally from paths. No manual page-name authoring or page_name emission is required. Read optional data-page-version from html with body fallback only when the html attribute is absent. Missing/invalid revisions remain null; preserve existing unrelated attributes.",
     "dietitian_contract": "Preserve the existing four-field contract and legacy locations. Optional data-cta-section/data-cta-version must be valid when supplied; absent values keep existing location/version-1 defaults."
   },
   "pages": [
     {
       "path": "/",
       "body_attributes_if_unset": {
-        "data-page-name": "Home",
         "data-page-version": "1"
       },
-      "preserve": "Preserve any existing valid reviewed page name/version on html or body. A changed existing page gets a newly assigned revision, never an automatic reset."
+      "preserve": "Preserve any existing valid reviewed page version on html or body. A changed existing page gets a newly assigned revision, never an automatic reset. Page revision is optional; preserve unrelated existing attributes."
     },
     {
       "path": "/become-a-dietitian",
       "body_attributes_if_unset": {
-        "data-page-name": "Become a dietitian",
         "data-page-version": "1"
       },
-      "preserve": "Preserve any existing valid reviewed page name/version on html or body. Preserve Apply CTA IDs, labels and placements."
+      "preserve": "Preserve any existing valid reviewed page version on html or body. Preserve Apply CTA IDs, labels and placements. Page revision is optional; preserve unrelated existing attributes."
     }
   ],
   "patient_rows": [
@@ -369,7 +367,7 @@
         ]
       }
     ],
-    "page_metadata": "Home body only: data-page-name=Home and explicitly assigned initial data-page-version=1 where no reviewed metadata exists. Defer other page/template labels until exact targets are confirmed.",
+    "page_metadata": "Do not add manual page-name attributes. Source page_path is automatic. Preserve existing reviewed data-page-version on html or body; author a new page revision only when independently needed. Do not remove pre-existing Webflow attributes.",
     "exclusions": "Do not fill blank tracking fields on editorial/privacy/unknown links. Do not change repeated DOM IDs. Inspect destination/attribute bindings before changing shared definitions and verify representative consumers."
   }
 }

@@ -1204,7 +1204,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     if (!cta) return;
     var version = el.getAttribute("data-cta-version");
     var pageVersion = pageAttribute("data-page-version");
-    var pageName = (pageAttribute("data-page-name") || "").trim().replace(/\s+/g, " ");
     var legacyElement = el.getAttribute("data-cta") || (el.id ? "#" + el.id : null) ||
       (el.className ? "." + String(el.className).trim().split(/\s+/).join(".") : el.tagName.toLowerCase());
     var payload = Object.assign({
@@ -1214,7 +1213,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       cta_action: cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
       tracking_schema_version: "2", release_version: CTA_RELEASE,
       page_version: CTA_VERSION.test(pageVersion || "") ? pageVersion : null,
-      page_name: CTA_NAME_RE.test(pageName) ? pageName : null,
       page_path: window.location.pathname || "/", destination_host: u.hostname,
       destination_path: u.pathname, locale: pageLocale(), cta_mapping_status: cta.mapping
     }, ctaQaProps());

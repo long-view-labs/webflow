@@ -91,13 +91,13 @@ test('an unapproved signup origin cannot become a dietitian event', t => {
   assert.equal(h.events().length, 0);
 });
 
-test('explicit body page labels/revisions are reported without private copy or UTM data', t => {
+test('body page revision and automatic source path need no manual page label', t => {
   const h = setup(t);
-  h.w.document.body.setAttribute('data-page-name', 'Home');
   h.w.document.body.setAttribute('data-page-version', '3');
   const a = h.click('https://signup.nourish.com/?token=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE', patient);
   const event = h.events()[0], p = event[1];
-  assert.equal(p.page_name, 'Home');
+  assert.equal(Object.hasOwn(p, 'page_name'), false);
+  assert.equal(p.page_path, '/');
   assert.equal(p.page_version, '3');
   assert.equal(p.cta_version, '2');
   assert.equal(p.release_version, 'cta-cleanup-2026-10-26-1');
@@ -112,27 +112,27 @@ test('explicit body page labels/revisions are reported without private copy or U
   assert.equal(h.identity.length, 0);
 });
 
-test('existing html page contract takes precedence over body metadata', t => {
+test('html page revision takes precedence while pre-existing page-name attributes stay untouched', t => {
   const h = setup(t);
   for (const [key, value] of Object.entries({ 'data-page-name': 'Reviewed home', 'data-page-version': '4' })) h.w.document.documentElement.setAttribute(key, value);
   h.w.document.body.setAttribute('data-page-name', 'Body fallback');
   h.w.document.body.setAttribute('data-page-version', '1');
   h.click('https://signup.nourish.com/', patient);
-  assert.equal(h.events()[0][1].page_name, 'Reviewed home');
+  assert.equal(Object.hasOwn(h.events()[0][1], 'page_name'), false);
   assert.equal(h.events()[0][1].page_version, '4');
+  assert.equal(h.w.document.documentElement.getAttribute('data-page-name'), 'Reviewed home');
+  assert.equal(h.w.document.body.getAttribute('data-page-name'), 'Body fallback');
 });
 
-test('missing/invalid page metadata stays null rather than using private document copy', t => {
+test('missing/invalid page revision stays null and no page label is inferred', t => {
   const h = setup(t);
   h.click('https://signup.nourish.com/', patient);
-  assert.equal(h.events()[0][1].page_name, null);
+  assert.equal(Object.hasOwn(h.events()[0][1], 'page_name'), false);
   assert.equal(h.events()[0][1].page_version, null);
-  h.w.document.documentElement.setAttribute('data-page-name', '');
   h.w.document.documentElement.setAttribute('data-page-version', 'invalid revision');
-  h.w.document.body.setAttribute('data-page-name', 'Body fallback');
   h.w.document.body.setAttribute('data-page-version', '1');
   h.click('https://signup.nourish.com/', patient);
-  assert.equal(h.events()[1][1].page_name, null);
+  assert.equal(Object.hasOwn(h.events()[1][1], 'page_name'), false);
   assert.equal(h.events()[1][1].page_version, null);
   assert.ok(!JSON.stringify(h.events()).includes('SYNTHETIC_PRIVATE'));
 });
@@ -161,7 +161,6 @@ for (const [field, value] of [['data-cta-section', ''], ['data-cta-section', 'in
 
 test('denied consent remains SDK-owned with no delivered event or identity mutation', t => {
   const h = setup(t, { consent: false });
-  h.w.document.body.setAttribute('data-page-name', 'Home');
   h.click('https://signup.nourish.com/', patient);
   h.click('/find-a-provider');
   assert.equal(h.events().length, 0);
