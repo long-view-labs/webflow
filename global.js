@@ -1083,9 +1083,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
    * @param {URL} u - URL object
    * @returns {boolean} - True if signup URL
    */
+  function isSignupHost(u) {
+    return !!u && (u.hostname === "signup.nourish.com" || u.hostname === "signup.usenourish.com");
+  }
+
   function isSignupURL(u) {
-    return !!u && !u.username && !u.password && (u.protocol === "https:" || u.protocol === "http:") &&
-      (u.hostname === "signup.nourish.com" || u.hostname === "signup.usenourish.com");
+    return isSignupHost(u) && !u.username && !u.password && u.protocol === "https:" && !u.port;
   }
 
   /**
@@ -1100,7 +1103,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // identities, placement, section and revision below are explicit constants.
   // Authors should add data-cta-* contracts for new sections instead of adding
   // CSS/text-derived identities. Unknown placements are reported as unmapped.
-  var CTA_RELEASE = "cta-cleanup-2026-10-22-1";
+  var CTA_RELEASE = "cta-cleanup-2026-10-26-1";
   var PATIENT_MAPPINGS = [
     { selector: '[data-cta="nav"]', location: "nav", section: "navigation", role: "nav" },
     { selector: '.nav_component-2 a', location: "nav", section: "navigation", role: "nav" },
@@ -1135,11 +1138,18 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     if (!action) return null;
     var id = a.getAttribute("data-cta-id");
     var c;
-    if (id && a.getAttribute("data-cta-action") !== "apply-dietitian") {
+    // Legacy data-cta alone is a migration hook. Once any explicit contract
+    // field is authored, require the complete contract instead of falling back.
+    var fields = ["id", "name", "location", "section", "action", "version"];
+    var authored = false;
+    for (var f = 0; f < fields.length; f++) {
+      if (a.getAttribute("data-cta-" + fields[f]) !== null) authored = true;
+    }
+    if (authored) {
       c = { id: id, name: a.getAttribute("data-cta-name"),
         location: a.getAttribute("data-cta-location"), section: a.getAttribute("data-cta-section"),
         action: a.getAttribute("data-cta-action"), version: a.getAttribute("data-cta-version") };
-      if (!CTA_TOKEN.test(c.id) || !c.name || c.name.length > 120 ||
+      if (!CTA_TOKEN.test(c.id || "") || !c.name || !c.name.trim() || c.name.length > 120 ||
           CTA_LOCATIONS_V2.indexOf(c.location) < 0 || !CTA_TOKEN.test(c.section || "") ||
           c.action !== action || !CTA_VERSION.test(c.version || "")) return null;
       c.mapping = "explicit";
@@ -1178,17 +1188,23 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       initial_referring_domain: document.referrer && ref ? ref.hostname : "" } };
   }
 
+  function pageAttribute(name) {
+    var value = document.documentElement.getAttribute(name);
+    return value === null && document.body ? document.body.getAttribute(name) : value;
+  }
+
   function track(el, href, eventName, extraProps) {
     if (!window.rudderanalytics || typeof window.rudderanalytics.track !== "function") return;
     var u = safeURL(href);
     if (!u || (u.protocol !== "http:" && u.protocol !== "https:")) return;
     var extra = extraProps || {};
     var cta = extra.cta_id ? { id: extra.cta_id, name: extra.cta_name,
-      location: extra.cta_location, section: extra.cta_location, action: extra.cta_action,
-      version: "1", mapping: "existing-dietitian-contract" } : patientContract(el, u);
+      location: extra.cta_location, section: extra.cta_section || extra.cta_location, action: extra.cta_action,
+      version: extra.cta_version || "1", mapping: "existing-dietitian-contract" } : patientContract(el, u);
     if (!cta) return;
     var version = el.getAttribute("data-cta-version");
-    var pageVersion = document.documentElement.getAttribute("data-page-version");
+    var pageVersion = pageAttribute("data-page-version");
+    var pageName = (pageAttribute("data-page-name") || "").trim().replace(/\s+/g, " ");
     var legacyElement = el.getAttribute("data-cta") || (el.id ? "#" + el.id : null) ||
       (el.className ? "." + String(el.className).trim().split(/\s+/).join(".") : el.tagName.toLowerCase());
     var payload = Object.assign({
@@ -1198,6 +1214,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       cta_action: cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
       tracking_schema_version: "2", release_version: CTA_RELEASE,
       page_version: CTA_VERSION.test(pageVersion || "") ? pageVersion : null,
+      page_name: CTA_NAME_RE.test(pageName) ? pageName : null,
       page_path: window.location.pathname || "/", destination_host: u.hostname,
       destination_path: u.pathname, locale: pageLocale(), cta_mapping_status: cta.mapping
     }, ctaQaProps());
@@ -1329,11 +1346,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       if (u.toString() !== before) a.setAttribute("href", u.toString());
       return;
     }
-    if (normPath(window.location.pathname) !== APPLY_PAGE || isSignupURL(u)) return;
+    if (normPath(window.location.pathname) !== APPLY_PAGE || isSignupHost(u)) return;
     var cta = readCtaContract(a);
     if (!cta) return;
     track(a, u.origin + u.pathname, cta.event, {
-      cta_id: cta.id, cta_name: cta.name, cta_location: cta.location, cta_action: cta.action
+      cta_id: cta.id, cta_name: cta.name, cta_location: cta.location, cta_action: cta.action,
+      cta_section: cta.section, cta_version: cta.version
     });
   });
 
@@ -1400,12 +1418,18 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       .trim()
       .replace(/\s+/g, " ");
     if (!CTA_NAME_RE.test(name)) return null;
+    var section = a.getAttribute("data-cta-section");
+    var version = a.getAttribute("data-cta-version");
+    if ((section !== null && !CTA_TOKEN.test(section)) ||
+        (version !== null && !CTA_VERSION.test(version))) return null;
     return {
       event: CTA_ACTION_EVENTS[action],
       action: action,
       id: id,
       name: name,
       location: location,
+      section: section === null ? location : section,
+      version: version === null ? "1" : version,
     };
   }
 

@@ -90,7 +90,7 @@ function fixtureHtml({ sdkMode }) {
     sdkMode === "live"
       ? `window.__liveTracks = [];
          window.rudderanalytics = {
-           track: function (name, props) { window.__liveTracks.push({ event: name, props: props }); },
+           track: function (name, props, options) { window.__liveTracks.push({ event: name, props: props, options: options }); },
            page: function () {}
          };`
       : sdkMode === "none"
@@ -131,7 +131,7 @@ function fixtureHtml({ sdkMode }) {
     var ra = window.rudderanalytics;
     if (Array.isArray(ra)) {
       return ra.filter(function (e) { return e[0] === "track"; })
-               .map(function (e) { return { event: e[1], props: e[2] }; });
+               .map(function (e) { return { event: e[1], props: e[2], options: e[3] }; });
     }
     return window.__liveTracks || [];
   };
@@ -254,8 +254,8 @@ test("Dietitian Apply Clicked", async (t) => {
       await page.locator("a:has-text('About Nourish')").click();
       await page.locator("#rd-app-calc").click();
       await page.locator("#mobile-nav-open-getstarted").click();
-      // An annotated anchor that points at the signup host stays a Get Started
-      // click: exactly one event per click, never both.
+      // A dietitian contract on a patient destination is a mapping error;
+      // do not silently relabel it as a patient click.
       const sel = await insertAnchor(
         page,
         `<a ${attrs("hero")} href="https://signup.nourish.com/">Apply now</a>`,
@@ -263,13 +263,76 @@ test("Dietitian Apply Clicked", async (t) => {
       await clickFirst(page, sel);
 
       assert.deepEqual(await applyEvents(page), []);
-      const getStarted = await page.evaluate(() =>
+      let getStarted = await page.evaluate(() =>
         window.__trackCalls().filter((c) => c.event === "Get Started Clicked"),
       );
-      assert.equal(getStarted.length, 2, "nav button + annotated signup link");
+      assert.equal(getStarted.length, 1, "only the unannotated nav signup click");
+      const patient = await insertAnchor(page,
+        '<a data-cta-id="patient-signup-content" data-cta-name="Start signup" data-cta-location="content" data-cta-section="intro" data-cta-action="direct-signup" data-cta-version="2" href="https://signup.nourish.com/">Start signup</a>');
+      await page.locator(patient).press("Enter");
+      getStarted = await page.evaluate(() => window.__trackCalls().filter(c => c.event === "Get Started Clicked"));
+      assert.equal(getStarted.length, 2, "nav click plus one valid keyboard-activated patient CTA");
+      assert.equal(getStarted[1].props.cta_mapping_status, "explicit");
+      assert.deepEqual(await applyEvents(page), []);
     } finally {
       await context.close();
     }
+  });
+
+  await t.test("directory redirect emits once with safe context and unchanged href", async () => {
+    const { page, context, pageErrors } = await openPage(browser, { pagePath: "/", sdkMode: "live" });
+    try {
+      const href = "/find-a-provider?email=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE";
+      await page.evaluate(() => {
+        document.body.setAttribute("data-page-name", "Home");
+        document.body.setAttribute("data-page-version", "2");
+      });
+      const sel = await insertAnchor(page, `<a data-cta-id="patient-directory-content" data-cta-name="Find a dietitian" data-cta-location="content" data-cta-section="provider_directory" data-cta-action="directory-navigation" data-cta-version="2" href="${href}"><span>Find a dietitian</span></a>`);
+      await page.locator(sel).locator("span").click();
+      const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
+      assert.equal(events.length, 1);
+      assert.equal(events[0].event, "Dietitian Directory Clicked");
+      assert.equal(events[0].props.page_name, "Home");
+      assert.equal(events[0].props.page_version, "2");
+      assert.equal(events[0].props.cta_version, "2");
+      assert.equal(events[0].props.release_version, "cta-cleanup-2026-10-26-1");
+      assert.equal(events[0].props.destination_path, "/find-a-provider");
+      assert.equal(await page.locator(sel).getAttribute("href"), href);
+      assert.ok(!JSON.stringify(events).includes("SYNTHETIC_PRIVATE"));
+      assert.deepEqual(await page.evaluate(() => window.__clicks), [{ defaultPrevented: false }]);
+      assert.deepEqual(pageErrors, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test("partial patient attributes and unreviewed signup origins emit nothing", async () => {
+    const { page, context } = await openPage(browser);
+    try {
+      for (const html of [
+        '<a data-cta-id="" data-cta="nav" href="https://signup.nourish.com/">Start</a>',
+        '<a data-cta-name="Start signup" href="https://signup.nourish.com/">Start</a>',
+        '<a data-cta="nav" href="https://signup.nourish.com:444/">Start</a>',
+        '<a data-cta="nav" href="http://signup.nourish.com/">Start</a>',
+        '<a data-cta="nav" href="https://signup.nourish.com/your-privacy-choices">Privacy</a>',
+      ]) await clickFirst(page, await insertAnchor(page, html));
+      const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
+      assert.deepEqual(events, []);
+    } finally { await context.close(); }
+  });
+
+  await t.test("explicit dietitian section and revisions preserve legacy placement", async () => {
+    const { page, context } = await openPage(browser);
+    try {
+      await page.locator('[data-cta-id="dietitian-apply-hero"]').evaluate(a => {
+        a.setAttribute("data-cta-section", "employment_intro");
+        a.setAttribute("data-cta-version", "3");
+      });
+      await clickFirst(page, '[data-cta-id="dietitian-apply-hero"]');
+      const [event] = await applyEvents(page);
+      assert.equal(event.props.cta_id, "dietitian-apply-hero");
+      assert.equal(event.props.cta_location, "hero");
+      assert.equal(event.props.cta_section, "employment_intro");
+      assert.equal(event.props.cta_version, "3");
+    } finally { await context.close(); }
   });
 
   await t.test("does not fire on other pages", async () => {
