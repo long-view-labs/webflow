@@ -1107,7 +1107,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // Reviewed migration mappings. Selectors locate existing markup only;
   // identities, placement, section and revision below are explicit constants.
   // Authors should add data-cta-* contracts for new sections instead of adding
-  // CSS/text-derived identities. Unknown placements are reported as unmapped.
+  // CSS/text-derived identities. Unknown placements are reported as "other".
   // Section blocks are shared by the paid, landing, condition, partner and
   // employer templates, so these apply on every page (first match wins, so
   // nested blocks are listed before the sections that contain them).
@@ -1115,7 +1115,8 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // One vocabulary for every CTA: id suffix -> section and readable label.
   // cta_section is where the CTA sits (nav, hero, footer) or, for in-page CTAs,
   // the block's topic. cta_location and cta_mapping_status are not sent; a
-  // cta_id ending in "-unmapped" marks a CTA with no mapping or a broken contract.
+  // cta_id ending in "-other" marks a CTA with no mapping or a broken contract
+  // (still counted; the UTM monitor alerts on it so it gets a real placement).
   // cta_name is "Get Started | <label>" (signup) or "Find a Dietitian | <label>".
   var CTA_PLACEMENTS = {
     "nav": { section: "nav", label: "Nav" },
@@ -1135,7 +1136,8 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     "article": { section: "content", label: "Article" },
     "page-content": { section: "content", label: "Page content" },
     "provider-search": { section: "provider_directory", label: "Provider search" },
-    "final-cta": { section: "footer", label: "Final CTA" }
+    "final-cta": { section: "footer", label: "Final CTA" },
+    "other": { section: "other", label: "Other" }
   };
   // Older ids (some authored in Webflow data-cta-id) folded into the vocabulary.
   var CTA_ID_ALIASES = { "footer": "final-cta", "program": "benefits", "hero-coverage": "hero-insurance-search",
@@ -1236,7 +1238,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       // but the click is still counted so authoring gaps cannot hide conversions.
       if (!CTA_TOKEN.test(c.id || "") || !c.name || !c.name.trim() || c.name.length > 120 ||
           CTA_LOCATIONS_V2.indexOf(c.location) < 0 || !CTA_TOKEN.test(c.section || "") ||
-          c.action !== action || !CTA_VERSION.test(c.version || "")) return unmappedContract(action, "invalid-contract");
+          c.action !== action || !CTA_VERSION.test(c.version || "")) return otherContract(action, "invalid-contract");
       c.mapping = "explicit";
       // Authored ids keep their prefix; known placements get the shared
       // vocabulary so explicit and mapped CTAs read the same in reports.
@@ -1259,13 +1261,13 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
         name: ctaName(action, m.role), location: m.location, section: CTA_PLACEMENTS[m.role].section,
         action: action, version: "1", mapping: "reviewed-migration" };
     }
-    return unmappedContract(action, "unmapped");
+    return otherContract(action, "other");
   }
 
-  function unmappedContract(action, mapping) {
-    return { id: "patient-" + (action === "direct-signup" ? "signup" : "directory") + "-unmapped",
-      name: ctaName(action, "unmapped"),
-      location: "unmapped", section: "unmapped", action: action, version: "unmapped", mapping: mapping };
+  function otherContract(action, mapping) {
+    return { id: "patient-" + (action === "direct-signup" ? "signup" : "directory") + "-other",
+      name: ctaName(action, "other"),
+      location: "other", section: "other", action: action, version: "1", mapping: mapping };
   }
 
   function ctaQaProps() {

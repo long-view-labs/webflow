@@ -266,8 +266,8 @@ test("Dietitian Apply Clicked", async (t) => {
         window.__trackCalls().filter((c) => c.event === "Get Started Clicked"),
       );
       assert.equal(getStarted.length, 2, "nav signup click plus the flagged mapping error");
-      assert.equal(getStarted[1].props.cta_id, "patient-signup-unmapped");
-      assert.equal(getStarted[1].props.cta_id, "patient-signup-unmapped");
+      assert.equal(getStarted[1].props.cta_id, "patient-signup-other");
+      assert.equal(getStarted[1].props.cta_id, "patient-signup-other");
       const patient = await insertAnchor(page,
         '<a data-cta-id="patient-signup-content" data-cta-name="Start signup" data-cta-location="content" data-cta-section="intro" data-cta-action="direct-signup" data-cta-version="2" href="https://signup.nourish.com/">Start signup</a>');
       await page.locator(patient).press("Enter");
@@ -318,8 +318,8 @@ test("Dietitian Apply Clicked", async (t) => {
       ]) await clickFirst(page, await insertAnchor(page, html));
       const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
       assert.deepEqual(events.map(e => [e.event, e.props.cta_id]), [
-        ["Get Started Clicked", "patient-signup-unmapped"],
-        ["Get Started Clicked", "patient-signup-unmapped"],
+        ["Get Started Clicked", "patient-signup-other"],
+        ["Get Started Clicked", "patient-signup-other"],
         ["Get Started Clicked", "patient-signup-nav"],
       ]);
     } finally { await context.close(); }

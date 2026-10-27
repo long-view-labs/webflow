@@ -150,3 +150,13 @@ test('page part names CMS templates by type and known pages by name', (t) => {
     assert.equal(p.cta_name, name, page);
   }
 });
+
+test('a signup link in an unknown block is counted as "<action> | <page> | Other"', (t) => {
+  const [p] = clickIn(t, '/landing-page/anxiety', '<section class="section_brand-new-block"><a>x</a></section>', 'a');
+  assert.equal(p.cta_id, 'patient-signup-other');
+  assert.equal(p.cta_name, 'Get Started | Landing page | Other');
+  assert.equal(p.cta_section, 'other');
+  const [d] = clickIn(t, '/', '<section class="section_brand-new-block"><a>x</a></section>', 'a', 'https://signup.nourish.com/providers');
+  assert.equal(d.cta_id, 'patient-directory-other');
+  assert.equal(d.cta_name, 'Find a Dietitian | Home | Other');
+});
