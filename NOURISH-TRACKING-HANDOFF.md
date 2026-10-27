@@ -5,7 +5,7 @@ PR8 contains the tested CTA runtime and a sitewide audit handoff. The runtime is
 ## Source and ownership
 
 - Repository: `long-view-labs/webflow`, existing draft PR8, branch `codex/nourish-cta-staging-2026-10-22`. Keep one repository writer and this PR. No merge or production publish is authorized.
-- Runtime source commit: `5d4062b` (invalid contracts counted as `invalid-contract`; first-touch referrer left to the SDK). `global.js` SHA256 `057c6a6205deb4d2f0efdd2d3c9a4acdc786b773a18bf0e56e67dda1cc6d176d`. Not yet deployed anywhere, so the release ID stays `cta-cleanup-2026-10-26-1`.
+- Runtime source commit: `3a8455f` (invalid contracts counted as `invalid-contract`; first-touch referrer left to the SDK; allow-listed UTMs, legacy `element` and visible-text `cta copy` restored). `global.js` SHA256 `ea75306d16ca5bc2f6007cac8e5e5cac4d4f9cb5317e5d072686e67ef6706a93`. Not yet deployed anywhere, so the release ID stays `cta-cleanup-2026-10-26-1`.
 - Runtime release: `cta-cleanup-2026-10-26-1`; tracking schema: `2`. Earlier production receipts for release `cta-cleanup-2026-10-22-1` do not prove acceptance of this runtime.
 - Webflow site identity, previously verified in the authenticated Gemin browser: `699ce714348d0db6b6640eaf`, project `nourish-2-23`, production `www.nourish.com`.
 - The PR author is `pakgem`; the latest review read returned no review submissions or review threads. The current PR head and test outcome are recorded in the PR summary after the final run.
