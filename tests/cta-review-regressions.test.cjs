@@ -21,7 +21,7 @@ function setup({url='https://www.nourish.com/',consent=true,mode='live'}={}) {
   vm.runInContext(section,context);
   function anchor(href,attrs={}) {
     attrs={href,...attrs};
-    const a={tagName:'A',id:'',className:'',getAttribute:k=>attrs[k]??null,setAttribute:(k,v)=>attrs[k]=v,matches:s=>s==='[data-cta="nav"]'&&attrs['data-cta']==='nav',closest:s=>s==='a[href]'?a:null};
+    const a={tagName:'A',id:'',className:'',getAttribute:k=>attrs[k]??null,setAttribute:(k,v)=>attrs[k]=v,matches:s=>s.split(',').map(x=>x.trim()).includes('[data-cta="nav"]')&&attrs['data-cta']==='nav',closest:s=>s==='a[href]'?a:null};
     anchors.push(a);return a;
   }
   function click(a,nested=false){const event={target:nested?{closest:()=>a}:a,defaultPrevented:false,preventDefault(){this.defaultPrevented=true}};handlers.forEach(fn=>fn(event));assert.equal(event.defaultPrevented,false);}

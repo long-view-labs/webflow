@@ -1108,34 +1108,62 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // identities, placement, section and revision below are explicit constants.
   // Authors should add data-cta-* contracts for new sections instead of adding
   // CSS/text-derived identities. Unknown placements are reported as unmapped.
+  // Section blocks are shared by the paid, landing, condition, partner and
+  // employer templates, so these apply on every page (first match wins, so
+  // nested blocks are listed before the sections that contain them).
   var CTA_RELEASE = "cta-cleanup-2026-10-26-1";
-  var PAID_PAGES = /^\/paid(?:-[a-z0-9-]+|wl)?$/;
+  // One vocabulary for every CTA: id suffix -> section and readable label.
+  // cta_name is "Get Started | <label>" (signup) or "Find a Dietitian | <label>".
+  var CTA_PLACEMENTS = {
+    "nav": { section: "navigation", label: "Nav" },
+    "hero": { section: "hero", label: "Hero" },
+    "hero-insurance-search": { section: "insurance", label: "Hero insurance search" },
+    "quiz": { section: "quiz", label: "Quiz" },
+    "insurance-logos": { section: "insurance", label: "Insurance logos" },
+    "how-it-works": { section: "how_it_works", label: "How it works" },
+    "how-we-help": { section: "benefits", label: "How we can help" },
+    "approach": { section: "approach", label: "Approach" },
+    "benefits": { section: "benefits", label: "Benefits" },
+    "condition-cards": { section: "benefits", label: "Condition cards" },
+    "app": { section: "app", label: "App" },
+    "testimonials": { section: "testimonials", label: "Testimonials" },
+    "faq": { section: "faq", label: "FAQ" },
+    "sidebar": { section: "content", label: "Sidebar" },
+    "article": { section: "content", label: "Article" },
+    "page-content": { section: "content", label: "Page content" },
+    "provider-search": { section: "provider_directory", label: "Provider search" },
+    "final-cta": { section: "final_cta", label: "Final CTA" }
+  };
+  // Older ids (some authored in Webflow data-cta-id) folded into the vocabulary.
+  var CTA_ID_ALIASES = { "footer": "final-cta", "program": "benefits", "hero-coverage": "hero-insurance-search",
+    "insurance": "insurance-logos", "provider-filter": "provider-search" };
   var PATIENT_MAPPINGS = [
-    { selector: '[data-cta="nav"]', location: "nav", section: "navigation", role: "nav" },
-    { selector: '.nav_component-2 a', location: "nav", section: "navigation", role: "nav" },
-    { selector: '.footer-wrap a', location: "footer", section: "final_cta", role: "footer" },
-    { selector: '#home-filter-cta', location: "hero", section: "insurance", role: "hero-coverage" },
-    { selector: '#provider-filter-cta', location: "content", section: "provider_directory", role: "provider-filter" },
-    { selector: '.logos_home-wrap a', page: "/", location: "content", section: "insurance", role: "insurance" },
-    { selector: '.program-slider_component a', page: "/", location: "content", section: "benefits", role: "program" },
-    { selector: '.sticky-phone_content a', page: "/", location: "content", section: "app", role: "app" },
-    { selector: '[data-cta="hero cta"]', location: "hero", section: "intro", role: "hero" },
-    // Footer V2 splash ("Take your first step…") on every page.
-    { selector: '.section_footer-splash a', location: "footer", section: "final_cta", role: "final-cta" },
-    // Paid landing pages (/paid, /paid-*, /paidwl) share these section blocks.
-    { selector: '.nav_component-3 a', pages: PAID_PAGES, location: "nav", section: "navigation", role: "nav" },
-    { selector: 'a.quiz', pages: PAID_PAGES, location: "hero", section: "quiz", role: "quiz" },
-    { selector: '.padding-section-insurances [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "insurance", role: "insurance" },
-    { selector: '.padding-section-how-it-works [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "how_it_works", role: "how-it-works" },
-    { selector: '.section_approach [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "approach", role: "approach" },
-    { selector: '.section_testimonial-slider [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "testimonials", role: "testimonials" },
-    { selector: '.section_step-cards [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "app", role: "app" },
-    { selector: '.footer-paid_card [data-cta="footer"]', pages: PAID_PAGES, location: "footer", section: "final_cta", role: "final-cta" },
-    { selector: '.section_logos [data-cta="footer"]', pages: PAID_PAGES, location: "content", section: "insurance", role: "insurance" },
-    { selector: '.section_program-slider [data-cta="footer"]', pages: PAID_PAGES, location: "content", section: "benefits", role: "program" },
-    { selector: '.section_sticky-phone [data-cta="footer"]', pages: PAID_PAGES, location: "content", section: "app", role: "app" },
-    { selector: '.faq_dropdown-list a', pages: PAID_PAGES, location: "content", section: "faq", role: "faq" }
+    { selector: '[data-cta="nav"], .nav_component-2 a, .nav_component-3 a', location: "nav", role: "nav" },
+    // Blog article buttons reuse the #home-filter-cta id, so they come first.
+    { selector: '.section_blog-article a, .blog-splash-1 a, .blog-spash-2 a', location: "content", role: "article" },
+    { selector: '#home-filter-cta', location: "hero", role: "hero-insurance-search" },
+    { selector: '#provider-filter-cta, .section_find-provider a, .padding-section-filter a', location: "content", role: "provider-search" },
+    { selector: '[data-cta="hero cta"]', location: "hero", role: "hero" },
+    { selector: 'a.quiz, .section_quiz-header a', location: "hero", role: "quiz" },
+    { selector: '.section_insurance-header a, .section_hero-2col a, .section_feature a', location: "hero", role: "hero" },
+    { selector: '.footer-wrap a, .section_footer-splash a, .footer-paid_card a, .cta-splash_card a', location: "footer", role: "final-cta" },
+    { selector: '.padding-section-how-it-works a, .section_how-it-works a', location: "content", role: "how-it-works" },
+    { selector: '.section_how-can-help a', location: "content", role: "how-we-help" },
+    { selector: '.section_approach a', location: "content", role: "approach" },
+    { selector: '.padding-section-insurances a, .section_logos a, .logos_home-wrap a', location: "content", role: "insurance-logos" },
+    { selector: '.section_testimonial-slider a, .section_employee-quotes a', location: "content", role: "testimonials" },
+    { selector: '.section_step-cards a, .section_sticky-phone a, .sticky-phone_content a', location: "content", role: "app" },
+    { selector: '.section_condition-cards a', location: "content", role: "condition-cards" },
+    { selector: '.section_program-slider a, .program-slider_component a, .section_nourish-program a, .section_benefits a', location: "content", role: "benefits" },
+    { selector: '.faq_dropdown-list a', location: "content", role: "faq" },
+    { selector: '.section_content a', location: "content", role: "sidebar" },
+    { selector: '.section_inner-container a', location: "content", role: "page-content" }
   ];
+
+  function ctaName(action, suffix) {
+    var p = CTA_PLACEMENTS[suffix];
+    return (action === "direct-signup" ? "Get Started" : "Find a Dietitian") + " | " + (p ? p.label : suffix);
+  }
   var CTA_TOKEN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
   var CTA_VERSION = /^[A-Za-z0-9._-]{1,64}$/;
   var CTA_LOCATIONS_V2 = ["nav", "hero", "content", "footer", "sticky_bar", "modal"];
@@ -1165,9 +1193,10 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       if (value !== null) authored = true;
       if (value) filled = true;
     }
-    // Footer V2 emits blank data-cta-* placeholders on every page when its CTA
-    // properties are unset; that splash button falls back to its reviewed mapping.
-    if (authored && !filled && a.matches(".section_footer-splash a")) authored = false;
+    // Footer V2 and the shared Webflow Button component emit blank data-cta-*
+    // placeholders when their CTA properties are unset; those buttons fall back
+    // to their reviewed section mapping.
+    if (authored && !filled && a.matches(".section_footer-splash a, [data-wf--button--variant]")) authored = false;
     if (authored) {
       c = { id: id, name: a.getAttribute("data-cta-name"),
         location: a.getAttribute("data-cta-location"), section: a.getAttribute("data-cta-section"),
@@ -1178,23 +1207,33 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
           CTA_LOCATIONS_V2.indexOf(c.location) < 0 || !CTA_TOKEN.test(c.section || "") ||
           c.action !== action || !CTA_VERSION.test(c.version || "")) return unmappedContract(action, "invalid-contract");
       c.mapping = "explicit";
+      // Authored ids keep their prefix; known placements get the shared
+      // vocabulary so explicit and mapped CTAs read the same in reports.
+      var prefix = action === "direct-signup" ? "patient-signup-" : "patient-directory-";
+      if (c.id.indexOf(prefix) === 0) {
+        var suffix = c.id.slice(prefix.length);
+        suffix = CTA_ID_ALIASES[suffix] || suffix;
+        if (CTA_PLACEMENTS[suffix]) {
+          c.id = prefix + suffix;
+          c.section = CTA_PLACEMENTS[suffix].section;
+          c.name = ctaName(action, suffix);
+        }
+      }
       return c;
     }
     for (var i = 0; i < PATIENT_MAPPINGS.length; i++) {
       var m = PATIENT_MAPPINGS[i];
-      if (m.page && normPath(window.location.pathname) !== m.page) continue;
-      if (m.pages && !m.pages.test(normPath(window.location.pathname))) continue;
       if (!a.matches(m.selector)) continue;
       return { id: "patient-" + (action === "direct-signup" ? "signup-" : "directory-") + m.role,
-        name: (action === "direct-signup" ? "Start signup" : "Find a dietitian") + " | " + m.role,
-        location: m.location, section: m.section, action: action, version: "1", mapping: "reviewed-migration" };
+        name: ctaName(action, m.role), location: m.location, section: CTA_PLACEMENTS[m.role].section,
+        action: action, version: "1", mapping: "reviewed-migration" };
     }
     return unmappedContract(action, "unmapped");
   }
 
   function unmappedContract(action, mapping) {
     return { id: "patient-" + (action === "direct-signup" ? "signup" : "directory") + "-unmapped",
-      name: (action === "direct-signup" ? "Start signup" : "Find a dietitian") + " | Unmapped placement",
+      name: (action === "direct-signup" ? "Get Started" : "Find a Dietitian") + " | Unmapped placement",
       location: "unmapped", section: "unmapped", action: action, version: "unmapped", mapping: mapping };
   }
 
