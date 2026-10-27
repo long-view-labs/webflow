@@ -1114,6 +1114,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // Authors should add data-cta-* contracts for new sections instead of adding
   // CSS/text-derived identities. Unknown placements are reported as unmapped.
   var CTA_RELEASE = "cta-cleanup-2026-10-26-1";
+  var PAID_PAGES = /^\/paid(?:-[a-z0-9-]+|wl)?$/;
   var PATIENT_MAPPINGS = [
     { selector: '[data-cta="nav"]', location: "nav", section: "navigation", role: "nav" },
     { selector: '.nav_component-2 a', location: "nav", section: "navigation", role: "nav" },
@@ -1123,7 +1124,20 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     { selector: '.logos_home-wrap a', page: "/", location: "content", section: "insurance", role: "insurance" },
     { selector: '.program-slider_component a', page: "/", location: "content", section: "benefits", role: "program" },
     { selector: '.sticky-phone_content a', page: "/", location: "content", section: "app", role: "app" },
-    { selector: '[data-cta="hero cta"]', location: "hero", section: "intro", role: "hero" }
+    { selector: '[data-cta="hero cta"]', location: "hero", section: "intro", role: "hero" },
+    // Paid landing pages (/paid, /paid-*, /paidwl) share these section blocks.
+    { selector: '.nav_component-3 a', pages: PAID_PAGES, location: "nav", section: "navigation", role: "nav" },
+    { selector: 'a.quiz', pages: PAID_PAGES, location: "hero", section: "quiz", role: "quiz" },
+    { selector: '.padding-section-insurances [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "insurance", role: "insurance" },
+    { selector: '.padding-section-how-it-works [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "how_it_works", role: "how-it-works" },
+    { selector: '.section_approach [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "approach", role: "approach" },
+    { selector: '.section_testimonial-slider [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "testimonials", role: "testimonials" },
+    { selector: '.section_step-cards [data-cta="in-page"]', pages: PAID_PAGES, location: "content", section: "app", role: "app" },
+    { selector: '.footer-paid_card [data-cta="footer"]', pages: PAID_PAGES, location: "footer", section: "final_cta", role: "final-cta" },
+    { selector: '.section_logos [data-cta="footer"]', pages: PAID_PAGES, location: "content", section: "insurance", role: "insurance" },
+    { selector: '.section_program-slider [data-cta="footer"]', pages: PAID_PAGES, location: "content", section: "benefits", role: "program" },
+    { selector: '.section_sticky-phone [data-cta="footer"]', pages: PAID_PAGES, location: "content", section: "app", role: "app" },
+    { selector: '.faq_dropdown-list a', pages: PAID_PAGES, location: "content", section: "faq", role: "faq" }
   ];
   var CTA_TOKEN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
   var CTA_VERSION = /^[A-Za-z0-9._-]{1,64}$/;
@@ -1170,6 +1184,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     for (var i = 0; i < PATIENT_MAPPINGS.length; i++) {
       var m = PATIENT_MAPPINGS[i];
       if (m.page && normPath(window.location.pathname) !== m.page) continue;
+      if (m.pages && !m.pages.test(normPath(window.location.pathname))) continue;
       if (!a.matches(m.selector)) continue;
       return { id: "patient-" + (action === "direct-signup" ? "signup-" : "directory-") + m.role,
         name: (action === "direct-signup" ? "Start signup" : "Find a dietitian") + " | " + m.role,
