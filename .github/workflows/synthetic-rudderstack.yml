@@ -1,30 +1,67 @@
 name: Synthetic RudderStack check
-
 on:
   schedule:
-    # Every 30 minutes
     - cron: "*/30 * * * *"
   workflow_dispatch:
-
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: nourish-site-monitor
+  cancel-in-progress: false
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install playwright && npx playwright install --with-deps chromium
-      - name: Run zero-interaction page-view check
-        run: node synthetic-rudderstack-check.js
-      - name: Notify Slack on failure
-        if: failure()
+      - name: Require owner DM alert connection
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_ALERT_WEBHOOK }}
+          SLACK_BOT_TOKEN: ${{ secrets.NOURISH_MONITOR_SLACK_BOT_TOKEN }}
+        run: node -e "require('./monitoring/alerts').requireConfig(process.env)"
+      - name: Install pinned test-only browser dependencies
+        id: install
+        run: npm install --no-save --package-lock=false playwright@1.62.1 jquery@3.5.1 && npx playwright install --with-deps chromium
+      - name: Test regression contracts and guards
+        id: tests
+        run: node --test tests/*.test.js
+      - name: Intercepted representative desktop and iPhone checks
+        run: node synthetic-rudderstack-check.js
+      - name: UTM handoff to signup links, iframes and click destinations
+        if: always()
+        env:
+          UTM_MERGE_INTO: monitoring-results.json
+        run: node monitoring/utm-handoff-check.js
+      - name: Restore previous incident state
+        id: restore
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 monitoring/restore-state.py nourish-monitor-state monitoring-state.json
+      - name: Notify only owner DM and persist dedup decision
+        if: always()
+        env:
+          MONITOR_INFRA_FAILURE: ${{ steps.restore.outcome == 'failure' || steps.install.outcome == 'failure' || steps.tests.outcome == 'failure' }}
+          SLACK_BOT_TOKEN: ${{ secrets.NOURISH_MONITOR_SLACK_BOT_TOKEN }}
         run: |
-          if [ -n "$SLACK_WEBHOOK" ]; then
-            curl -s -X POST -H 'Content-type: application/json' \
-              --data '{"text":"🚨 Synthetic check failed: RudderStack is not capturing page views for non-interacting visitors on www.nourish.com. Check the latest global-footer publish. <'"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"'|Run details>"}' \
-              "$SLACK_WEBHOOK"
-          fi
+          test -f monitoring-results.json || node -e "require('fs').writeFileSync('monitoring-results.json',JSON.stringify({failures:['Monitor setup or fixture tests failed; inspect run evidence']}))"
+          node monitoring/notify.js monitoring-results.json monitoring-state.json
+      - name: Save incident state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nourish-monitor-state
+          path: monitoring-state.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Save intercepted evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nourish-monitor-evidence
+          path: monitoring-results.json
+          if-no-files-found: error
+          retention-days: 14

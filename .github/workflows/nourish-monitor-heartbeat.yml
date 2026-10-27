@@ -1,0 +1,45 @@
+name: Nourish monitor heartbeat
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: nourish-monitor-heartbeat
+  cancel-in-progress: false
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check completed scheduled monitor run age
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node monitoring/heartbeat.js
+      - name: Restore heartbeat incident state
+        id: restore
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 monitoring/restore-state.py nourish-heartbeat-state monitoring-state.json
+      - name: Alert owner about stale or failed monitoring
+        if: always()
+        env:
+          MONITOR_INFRA_FAILURE: ${{ steps.restore.outcome == 'failure' }}
+          SLACK_BOT_TOKEN: ${{ secrets.NOURISH_MONITOR_SLACK_BOT_TOKEN }}
+        run: |
+          test -f heartbeat-results.json || node -e "require('fs').writeFileSync('heartbeat-results.json',JSON.stringify({failures:['Heartbeat execution failed; inspect run']}))"
+          node monitoring/notify.js heartbeat-results.json monitoring-state.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nourish-heartbeat-state
+          path: monitoring-state.json
+          if-no-files-found: error
+          retention-days: 14
