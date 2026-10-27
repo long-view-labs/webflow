@@ -1113,12 +1113,15 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // nested blocks are listed before the sections that contain them).
   var CTA_RELEASE = "cta-cleanup-2026-10-26-1";
   // One vocabulary for every CTA: id suffix -> section and readable label.
+  // cta_section is where the CTA sits (nav, hero, footer) or, for in-page CTAs,
+  // the block's topic. cta_location and cta_mapping_status are not sent; a
+  // cta_id ending in "-unmapped" marks a CTA with no mapping or a broken contract.
   // cta_name is "Get Started | <label>" (signup) or "Find a Dietitian | <label>".
   var CTA_PLACEMENTS = {
-    "nav": { section: "navigation", label: "Nav" },
+    "nav": { section: "nav", label: "Nav" },
     "hero": { section: "hero", label: "Hero" },
-    "hero-insurance-search": { section: "insurance", label: "Hero insurance search" },
-    "quiz": { section: "quiz", label: "Quiz" },
+    "hero-insurance-search": { section: "hero", label: "Hero insurance search" },
+    "quiz": { section: "hero", label: "Quiz" },
     "insurance-logos": { section: "insurance", label: "Insurance logos" },
     "how-it-works": { section: "how_it_works", label: "How it works" },
     "how-we-help": { section: "benefits", label: "How we can help" },
@@ -1132,7 +1135,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     "article": { section: "content", label: "Article" },
     "page-content": { section: "content", label: "Page content" },
     "provider-search": { section: "provider_directory", label: "Provider search" },
-    "final-cta": { section: "final_cta", label: "Final CTA" }
+    "final-cta": { section: "footer", label: "Final CTA" }
   };
   // Older ids (some authored in Webflow data-cta-id) folded into the vocabulary.
   var CTA_ID_ALIASES = { "footer": "final-cta", "program": "benefits", "hero-coverage": "hero-insurance-search",
@@ -1161,7 +1164,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   ];
 
   // cta_name = "<action> | <page> | <placement>". Nav, hero and footer CTAs leave
-  // the placement out because cta_location already says it.
+  // the placement out because cta_section already says it.
   var NAME_WITHOUT_PLACEMENT = { "nav": 1, "hero": 1, "final-cta": 1 };
   // CMS collections are named by template; page_path keeps the exact URL.
   var PAGE_TEMPLATES = {
@@ -1303,12 +1306,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       // url is the full clicked link, as before 2.622.0: charts filter on it
       // (UTM Passthrough Rate: url contains utm_source=).
       url: href || null, deviceType: deviceType(), cta_id: cta.id,
-      cta_name: cta.name, cta_location: cta.location, cta_section: cta.section,
+      cta_name: cta.name, cta_section: cta.section,
       cta_action: cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
       tracking_schema_version: "2", release_version: CTA_RELEASE,
       page_version: CTA_VERSION.test(pageVersion || "") ? pageVersion : null,
       page_path: window.location.pathname || "/", destination_host: u.hostname,
-      destination_path: u.pathname, locale: pageLocale(), cta_mapping_status: cta.mapping
+      destination_path: u.pathname, locale: pageLocale()
     }, ctaQaProps());
     var variant = el.getAttribute("data-experiment-variant");
     if (CTA_VERSION.test(variant || "")) payload.experiment_variant = variant;
@@ -1466,12 +1469,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   //
   // Reuses track() above, so the Get Started schema is preserved (location,
   // element, cta copy, url, deviceType + persisted UTMs), with additive
-  // cta_id, cta_name, cta_location, cta_action, page_path, destination_host,
+  // cta_id, cta_name, cta_section, cta_action, page_path, destination_host,
   // destination_path and locale. url is the full clicked link; destination_*
   // are host and path; nothing is read from form fields or DOM text.
   // The "earnings" CTA says Apply now but opens the pay calculator: that is
   // calculator engagement, not an application start — distinguish it by
-  // cta_location / destination_path, never by dropping the event.
+  // cta_section / destination_path, never by dropping the event.
   // Scoped to the page itself (normalised path, so trailing slash counts);
   // delegated from document so repeated, mobile and late-inserted CTAs are
   // covered; one listener (idempotence flag); never calls preventDefault; and

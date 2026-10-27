@@ -199,7 +199,6 @@ function expectedProps(key, { destinationPath, pagePath = PAGE_PATH, element }) 
     deviceType: "desktop",
     cta_id: c.id,
     cta_name: c.name,
-    cta_location: c.location,
     cta_action: "apply-dietitian",
     page_path: pagePath,
     destination_host: "www.nourish.com",
@@ -267,14 +266,14 @@ test("Dietitian Apply Clicked", async (t) => {
         window.__trackCalls().filter((c) => c.event === "Get Started Clicked"),
       );
       assert.equal(getStarted.length, 2, "nav signup click plus the flagged mapping error");
-      assert.equal(getStarted[1].props.cta_mapping_status, "invalid-contract");
+      assert.equal(getStarted[1].props.cta_id, "patient-signup-unmapped");
       assert.equal(getStarted[1].props.cta_id, "patient-signup-unmapped");
       const patient = await insertAnchor(page,
         '<a data-cta-id="patient-signup-content" data-cta-name="Start signup" data-cta-location="content" data-cta-section="intro" data-cta-action="direct-signup" data-cta-version="2" href="https://signup.nourish.com/">Start signup</a>');
       await page.locator(patient).press("Enter");
       getStarted = await page.evaluate(() => window.__trackCalls().filter(c => c.event === "Get Started Clicked"));
       assert.equal(getStarted.length, 3, "plus one valid keyboard-activated patient CTA");
-      assert.equal(getStarted[2].props.cta_mapping_status, "explicit");
+      assert.equal(getStarted[2].props.cta_mapping_status, undefined);
       assert.deepEqual(await applyEvents(page), []);
     } finally {
       await context.close();
@@ -318,10 +317,10 @@ test("Dietitian Apply Clicked", async (t) => {
         '<a data-cta="nav" href="https://signup.nourish.com/your-privacy-choices">Privacy</a>',
       ]) await clickFirst(page, await insertAnchor(page, html));
       const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
-      assert.deepEqual(events.map(e => [e.event, e.props.cta_mapping_status, e.props.cta_id]), [
-        ["Get Started Clicked", "invalid-contract", "patient-signup-unmapped"],
-        ["Get Started Clicked", "invalid-contract", "patient-signup-unmapped"],
-        ["Get Started Clicked", "reviewed-migration", "patient-signup-nav"],
+      assert.deepEqual(events.map(e => [e.event, e.props.cta_id]), [
+        ["Get Started Clicked", "patient-signup-unmapped"],
+        ["Get Started Clicked", "patient-signup-unmapped"],
+        ["Get Started Clicked", "patient-signup-nav"],
       ]);
     } finally { await context.close(); }
   });
@@ -336,7 +335,7 @@ test("Dietitian Apply Clicked", async (t) => {
       await clickFirst(page, '[data-cta-id="dietitian-apply-hero"]');
       const [event] = await applyEvents(page);
       assert.equal(event.props.cta_id, "dietitian-apply-hero");
-      assert.equal(event.props.cta_location, "hero");
+      assert.equal(event.props.cta_location, undefined);
       assert.equal(event.props.cta_section, "employment_intro");
       assert.equal(event.props.cta_version, "3");
     } finally { await context.close(); }

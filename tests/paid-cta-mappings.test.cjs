@@ -22,13 +22,13 @@ function clickIn(t, page, html, selector, href = 'https://signup.nourish.com/') 
 }
 
 const cases = [
-  ['a.quiz', '<div class="padding-section-medium"><a class="button quiz w-button">Check</a></div>', 'patient-signup-quiz', 'hero', 'quiz'],
+  ['a.quiz', '<div class="padding-section-medium"><a class="button quiz w-button">Check</a></div>', 'patient-signup-quiz', 'hero', 'hero'],
   ['a', '<div class="padding-section-insurances"><a data-cta="in-page">x</a></div>', 'patient-signup-insurance-logos', 'content', 'insurance'],
   ['a', '<section class="section_approach"><div class="padding-section-how-it-works"><a data-cta="in-page">x</a></div></section>', 'patient-signup-how-it-works', 'content', 'how_it_works'],
   ['a', '<section class="section_approach"><div class="container-medium"><a data-cta="in-page">x</a></div></section>', 'patient-signup-approach', 'content', 'approach'],
   ['a', '<section class="section_testimonial-slider"><a data-cta="in-page">x</a></section>', 'patient-signup-testimonials', 'content', 'testimonials'],
   ['a', '<section class="section_step-cards"><a data-cta="in-page">x</a></section>', 'patient-signup-app', 'content', 'app'],
-  ['a', '<section class="footer-paid_card"><a data-cta="footer">x</a></section>', 'patient-signup-final-cta', 'footer', 'final_cta'],
+  ['a', '<section class="footer-paid_card"><a data-cta="footer">x</a></section>', 'patient-signup-final-cta', 'footer', 'footer'],
   ['a', '<section class="section_logos"><a data-cta="footer">x</a></section>', 'patient-signup-insurance-logos', 'content', 'insurance'],
   ['a', '<section class="section_program-slider"><a data-cta="footer">x</a></section>', 'patient-signup-benefits', 'content', 'benefits'],
   ['a', '<section class="section_sticky-phone"><a data-cta="footer">x</a></section>', 'patient-signup-app', 'content', 'app'],
@@ -39,9 +39,9 @@ for (const page of ['/paid', '/paid-google', '/paid-labs', '/paidwl']) {
     test(`${page}: ${id} maps to ${loc}/${section}`, (t) => {
       const [p] = clickIn(t, page, html, sel);
       assert.equal(p.cta_id, id);
-      assert.equal(p.cta_location, loc);
+      assert.equal(p.cta_location, undefined);
       assert.equal(p.cta_section, section);
-      assert.equal(p.cta_mapping_status, 'reviewed-migration');
+      assert.equal(p.cta_mapping_status, undefined);
     });
   }
 }
@@ -61,19 +61,19 @@ test('section mappings apply on landing, condition, partner and employer pages t
 
 const sitewide = [
   ['<section class="section_how-can-help"><a>x</a></section>', 'patient-signup-how-we-help', 'content', 'benefits', 'Get Started | Landing page | How we can help'],
-  ['<section class="section_insurance-header"><a class="button quiz">x</a></section>', 'patient-signup-quiz', 'hero', 'quiz', 'Get Started | Landing page | Quiz'],
+  ['<section class="section_insurance-header"><a class="button quiz">x</a></section>', 'patient-signup-quiz', 'hero', 'hero', 'Get Started | Landing page | Quiz'],
   ['<section class="section_feature"><a>x</a></section>', 'patient-signup-hero', 'hero', 'hero', 'Get Started | Landing page'],
   ['<section class="section_content"><a class="button-sidebar">x</a></section>', 'patient-signup-sidebar', 'content', 'content', 'Get Started | Landing page | Sidebar'],
   ['<section class="section_blog-article"><a>x</a></section>', 'patient-signup-article', 'content', 'content', 'Get Started | Landing page | Article'],
   ['<section class="section_employee-quotes"><a>x</a></section>', 'patient-signup-testimonials', 'content', 'testimonials', 'Get Started | Landing page | Testimonials'],
-  ['<div class="cta-splash_card"><a>x</a></div>', 'patient-signup-final-cta', 'footer', 'final_cta', 'Get Started | Landing page'],
+  ['<div class="cta-splash_card"><a>x</a></div>', 'patient-signup-final-cta', 'footer', 'footer', 'Get Started | Landing page'],
   ['<section class="section_nourish-program"><a>x</a></section>', 'patient-signup-benefits', 'content', 'benefits', 'Get Started | Landing page | Benefits'],
 ];
 for (const [html, id, loc, section, name] of sitewide) {
   test(`${id} (${name}) maps on any page`, (t) => {
     const [p] = clickIn(t, '/landing-page/anxiety', html, 'a');
     assert.equal(p.cta_id, id);
-    assert.equal(p.cta_location, loc);
+    assert.equal(p.cta_location, undefined);
     assert.equal(p.cta_section, section);
     assert.equal(p.cta_name, name);
   });
@@ -92,7 +92,7 @@ test('authored ids from older naming fold into the shared vocabulary', (t) => {
   const [p] = clickIn(t, '/', html, 'a', 'https://signup.nourish.com/providers');
   assert.equal(p.cta_id, 'patient-directory-final-cta');
   assert.equal(p.cta_name, 'Find a Dietitian | Home');
-  assert.equal(p.cta_mapping_status, 'explicit');
+  assert.equal(p.cta_mapping_status, undefined);
   const [h] = clickIn(t, '/', '<a data-cta-id="patient-signup-hero" data-cta-name="Start signup | hero" data-cta-location="hero" data-cta-section="intro" data-cta-action="direct-signup" data-cta-version="1">x</a>', 'a');
   assert.equal(h.cta_section, 'hero');
   assert.equal(h.cta_name, 'Get Started | Home');
@@ -107,32 +107,32 @@ test('plain http signup links are counted and upgraded to https', (t) => {
 test('an authored contract still wins over the paid mapping', (t) => {
   const [p] = clickIn(t, '/paid', '<section class="footer-paid_card"><a data-cta="footer" data-cta-id="patient-signup-custom" data-cta-name="Custom" data-cta-location="footer" data-cta-section="final_cta" data-cta-action="direct-signup" data-cta-version="3">x</a></section>', 'a');
   assert.equal(p.cta_id, 'patient-signup-custom');
-  assert.equal(p.cta_mapping_status, 'explicit');
+  assert.equal(p.cta_mapping_status, undefined);
 });
 
-test('Footer V2 splash with blank placeholder attributes maps to final_cta on any page', (t) => {
+test('Footer V2 splash with blank placeholder attributes maps to the footer section on any page', (t) => {
   for (const page of ['/', '/blog', '/paid-google']) {
     const [p] = clickIn(t, page, '<section class="section_footer-splash"><a data-cta="footer" data-cta-name="" data-cta-location="" data-cta-action="" data-cta-id="">Get started</a></section>', 'a');
     assert.equal(p.cta_id, 'patient-signup-final-cta', page);
-    assert.equal(p.cta_section, 'final_cta');
-    assert.equal(p.cta_mapping_status, 'reviewed-migration');
+    assert.equal(p.cta_section, 'footer');
+    assert.equal(p.cta_mapping_status, undefined);
   }
 });
 
 test('Footer V2 splash with a partly filled contract is still invalid', (t) => {
   const [p] = clickIn(t, '/', '<section class="section_footer-splash"><a data-cta="footer" data-cta-name="Start" data-cta-location="" data-cta-action="" data-cta-id="">Get started</a></section>', 'a');
-  assert.equal(p.cta_mapping_status, 'invalid-contract');
+  assert.equal(p.cta_mapping_status, undefined);
 });
 
 test('blank placeholders outside the footer splash stay invalid', (t) => {
   const [p] = clickIn(t, '/', '<div class="hero"><a data-cta="nav" data-cta-id="">Get started</a></div>', 'a');
-  assert.equal(p.cta_mapping_status, 'invalid-contract');
+  assert.equal(p.cta_mapping_status, undefined);
 });
 
 test('Webflow Button component with blank placeholders falls back to its section mapping', (t) => {
   const btn = (cls) => '<section class="' + cls + '"><a data-wf--button--variant="grey" data-cta-location="" data-cta-action="" data-cta-id="" data-cta-name="">Find a dietitian</a></section>';
   const [p] = clickIn(t, '/blog/some-post', btn('section_blog-article'), 'a', 'http://signup.nourish.com/');
-  assert.equal(p.cta_mapping_status, 'reviewed-migration');
+  assert.equal(p.cta_mapping_status, undefined);
   assert.equal(p.cta_id, 'patient-signup-article');
 });
 

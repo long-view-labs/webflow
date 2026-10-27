@@ -90,7 +90,7 @@ function auditPage(url, html) {
     a.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true }));
     const ev = events.slice(before).filter((e) => e[0] !== "Viewed Page");
     const p = ev[0] && ev[0][1];
-    out.push({ ...describe(a), href: a.getAttribute("href").slice(0, 80), event: ev[0] && ev[0][0], cta_id: p && p.cta_id, cta_name: p && p.cta_name, mapping: p && p.cta_mapping_status, location: p && p.cta_location, cta_section: p && p.cta_section, action: p && p.cta_action });
+    out.push({ ...describe(a), href: a.getAttribute("href").slice(0, 80), event: ev[0] && ev[0][0], cta_id: p && p.cta_id, cta_name: p && p.cta_name, mapping: !p ? null : /-unmapped$/.test(p.cta_id || "") ? "unmapped" : "mapped", cta_section: p && p.cta_section, action: p && p.cta_action });
   }
   dom.window.close();
   return { url, links: out };

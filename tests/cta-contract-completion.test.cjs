@@ -55,9 +55,9 @@ function assertInvalidContract(events, name, id) {
   assert.equal(events.length, 1);
   const [event, p] = events[0];
   assert.equal(event, name);
-  assert.equal(p.cta_mapping_status, 'invalid-contract');
+  assert.equal(p.cta_mapping_status, undefined);
   assert.equal(p.cta_id, id);
-  assert.equal(p.cta_location, 'unmapped');
+  assert.equal(p.cta_location, undefined);
   assert.equal(p.cta_section, 'unmapped');
   assert.notEqual(p.cta_name, 'Start signup | nav');
 }
@@ -76,7 +76,7 @@ test('a partial contract without any ID is counted as invalid; unauthored migrat
   h.click('https://signup.nourish.com/', { 'data-cta-name': 'Start signup', 'data-cta': 'nav' });
   assertInvalidContract(h.events(), 'Get Started Clicked', 'patient-signup-unmapped');
   h.click('https://signup.nourish.com/', { 'data-cta': 'nav' });
-  assert.equal(h.events()[1][1].cta_mapping_status, 'reviewed-migration');
+  assert.equal(h.events()[1][1].cta_id, 'patient-signup-nav');
 });
 
 for (const href of ['https://signup.nourish.com:444/',
@@ -156,7 +156,7 @@ test('dietitian section/revision is explicit while ID, placement and legacy elem
   const [event, p] = h.events()[0];
   assert.equal(event, 'Dietitian Apply Clicked');
   assert.equal(p.cta_id, 'dietitian-apply-hero');
-  assert.equal(p.cta_location, 'hero');
+  assert.equal(p.cta_location, undefined);
   assert.equal(p.element, 'hero');
   assert.equal(p.cta_section, 'employment_intro');
   assert.equal(p.cta_version, '3');
