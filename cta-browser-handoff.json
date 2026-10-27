@@ -1,0 +1,382 @@
+{
+  "status": "coverage_inventory_pending_authorized_browser_exports",
+  "source_head": "3a8455fec365fc5ebc59284c39849246d95d7a3d",
+  "site": {
+    "known_project_short_name": "nourish-2-23",
+    "staging_origin": "https://nourish-2-23.webflow.io",
+    "production_origin": "https://www.nourish.com",
+    "site_id": "699ce714348d0db6b6640eaf",
+    "identity_verification": "Verified by the coordinating browser inventory in authenticated Chrome profile Gemin. Nourish Designer site 699ce714348d0db6b6640eaf; sampled Health Systems, Home and Blogs Template. This cloud Webflow connection does not list Nourish and cloud page retrieval is proxy-blocked; live/Designer values come from that browser inventory, not cloud execution."
+  },
+  "observation_limit": "Browser inventory reports missing/blank CTA metadata, repeated DOM IDs and blank tracking fields on editorial links. Exact per-anchor current values must still be recorded before edits. Required values below come from the reviewed source contract.",
+  "workflow": "Record existing values first. Apply missing reviewed attributes together on the interactive anchor. Preserve existing valid authored IDs, names and versions; report conflicts instead of resetting them. For a previously unauthored CTA explicitly start version 1. Never infer identity or version from CSS/copy. Do not publish.",
+  "planned_runtime_contract": {
+    "release_version": "cta-cleanup-2026-10-26-1",
+    "tracking_schema_version": "2",
+    "patient_contract": "All six authored fields are required together; incomplete, empty or action-mismatched authored contracts are counted under the unmapped ID with cta_mapping_status=invalid-contract, never with the authored identity. Completely unannotated links retain reviewed migration/unmapped fallback.",
+    "page_contract": "Source page_path is automatic and is the canonical page dimension; readable reporting labels can be maintained centrally from paths. No manual page-name authoring or page_name emission is required. Read optional data-page-version from html with body fallback only when the html attribute is absent. Missing/invalid revisions remain null; preserve existing unrelated attributes.",
+    "dietitian_contract": "Preserve the existing four-field contract and legacy locations. Optional data-cta-section/data-cta-version must be valid when supplied; absent values keep existing location/version-1 defaults."
+  },
+  "pages": [
+    {
+      "path": "/",
+      "body_attributes_if_unset": {
+        "data-page-version": "1"
+      },
+      "preserve": "Preserve any existing valid reviewed page version on html or body. A changed existing page gets a newly assigned revision, never an automatic reset. Page revision is optional; preserve unrelated existing attributes."
+    },
+    {
+      "path": "/become-a-dietitian",
+      "body_attributes_if_unset": {
+        "data-page-version": "1"
+      },
+      "preserve": "Preserve any existing valid reviewed page version on html or body. Preserve Apply CTA IDs, labels and placements. Page revision is optional; preserve unrelated existing attributes."
+    }
+  ],
+  "patient_rows": [
+    {
+      "selector": "[data-cta=\"nav\"]",
+      "location": "nav",
+      "section": "navigation",
+      "role": "nav",
+      "scope": "Shared navigation, desktop and mobile",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-nav",
+          "data-cta-name": "Start signup | nav",
+          "data-cta-location": "nav",
+          "data-cta-section": "navigation",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-nav",
+          "data-cta-name": "Find a dietitian | nav",
+          "data-cta-location": "nav",
+          "data-cta-section": "navigation",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    },
+    {
+      "selector": ".nav_component-2 a",
+      "location": "nav",
+      "section": "navigation",
+      "role": "nav",
+      "scope": "Shared navigation legacy fallback",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-nav",
+          "data-cta-name": "Start signup | nav",
+          "data-cta-location": "nav",
+          "data-cta-section": "navigation",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-nav",
+          "data-cta-name": "Find a dietitian | nav",
+          "data-cta-location": "nav",
+          "data-cta-section": "navigation",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    },
+    {
+      "selector": ".footer-wrap a",
+      "location": "footer",
+      "section": "final_cta",
+      "role": "footer",
+      "scope": "Shared footer",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-footer",
+          "data-cta-name": "Start signup | footer",
+          "data-cta-location": "footer",
+          "data-cta-section": "final_cta",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-footer",
+          "data-cta-name": "Find a dietitian | footer",
+          "data-cta-location": "footer",
+          "data-cta-section": "final_cta",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    },
+    {
+      "selector": "#home-filter-cta",
+      "location": "hero",
+      "section": "insurance",
+      "role": "hero-coverage",
+      "scope": "Home/filter widget",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-hero-coverage",
+          "data-cta-name": "Start signup | hero-coverage",
+          "data-cta-location": "hero",
+          "data-cta-section": "insurance",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-hero-coverage",
+          "data-cta-name": "Find a dietitian | hero-coverage",
+          "data-cta-location": "hero",
+          "data-cta-section": "insurance",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    },
+    {
+      "selector": "#provider-filter-cta",
+      "location": "content",
+      "section": "provider_directory",
+      "role": "provider-filter",
+      "scope": "Provider filter widget",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-provider-filter",
+          "data-cta-name": "Start signup | provider-filter",
+          "data-cta-location": "content",
+          "data-cta-section": "provider_directory",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-provider-filter",
+          "data-cta-name": "Find a dietitian | provider-filter",
+          "data-cta-location": "content",
+          "data-cta-section": "provider_directory",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    },
+    {
+      "selector": ".logos_home-wrap a",
+      "location": "content",
+      "section": "insurance",
+      "role": "insurance",
+      "scope": "Home only",
+      "page": "/",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-insurance",
+          "data-cta-name": "Start signup | insurance",
+          "data-cta-location": "content",
+          "data-cta-section": "insurance",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-insurance",
+          "data-cta-name": "Find a dietitian | insurance",
+          "data-cta-location": "content",
+          "data-cta-section": "insurance",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    },
+    {
+      "selector": ".program-slider_component a",
+      "location": "content",
+      "section": "benefits",
+      "role": "program",
+      "scope": "Home only",
+      "page": "/",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-program",
+          "data-cta-name": "Start signup | program",
+          "data-cta-location": "content",
+          "data-cta-section": "benefits",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-program",
+          "data-cta-name": "Find a dietitian | program",
+          "data-cta-location": "content",
+          "data-cta-section": "benefits",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    },
+    {
+      "selector": ".sticky-phone_content a",
+      "location": "content",
+      "section": "app",
+      "role": "app",
+      "scope": "Home only",
+      "page": "/",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-app",
+          "data-cta-name": "Start signup | app",
+          "data-cta-location": "content",
+          "data-cta-section": "app",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-app",
+          "data-cta-name": "Find a dietitian | app",
+          "data-cta-location": "content",
+          "data-cta-section": "app",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    },
+    {
+      "selector": "[data-cta=\"hero cta\"]",
+      "location": "hero",
+      "section": "intro",
+      "role": "hero",
+      "scope": "Reviewed hero CTA fallback",
+      "attributes_by_destination": {
+        "direct-signup": {
+          "data-cta-id": "patient-signup-hero",
+          "data-cta-name": "Start signup | hero",
+          "data-cta-location": "hero",
+          "data-cta-section": "intro",
+          "data-cta-action": "direct-signup",
+          "data-cta-version": "1"
+        },
+        "directory-navigation": {
+          "data-cta-id": "patient-directory-hero",
+          "data-cta-name": "Find a dietitian | hero",
+          "data-cta-location": "hero",
+          "data-cta-section": "intro",
+          "data-cta-action": "directory-navigation",
+          "data-cta-version": "1"
+        }
+      }
+    }
+  ],
+  "destination_rules": {
+    "direct-signup": "HTTPS signup.nourish.com or signup.usenourish.com, standard HTTPS port, root path only.",
+    "directory-navigation": "Same approved signup origins with /providers, plus exactly HTTPS www.nourish.com/find-a-provider. Other marketing routes and the marketing trailing-slash variant need review.",
+    "excluded": "Privacy/settings, unknown destinations, credentials, lookalike hosts, insecure signup origins and nonstandard ports. Do not label these as signup or directory CTAs."
+  },
+  "dietitian_rows": [
+    {
+      "page": "/become-a-dietitian",
+      "attributes_to_preserve": {
+        "data-cta-action": "apply-dietitian",
+        "data-cta-id": "dietitian-apply-hero",
+        "data-cta-location": "hero"
+      },
+      "existing_reviewed_name": "Dietitian apply - Hero",
+      "optional_attributes_if_unset": {
+        "data-cta-section": "hero",
+        "data-cta-version": "1"
+      },
+      "expected_destination": "/dietitian-application"
+    },
+    {
+      "page": "/become-a-dietitian",
+      "attributes_to_preserve": {
+        "data-cta-action": "apply-dietitian",
+        "data-cta-id": "dietitian-apply-earnings",
+        "data-cta-location": "earnings"
+      },
+      "existing_reviewed_name": "Dietitian apply - Earnings calculator",
+      "optional_attributes_if_unset": {
+        "data-cta-section": "earnings",
+        "data-cta-version": "1"
+      },
+      "expected_destination": "/become-a-dietitian/pay-calculator"
+    },
+    {
+      "page": "/become-a-dietitian",
+      "attributes_to_preserve": {
+        "data-cta-action": "apply-dietitian",
+        "data-cta-id": "dietitian-apply-platform",
+        "data-cta-location": "platform"
+      },
+      "existing_reviewed_name": "Dietitian apply - Platform",
+      "optional_attributes_if_unset": {
+        "data-cta-section": "platform",
+        "data-cta-version": "1"
+      },
+      "expected_destination": "/dietitian-application"
+    },
+    {
+      "page": "/become-a-dietitian",
+      "attributes_to_preserve": {
+        "data-cta-action": "apply-dietitian",
+        "data-cta-id": "dietitian-apply-footer",
+        "data-cta-location": "footer"
+      },
+      "existing_reviewed_name": "Dietitian apply - Footer",
+      "optional_attributes_if_unset": {
+        "data-cta-section": "footer",
+        "data-cta-version": "1"
+      },
+      "expected_destination": "/dietitian-application"
+    }
+  ],
+  "preserve": [
+    "All hrefs, existing data-cta legacy element labels, element IDs/classes, styling, content, locale, navigation behavior, query attribution and filter parameters.",
+    "OneTrust/RudderStack consent ownership, existing SDK configuration and identity; no credentials/permission changes or new tracking embeds.",
+    "Shared component definition/instance bindings and CMS propagation; annotate one semantic role per actual destination, not every link selected by a broad CSS selector."
+  ],
+  "verification_plan": [
+    "Capture initial Designer/live attribute inventory and exact site/page/component IDs. Inspect desktop/mobile shared components and at least representative CMS consumers before propagating changes.",
+    "Save draft attribute edits only. Read back all six patient fields and page metadata, plus the unchanged dietitian contract and hrefs. Browser worker must return edited IDs and exact before/after values.",
+    "After separately approved staging publication of the exact code and attribute revision, verify one event per nested/text/keyboard/dynamic activation with denied/granted consent, sanitized payload/context, stable IDs and explicit revisions.",
+    "No live/provider acceptance claim from cloud mocks. Publishing, provider-event injection, real form submission, chart edits and production changes require separate scope/approval."
+  ],
+  "material_decisions": [
+    "Conflicting existing authored identity/version or a newly discovered placement/destination outside this finite mapping requires a mapping decision. Do not assign a generic role or overwrite it silently.",
+    "Numeric site identity is now verified by the coordinating browser inventory. Resolve per-anchor identity/version conflicts and any new destination/placement before editing; preserve reviewed values."
+  ],
+  "source_evidence": [
+    "global.js: PATIENT_MAPPINGS, patientAction and patientContract define the reviewed migration and explicit patient fields.",
+    "global.js: track, pageAttribute and cleanCtaContext preserve source paths, optional revisions and sanitized context; page_name is not emitted.",
+    "global.js: readCtaContract and tests/dietitian-apply-clicked.test.js preserve the four dietitian IDs, labels, destinations and placements.",
+    "hero-filter-search.js updates existing CTA hrefs; preserve experiment/filter/UTM navigation.",
+    "global-footer.html: consentManagement uses the existing OneTrust provider; live configuration still needs browser verification."
+  ],
+  "initial_browser_batch": {
+    "components": [
+      {
+        "name": "Nav V2",
+        "instance_count": 82,
+        "roles": [
+          "patient-signup-nav",
+          "patient-directory-nav"
+        ]
+      },
+      {
+        "name": "Footer V2",
+        "instance_count": 91,
+        "roles": [
+          "patient-signup-footer",
+          "patient-directory-footer"
+        ]
+      }
+    ],
+    "page_metadata": "Do not add manual page-name attributes. Source page_path is automatic. Preserve existing reviewed data-page-version on html or body; author a new page revision only when independently needed. Do not remove pre-existing Webflow attributes.",
+    "exclusions": "Do not fill blank tracking fields on editorial/privacy/unknown links. Do not change repeated DOM IDs. Inspect destination/attribute bindings before changing shared definitions and verify representative consumers."
+  },
+  "source_head_kind": "Runtime source commit (global.js last changed here).",
+  "runtime_sha256": "f31cbf95a594e88da5ec1d413746ba8f068e360ceb6ea0cdb0165353149b277a",
+  "sitewide_inventory": {
+    "collector": "tools/cta-snapshot.js",
+    "compiler": "tools/cta-coverage.cjs",
+    "manifest": "cta-site-inventory.json",
+    "review_handoff": "NOURISH-TRACKING-HANDOFF.md",
+    "coverage_rule": "No complete-site claim until the sitemap and authorized static/CMS/component catalogues, non-sitemap pages and required viewport/conditional snapshots are reconciled. The offline tool cannot assert live receipts or chart acceptance."
+  }
+}

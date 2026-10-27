@@ -1,0 +1,87 @@
+{
+  "site_id": "699ce714348d0db6b6640eaf",
+  "runtime_source_head": "b5377b99afc12b07c0e00f4799a8418eb5555922",
+  "source": "Verified prior browser site identity and repository source; fresh Oct27 catalogue access is blocked.",
+  "discovery_complete": false,
+  "pages": [
+    {
+      "path": "/",
+      "kind": "static",
+      "source": "Prior authenticated Home inventory; fresh snapshot required."
+    },
+    {
+      "path": "/become-a-dietitian",
+      "kind": "static",
+      "source": "Existing reviewed runtime and browser fixtures; fresh snapshot required."
+    }
+  ],
+  "required_views": [
+    {
+      "path": "/",
+      "width": 1440,
+      "state": "default"
+    },
+    {
+      "path": "/",
+      "width": 375,
+      "state": "mobile-menu-open"
+    },
+    {
+      "path": "/become-a-dietitian",
+      "width": 1440,
+      "state": "default"
+    },
+    {
+      "path": "/become-a-dietitian",
+      "width": 375,
+      "state": "mobile-menu-open"
+    }
+  ],
+  "catalogue_gaps": [
+    {
+      "kind": "sitemap",
+      "name": "Complete published URL inventory",
+      "reason": "Cloud proxy denied sitemap/robots retrieval with 403; native fetch cannot parse the sitemap content type."
+    },
+    {
+      "kind": "static_pages",
+      "name": "Authorized Webflow page catalogue",
+      "reason": "Connected Webflow API returns 404 for the verified Nourish site."
+    },
+    {
+      "kind": "cms_templates",
+      "name": "Blogs Template and all CMS consumers",
+      "reason": "Prior browser sample only; current template IDs, routes, bindings and variants must be exported."
+    },
+    {
+      "kind": "static_pages",
+      "name": "Health Systems",
+      "reason": "Prior browser sample only; current path, page ID and full CTA tree are not available here."
+    },
+    {
+      "kind": "shared_component",
+      "name": "Nav V2",
+      "reason": "Previously reported 82 instances; current definitions, bindings, desktop/mobile variants and consumers need reconciliation."
+    },
+    {
+      "kind": "shared_component",
+      "name": "Footer V2",
+      "reason": "Previously reported 91 instances; current definitions, bindings and consumers need reconciliation."
+    },
+    {
+      "kind": "conditional_variants",
+      "name": "CMS, experiment and filter-dependent controls",
+      "reason": "All visible and hidden branches must be inventoried in the existing authorized browser task."
+    },
+    {
+      "kind": "application_boundary",
+      "name": "Production dietitian application",
+      "reason": "Ordinary JavaScript visits can create drafts and are prohibited. Use approved source or controlled staging/mocks; do not submit forms."
+    },
+    {
+      "kind": "non_sitemap_pages",
+      "name": "Draft, noindex and campaign routes",
+      "reason": "Discover through the authorized Designer catalogue and observed internal links; not yet available."
+    }
+  ]
+}

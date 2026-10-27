@@ -745,12 +745,26 @@ function nourishMergePageArgs(args, utms) {
   return arr;
 }
 
+var NOURISH_CTA_ATTRIBUTION_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content",
+  "utm_term", "utm_creative", "utm_page", "gclid", "gbraid", "gad_source", "gad_campaignid",
+  "matchtype", "fbclid", "msclkid", "ttclid", "oppref", "im_ref", "nsh_cam"];
+
 function nourishMergeUtmsIntoArgs(method, args) {
   if (!method) {
     return Array.prototype.slice.call(args || []);
   }
 
   var utms = nourishGetUtms();
+  if (method === "track" && args &&
+      (args[0] === "Get Started Clicked" || args[0] === "Dietitian Directory Clicked" || args[0] === "Dietitian Apply Clicked")) {
+    // CTA events keep campaign attribution, but only from a fixed list: any
+    // utm_* key is persisted, so arbitrary names could carry personal data.
+    var allowed = {};
+    for (var key in utms) {
+      if (Object.prototype.hasOwnProperty.call(utms, key) && NOURISH_CTA_ATTRIBUTION_KEYS.indexOf(key) !== -1) allowed[key] = utms[key];
+    }
+    return Object.keys(allowed).length ? nourishMergeTrackArgs(args, allowed) : Array.prototype.slice.call(args || []);
+  }
   var hasUtms = utms && Object.keys(utms).length;
   if (!hasUtms && method !== "page") {
     return Array.prototype.slice.call(args || []);
@@ -993,6 +1007,8 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   var VAR_NAME_KEY = "variationName";
 
   if (!window.jQuery) return;
+  if (window.__nourishCtaTrackingBound) return;
+  window.__nourishCtaTrackingBound = true;
   var $doc = jQuery(document);
 
   /**
@@ -1077,8 +1093,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
    * @param {URL} u - URL object
    * @returns {boolean} - True if signup URL
    */
+  function isSignupHost(u) {
+    return !!u && (u.hostname === "signup.nourish.com" || u.hostname === "signup.usenourish.com");
+  }
+
   function isSignupURL(u) {
-    return !!u && (u.hostname || "").toLowerCase().indexOf(SIGNUP_HOST) !== -1;
+    return isSignupHost(u) && !u.username && !u.password && u.protocol === "https:" && !u.port;
   }
 
   /**
@@ -1089,44 +1109,145 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
    * @param {Object} [extraProps] - Additional/override properties. When it
    *   supplies "cta copy", the element's DOM text is not read at all.
    */
-  function track(el, href, eventName, extraProps) {
-    if (
-      !window.rudderanalytics ||
-      typeof window.rudderanalytics.track !== "function"
-    )
-      return;
+  // Reviewed migration mappings. Selectors locate existing markup only;
+  // identities, placement, section and revision below are explicit constants.
+  // Authors should add data-cta-* contracts for new sections instead of adding
+  // CSS/text-derived identities. Unknown placements are reported as unmapped.
+  var CTA_RELEASE = "cta-cleanup-2026-10-26-1";
+  var PATIENT_MAPPINGS = [
+    { selector: '[data-cta="nav"]', location: "nav", section: "navigation", role: "nav" },
+    { selector: '.nav_component-2 a', location: "nav", section: "navigation", role: "nav" },
+    { selector: '.footer-wrap a', location: "footer", section: "final_cta", role: "footer" },
+    { selector: '#home-filter-cta', location: "hero", section: "insurance", role: "hero-coverage" },
+    { selector: '#provider-filter-cta', location: "content", section: "provider_directory", role: "provider-filter" },
+    { selector: '.logos_home-wrap a', page: "/", location: "content", section: "insurance", role: "insurance" },
+    { selector: '.program-slider_component a', page: "/", location: "content", section: "benefits", role: "program" },
+    { selector: '.sticky-phone_content a', page: "/", location: "content", section: "app", role: "app" },
+    { selector: '[data-cta="hero cta"]', location: "hero", section: "intro", role: "hero" }
+  ];
+  var CTA_TOKEN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
+  var CTA_VERSION = /^[A-Za-z0-9._-]{1,64}$/;
+  var CTA_LOCATIONS_V2 = ["nav", "hero", "content", "footer", "sticky_bar", "modal"];
 
-    var extra = extraProps || {};
-    var text = null;
-    if (!Object.prototype.hasOwnProperty.call(extra, "cta copy")) {
-      var $el = jQuery(el);
-      text =
-        ($el.text() || "").trim().replace(/\s+/g, " ").slice(0, 120) || null;
+  function patientAction(u) {
+    // Reviewed production redirect: /find-a-provider -> signup.nourish.com/providers.
+    // Keep this exact; other marketing hosts/paths need separate routing review.
+    if (u && !u.username && !u.password && u.protocol === "https:" &&
+        u.host === "www.nourish.com" && u.pathname === "/find-a-provider") {
+      return "directory-navigation";
     }
+    if (!isSignupURL(u)) return null;
+    var path = normPath(u.pathname);
+    if (path === "/") return "direct-signup";
+    if (path === "/providers") return "directory-navigation";
+    return null; // privacy/settings and unknown signup paths are not patient CTAs
+  }
 
-    var elementId =
-      el.getAttribute("data-cta") ||
-      (el.id ? "#" + el.id : null) ||
-      (el.className
-        ? "." + String(el.className).trim().split(/\s+/).join(".")
-        : el.tagName.toLowerCase());
+  function patientContract(a, u) {
+    var action = patientAction(u);
+    if (!action) return null;
+    var id = a.getAttribute("data-cta-id");
+    var c;
+    // Legacy data-cta alone is a migration hook. Once any explicit contract
+    // field is authored, require the complete contract instead of falling back.
+    var fields = ["id", "name", "location", "section", "action", "version"];
+    var authored = false;
+    for (var f = 0; f < fields.length; f++) {
+      if (a.getAttribute("data-cta-" + fields[f]) !== null) authored = true;
+    }
+    if (authored) {
+      c = { id: id, name: a.getAttribute("data-cta-name"),
+        location: a.getAttribute("data-cta-location"), section: a.getAttribute("data-cta-section"),
+        action: a.getAttribute("data-cta-action"), version: a.getAttribute("data-cta-version") };
+      // An incomplete or mismatched contract never sends its authored identity,
+      // but the click is still counted so authoring gaps cannot hide conversions.
+      if (!CTA_TOKEN.test(c.id || "") || !c.name || !c.name.trim() || c.name.length > 120 ||
+          CTA_LOCATIONS_V2.indexOf(c.location) < 0 || !CTA_TOKEN.test(c.section || "") ||
+          c.action !== action || !CTA_VERSION.test(c.version || "")) return unmappedContract(action, "invalid-contract");
+      c.mapping = "explicit";
+      return c;
+    }
+    for (var i = 0; i < PATIENT_MAPPINGS.length; i++) {
+      var m = PATIENT_MAPPINGS[i];
+      if (m.page && normPath(window.location.pathname) !== m.page) continue;
+      if (!a.matches(m.selector)) continue;
+      return { id: "patient-" + (action === "direct-signup" ? "signup-" : "directory-") + m.role,
+        name: (action === "direct-signup" ? "Start signup" : "Find a dietitian") + " | " + m.role,
+        location: m.location, section: m.section, action: action, version: "1", mapping: "reviewed-migration" };
+    }
+    return unmappedContract(action, "unmapped");
+  }
 
+  function unmappedContract(action, mapping) {
+    return { id: "patient-" + (action === "direct-signup" ? "signup" : "directory") + "-unmapped",
+      name: (action === "direct-signup" ? "Start signup" : "Find a dietitian") + " | Unmapped placement",
+      location: "unmapped", section: "unmapped", action: action, version: "unmapped", mapping: mapping };
+  }
+
+  function ctaQaProps() {
+    // Staging QA is deliberately opt-in and never propagated to signup URLs.
+    if (window.location.hostname !== "nourish-2-23.webflow.io") return {};
+    var p = new URLSearchParams(window.location.search);
+    var run = p.get("qa_run_id") || "";
+    return p.get("qa_test") === "true" && /^nourish-cta-qa-[a-z0-9-]{1,64}$/.test(run)
+      ? { qa_test: true, qa_run_id: run } : {};
+  }
+
+  function cleanCtaContext() {
+    var ref = safeURL(document.referrer || "");
+    return { page: { url: window.location.origin + window.location.pathname,
+      tab_url: window.location.origin + window.location.pathname,
+      path: window.location.pathname, search: "",
+      referrer: document.referrer && ref ? ref.origin + ref.pathname : "",
+      referring_domain: document.referrer && ref ? ref.hostname : "" } };
+    // initial_referrer/initial_referring_domain are first-touch values owned by
+    // the SDK; the current page's referrer must not overwrite them.
+  }
+
+  // Historical patient "cta copy" is the visible link text (Dietitian Apply has
+  // always sent its contract name); cta_name carries the contract name.
+  function ctaCopy(el) {
+    return (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 120) || null;
+  }
+
+  function pageAttribute(name) {
+    var value = document.documentElement.getAttribute(name);
+    return value === null && document.body ? document.body.getAttribute(name) : value;
+  }
+
+  function track(el, href, eventName, extraProps) {
+    if (!window.rudderanalytics || typeof window.rudderanalytics.track !== "function") return;
+    var u = safeURL(href);
+    if (!u || (u.protocol !== "http:" && u.protocol !== "https:")) return;
+    var extra = extraProps || {};
+    var cta = extra.cta_id ? { id: extra.cta_id, name: extra.cta_name,
+      location: extra.cta_location, section: extra.cta_section || extra.cta_location, action: extra.cta_action,
+      version: extra.cta_version || "1", mapping: "existing-dietitian-contract" } : patientContract(el, u);
+    if (!cta) return;
+    var version = el.getAttribute("data-cta-version");
+    var pageVersion = pageAttribute("data-page-version");
+    var legacyElement = el.getAttribute("data-cta") || (el.id ? "#" + el.id : null) ||
+      (el.className ? "." + String(el.className).trim().split(/\s+/).join(".") : el.tagName.toLowerCase());
+    var payload = Object.assign({
+      location: window.location.pathname || "/", element: legacyElement, "cta copy": eventName === "Dietitian Apply Clicked" ? cta.name : ctaCopy(el),
+      url: u.origin + u.pathname, deviceType: deviceType(), cta_id: cta.id,
+      cta_name: cta.name, cta_location: cta.location, cta_section: cta.section,
+      cta_action: cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
+      tracking_schema_version: "2", release_version: CTA_RELEASE,
+      page_version: CTA_VERSION.test(pageVersion || "") ? pageVersion : null,
+      page_path: window.location.pathname || "/", destination_host: u.hostname,
+      destination_path: u.pathname, locale: pageLocale(), cta_mapping_status: cta.mapping
+    }, ctaQaProps());
+    var variant = el.getAttribute("data-experiment-variant");
+    if (CTA_VERSION.test(variant || "")) payload.experiment_variant = variant;
+    var presentation = el.getAttribute("data-cta-presentation");
+    if (presentation === "button" || presentation === "text_link") payload.cta_presentation = presentation;
+    var vp = getVariationParams(window.location.pathname);
+    if (vp) payload.landingPageVariation = vp.landingPageVariation;
+    if (vp && vp.variationName) payload.variationName = vp.variationName;
     try {
-      var payload = nourishMergeUtmsIntoProps(
-        Object.assign(
-          {
-            location: window.location.pathname || "/",
-            element: elementId,
-            "cta copy": text,
-            url: href || null,
-            deviceType: deviceType(),
-          },
-          extra,
-        ),
-      );
-
-      window.rudderanalytics.track(eventName || EVENT, payload);
-    } catch (e) {}
+      window.rudderanalytics.track(eventName || (cta.action === "directory-navigation" ? "Dietitian Directory Clicked" : EVENT), payload, { context: cleanCtaContext() });
+    } catch (e) {} // SDK failures must never prevent navigation
   }
 
   // NOTE: intentional duplicate of section 5's param list, used only as a
@@ -1201,9 +1322,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   }
 
   function rewriteSignupLinks() {
-    jQuery('a[href*="' + SIGNUP_HOST + '"]').each(function () {
+    jQuery('a[href]').each(function () {
       var u = safeURL(this.getAttribute("href"));
-      if (!isSignupURL(u)) return;
+      if (!isSignupURL(u) || !patientAction(u)) return;
       maybeAppendVariation(u);
       this.setAttribute("href", u.toString());
     });
@@ -1229,20 +1350,29 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     }
   });
 
-  // Delegate clicks sitewide
+  // One delegated handler for patient and dietitian actions, including dynamic
+  // anchors and browser-generated keyboard clicks. Never suppress navigation.
   $doc.on("click", function (e) {
     var a = e.target.closest && e.target.closest("a[href]");
     if (!a) return;
-    var u = safeURL(a.getAttribute("href"));
-    if (!isSignupURL(u)) return;
-
-    // Track with required properties
-    track(a, u.toString());
-
-    // Inject landingPageVariation if mapping exists
-    var before = u.toString();
-    maybeAppendVariation(u);
-    if (u.toString() !== before) a.setAttribute("href", u.toString());
+    var raw = (a.getAttribute("href") || "").trim();
+    if (!raw || raw.charAt(0) === "#") return;
+    var u = safeURL(raw);
+    if (!u || (u.protocol !== "https:" && u.protocol !== "http:")) return;
+    if (patientAction(u)) {
+      track(a, u.toString());
+      var before = u.toString();
+      if (isSignupURL(u)) maybeAppendVariation(u);
+      if (u.toString() !== before) a.setAttribute("href", u.toString());
+      return;
+    }
+    if (normPath(window.location.pathname) !== APPLY_PAGE || isSignupHost(u)) return;
+    var cta = readCtaContract(a);
+    if (!cta) return;
+    track(a, u.origin + u.pathname, cta.event, {
+      cta_id: cta.id, cta_name: cta.name, cta_location: cta.location, cta_action: cta.action,
+      cta_section: cta.section, cta_version: cta.version
+    });
   });
 
   // --------------------------------------------------------------------------
@@ -1308,12 +1438,18 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       .trim()
       .replace(/\s+/g, " ");
     if (!CTA_NAME_RE.test(name)) return null;
+    var section = a.getAttribute("data-cta-section");
+    var version = a.getAttribute("data-cta-version");
+    if ((section !== null && !CTA_TOKEN.test(section)) ||
+        (version !== null && !CTA_VERSION.test(version))) return null;
     return {
       event: CTA_ACTION_EVENTS[action],
       action: action,
       id: id,
       name: name,
       location: location,
+      section: section === null ? location : section,
+      version: version === null ? "1" : version,
     };
   }
 
@@ -1322,33 +1458,4 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     return lang && /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(lang) ? lang : null;
   }
 
-  if (
-    normPath(window.location.pathname) === APPLY_PAGE &&
-    !window.__nourishApplyTrackingBound
-  ) {
-    window.__nourishApplyTrackingBound = true;
-    $doc.on("click", function (e) {
-      var a = e.target.closest && e.target.closest("a[href]");
-      if (!a) return;
-      var cta = readCtaContract(a);
-      if (!cta) return;
-      var rawHref = (a.getAttribute("href") || "").trim();
-      if (!rawHref || rawHref.charAt(0) === "#") return; // not a navigation
-      var u = safeURL(rawHref);
-      if (!u || (u.protocol !== "http:" && u.protocol !== "https:")) return;
-      if (isSignupURL(u)) return; // handled by Get Started Clicked above
-      var destination = u.origin + u.pathname; // no query, no hash
-      track(a, destination, cta.event, {
-        "cta copy": cta.name,
-        cta_id: cta.id,
-        cta_name: cta.name,
-        cta_location: cta.location,
-        cta_action: cta.action,
-        page_path: window.location.pathname || "/",
-        destination_host: u.hostname,
-        destination_path: u.pathname,
-        locale: pageLocale(),
-      });
-    });
-  }
 })();
