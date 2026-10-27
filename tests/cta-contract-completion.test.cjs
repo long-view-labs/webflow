@@ -79,7 +79,7 @@ test('a partial contract without any ID is counted as invalid; unauthored migrat
   assert.equal(h.events()[1][1].cta_mapping_status, 'reviewed-migration');
 });
 
-for (const href of ['http://signup.nourish.com/', 'https://signup.nourish.com:444/',
+for (const href of ['https://signup.nourish.com:444/',
   'https://signup.usenourish.com:444/providers', 'https://user:password@signup.nourish.com/',
   'https://signup.nourish.com/your-privacy-choices', 'https://signup.nourish.com/settings']) {
   test('unapproved/private signup destination excluded: ' + href, t => {
@@ -98,7 +98,7 @@ test('standard HTTPS signup port remains valid', t => {
 
 test('an unapproved signup origin cannot become a dietitian event', t => {
   const h = setup(t, { page: '/become-a-dietitian' });
-  for (const href of ['http://signup.nourish.com/', 'https://signup.nourish.com:444/']) h.click(href, apply);
+  for (const href of ['https://signup.nourish.com:444/']) h.click(href, apply);
   assert.equal(h.events().length, 0);
 });
 
@@ -178,4 +178,14 @@ test('denied consent remains SDK-owned with no delivered event or identity mutat
   h.click('/find-a-provider');
   assert.equal(h.events().length, 0);
   assert.equal(h.identity.length, 0);
+});
+
+test('plain http signup links are counted and upgraded to https (blog template CTAs)', t => {
+  const h = setup(t);
+  const a = h.click('http://signup.nourish.com/', { 'data-cta': 'nav' });
+  const [event, p] = h.events()[0];
+  assert.equal(event, 'Get Started Clicked');
+  assert.equal(p.cta_id, 'patient-signup-nav');
+  assert.ok(p.url.startsWith('https://signup.nourish.com/'), p.url);
+  assert.ok(a.getAttribute('href').startsWith('https://signup.nourish.com/'));
 });

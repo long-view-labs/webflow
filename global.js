@@ -1083,8 +1083,17 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     return !!u && (u.hostname === "signup.nourish.com" || u.hostname === "signup.usenourish.com");
   }
 
+  // Plain http signup links (the blog template and a few pages were authored
+  // that way) count too; upgradeSignupURL switches them to https before use.
+  // Non-default ports and embedded credentials stay excluded.
   function isSignupURL(u) {
-    return isSignupHost(u) && !u.username && !u.password && u.protocol === "https:" && !u.port;
+    return isSignupHost(u) && !u.username && !u.password && !u.port &&
+      (u.protocol === "https:" || u.protocol === "http:");
+  }
+
+  function upgradeSignupURL(u) {
+    if (u.protocol === "http:") u.protocol = "https:";
+    return u;
   }
 
   /**
@@ -1321,6 +1330,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     jQuery('a[href]').each(function () {
       var u = safeURL(this.getAttribute("href"));
       if (!isSignupURL(u) || !patientAction(u)) return;
+      upgradeSignupURL(u);
       maybeAppendVariation(u);
       this.setAttribute("href", u.toString());
     });
@@ -1356,10 +1366,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     var u = safeURL(raw);
     if (!u || (u.protocol !== "https:" && u.protocol !== "http:")) return;
     if (patientAction(u)) {
+      var wasHttp = u.protocol === "http:";
+      upgradeSignupURL(u);
       track(a, u.toString());
       var before = u.toString();
       if (isSignupURL(u)) maybeAppendVariation(u);
-      if (u.toString() !== before) a.setAttribute("href", u.toString());
+      if (wasHttp || u.toString() !== before) a.setAttribute("href", u.toString());
       return;
     }
     if (normPath(window.location.pathname) !== APPLY_PAGE || isSignupHost(u)) return;

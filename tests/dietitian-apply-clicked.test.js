@@ -307,7 +307,7 @@ test("Dietitian Apply Clicked", async (t) => {
     } finally { await context.close(); }
   });
 
-  await t.test("partial patient attributes are counted as invalid; unreviewed signup origins emit nothing", async () => {
+  await t.test("partial patient attributes are counted as invalid; plain http is upgraded; unreviewed signup origins emit nothing", async () => {
     const { page, context } = await openPage(browser);
     try {
       for (const html of [
@@ -321,6 +321,7 @@ test("Dietitian Apply Clicked", async (t) => {
       assert.deepEqual(events.map(e => [e.event, e.props.cta_mapping_status, e.props.cta_id]), [
         ["Get Started Clicked", "invalid-contract", "patient-signup-unmapped"],
         ["Get Started Clicked", "invalid-contract", "patient-signup-unmapped"],
+        ["Get Started Clicked", "reviewed-migration", "patient-signup-nav"],
       ]);
     } finally { await context.close(); }
   });

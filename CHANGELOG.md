@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.10] - 2026-10-27
+
+Plain http://signup.nourish.com links count again. v2.622.0 only tracked https signup links, so CTAs Webflow authored with http (the blog template's Find a dietitian / Learn more buttons, Check coverage on /does-my-insurance-cover-nutrition) sent no Get Started Clicked event. They are now tracked and their href is upgraded to https; non-default ports and embedded credentials stay excluded. npm test runs 174 tests.
+
 ## [2.622.9] - 2026-10-27
 
 Retire Dietitian Directory Clicked. Provider-directory signup links (signup.nourish.com/providers) fire Get Started Clicked again, as before 2.622.0, and are told apart by cta_action=directory-navigation (plus destination_path). Internal www.nourish.com/find-a-provider links fire nothing again, as before 2.622.0. For Fri Oct 23 - Tue Oct 27 directory clicks are in Dietitian Directory Clicked; combine both events for that window. tools/cta-coverage.cjs updated to match. Verified against v2.621.4 with live homepage clicks. npm test runs 173 tests.
