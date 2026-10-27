@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.gemin.nourish-tracking-monitor</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/geminpak/.local/bin/node</string>
+    <string>/Users/geminpak/Documents/Github-Webflow/nourish-long-view-labs/monitoring/local-tracking-monitor.js</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/geminpak/Documents/Github-Webflow/nourish-long-view-labs</string>
+  <key>StartInterval</key><integer>3600</integer>
+  <key>RunAtLoad</key><false/>
+  <key>ProcessType</key><string>Background</string>
+  <key>Nice</key><integer>10</integer>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+  <key>StandardOutPath</key><string>/Users/geminpak/Documents/Github-Webflow/nourish-long-view-labs/monitoring-local/launchd.stdout.log</string>
+  <key>StandardErrorPath</key><string>/Users/geminpak/Documents/Github-Webflow/nourish-long-view-labs/monitoring-local/launchd.stderr.log</string>
+</dict>
+</plist>
