@@ -1160,9 +1160,37 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     { selector: '.section_inner-container a', location: "content", role: "page-content" }
   ];
 
+  // cta_name = "<action> | <page> | <placement>". Nav, hero and footer CTAs leave
+  // the placement out because cta_location already says it.
+  var NAME_WITHOUT_PLACEMENT = { "nav": 1, "hero": 1, "final-cta": 1 };
+  // CMS collections are named by template; page_path keeps the exact URL.
+  var PAGE_TEMPLATES = {
+    "blog": "Blog post", "blog-category": "Blog category", "local-dietitians": "Local dietitians",
+    "insurance-dietitians": "Insurance dietitians", "conditions": "Condition page", "condition": "Condition page",
+    "anorexia": "Condition page", "bulimia": "Condition page", "landing-page": "Landing page",
+    "landing-pages": "Landing page", "landing": "Landing page", "faq": "FAQ", "faq-categories": "FAQ category",
+    "term": "Glossary term", "partners": "Partner page", "partnerships": "Partner page", "reviewer": "Reviewer",
+    "authors": "Author", "quiz": "Quiz page"
+  };
+  var PAGE_NAMES = {
+    "/": "Home", "/paid": "Paid", "/paid-google": "Paid Google", "/paid-labs": "Paid Labs",
+    "/paid-youtube": "Paid YouTube", "/paidwl": "Paid WL", "/does-my-insurance-cover-nutrition": "Am I covered",
+    "/for-health-plans": "Health plans", "/health-systems": "Health systems"
+  };
+
+  function ctaPageName() {
+    var path = normPath(window.location.pathname);
+    if (PAGE_NAMES[path]) return PAGE_NAMES[path];
+    var parts = path.split("/").filter(Boolean);
+    if (parts.length > 1 && PAGE_TEMPLATES[parts[0]]) return PAGE_TEMPLATES[parts[0]];
+    var slug = parts.join(" ").replace(/-/g, " ");
+    return (slug.charAt(0).toUpperCase() + slug.slice(1)).slice(0, 40) || "Home";
+  }
+
   function ctaName(action, suffix) {
     var p = CTA_PLACEMENTS[suffix];
-    return (action === "direct-signup" ? "Get Started" : "Find a Dietitian") + " | " + (p ? p.label : suffix);
+    var name = (action === "direct-signup" ? "Get Started" : "Find a Dietitian") + " | " + ctaPageName();
+    return NAME_WITHOUT_PLACEMENT[suffix] ? name : name + " | " + (p ? p.label : suffix);
   }
   var CTA_TOKEN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
   var CTA_VERSION = /^[A-Za-z0-9._-]{1,64}$/;
@@ -1233,7 +1261,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
 
   function unmappedContract(action, mapping) {
     return { id: "patient-" + (action === "direct-signup" ? "signup" : "directory") + "-unmapped",
-      name: (action === "direct-signup" ? "Get Started" : "Find a Dietitian") + " | Unmapped placement",
+      name: ctaName(action, "unmapped"),
       location: "unmapped", section: "unmapped", action: action, version: "unmapped", mapping: mapping };
   }
 
