@@ -7,7 +7,7 @@ const token = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
 const revision = /^[A-Za-z0-9._-]{1,64}$/;
 const locations = ['nav', 'hero', 'content', 'footer', 'sticky_bar', 'modal'];
 const fields = ['id', 'name', 'location', 'section', 'action', 'version'];
-const events = { 'direct-signup': 'Get Started Clicked', 'directory-navigation': 'Dietitian Directory Clicked', 'apply-dietitian': 'Dietitian Apply Clicked' };
+const events = { 'direct-signup': 'Get Started Clicked', 'directory-navigation': 'Get Started Clicked', 'apply-dietitian': 'Dietitian Apply Clicked' };
 
 function classify(item) {
   if (item.fragment_only) return { category: 'non_conversion', action: null };
@@ -23,7 +23,6 @@ function classify(item) {
     if (normalized === '/providers') return { category: 'directory', action: 'directory-navigation' };
     return { category: /^\/(?:settings|your-privacy-choices)/.test(normalized) ? 'privacy_settings' : 'unreviewed_destination', action: null };
   }
-  if (u.protocol === 'https:' && u.host === 'www.nourish.com' && u.pathname === '/find-a-provider') return { category: 'directory', action: 'directory-navigation' };
   if (['www.nourish.com', 'nourish.com', 'nourish-2-23.webflow.io'].includes(u.hostname)) {
     if (normalized === '/dietitian-application' || normalized === '/become-a-dietitian/pay-calculator') return { category: 'dietitian_application', action: 'apply-dietitian' };
     if (/^\/(?:contact|contact-us|book-a-demo|request-demo)(?:\/|$)/.test(normalized)) return { category: 'enterprise_contact_candidate', action: null };

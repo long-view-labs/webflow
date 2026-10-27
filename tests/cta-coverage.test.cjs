@@ -10,10 +10,11 @@ const snapshot = { status: 'snapshot', site_id: '699ce714348d0db6b6640eaf', page
   viewport: { width: 1440, height: 900 }, state: 'default', captured_at: '2026-10-27T00:00:00Z', items: [item] };
 const inventory = { site_id: snapshot.site_id, discovery_complete: true, pages: [{ path: '/' }], required_views: [{ path: '/', width: 1440, state: 'default' }] };
 
-test('conversion buckets preserve separate signup and directory events', () => {
+test('signup and signup-directory links both count as Get Started Clicked; internal /find-a-provider is not tracked', () => {
   assert.equal(inspect(item, snapshot).event, 'Get Started Clicked');
-  const directory = { ...item, href: 'https://www.nourish.com/find-a-provider', attributes: { ...attrs, 'data-cta-id': 'patient-directory-nav', 'data-cta-action': 'directory-navigation' } };
-  assert.equal(inspect(directory, snapshot).event, 'Dietitian Directory Clicked');
+  const directory = { ...item, href: 'https://signup.nourish.com/providers', attributes: { ...attrs, 'data-cta-id': 'patient-directory-nav', 'data-cta-action': 'directory-navigation' } };
+  assert.equal(inspect(directory, snapshot).event, 'Get Started Clicked');
+  assert.equal(classify({ ...item, href: 'https://www.nourish.com/find-a-provider' }).action, null);
 });
 test('credentials, alternate ports and privacy destinations are not approved signup conversions', () => {
   for (const bad of [{ ...item, has_credentials: true }, { ...item, href: 'https://user:password@signup.nourish.com/' }, { ...item, href: 'https://signup.nourish.com:444/' }, { ...item, href: 'https://signup.nourish.com/your-privacy-choices' }]) assert.equal(classify(bad).action, null);

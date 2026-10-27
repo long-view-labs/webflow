@@ -281,10 +281,10 @@ test("Dietitian Apply Clicked", async (t) => {
     }
   });
 
-  await t.test("directory redirect emits once with safe context and unchanged href", async () => {
+  await t.test("signup directory link emits Get Started Clicked once with directory action and unchanged href", async () => {
     const { page, context, pageErrors } = await openPage(browser, { pagePath: "/", sdkMode: "live" });
     try {
-      const href = "/find-a-provider?email=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE";
+      const href = "https://signup.nourish.com/providers?email=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE";
       await page.evaluate(() => {
         document.body.setAttribute("data-page-version", "2");
       });
@@ -292,15 +292,16 @@ test("Dietitian Apply Clicked", async (t) => {
       await page.locator(sel).locator("span").click();
       const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
       assert.equal(events.length, 1);
-      assert.equal(events[0].event, "Dietitian Directory Clicked");
+      assert.equal(events[0].event, "Get Started Clicked");
+      assert.equal(events[0].props.cta_action, "directory-navigation");
       assert.equal(Object.hasOwn(events[0].props, "page_name"), false);
       assert.equal(events[0].props.page_path, "/");
       assert.equal(events[0].props.page_version, "2");
       assert.equal(events[0].props.cta_version, "2");
       assert.equal(events[0].props.release_version, "cta-cleanup-2026-10-26-1");
-      assert.equal(events[0].props.destination_path, "/find-a-provider");
-      assert.equal(await page.locator(sel).getAttribute("href"), href);
-      assert.ok(events[0].props.url.includes("/find-a-provider?email=SYNTHETIC_PRIVATE"), "url is the full clicked link");
+      assert.equal(events[0].props.destination_path, "/providers");
+      assert.ok((await page.locator(sel).getAttribute("href")).startsWith("https://signup.nourish.com/providers?email=SYNTHETIC_PRIVATE"));
+      assert.ok(events[0].props.url.includes("/providers?email=SYNTHETIC_PRIVATE"), "url is the full clicked link");
       assert.deepEqual(await page.evaluate(() => window.__clicks), [{ defaultPrevented: false }]);
       assert.deepEqual(pageErrors, []);
     } finally { await context.close(); }

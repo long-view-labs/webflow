@@ -46,7 +46,7 @@ for (const page of ['/paid', '/paid-google', '/paid-labs', '/paidwl']) {
 }
 
 test('paid FAQ directory link maps to faq', (t) => {
-  const [p] = clickIn(t, '/paid', '<div class="faq_dropdown-list"><a>Find</a></div>', 'a', 'https://www.nourish.com/find-a-provider');
+  const [p] = clickIn(t, '/paid', '<div class="faq_dropdown-list"><a>Find</a></div>', 'a', 'https://signup.nourish.com/providers');
   assert.equal(p.cta_id, 'patient-directory-faq');
   assert.equal(p.cta_section, 'faq');
 });

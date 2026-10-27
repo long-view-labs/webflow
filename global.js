@@ -1131,13 +1131,10 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   var CTA_VERSION = /^[A-Za-z0-9._-]{1,64}$/;
   var CTA_LOCATIONS_V2 = ["nav", "hero", "content", "footer", "sticky_bar", "modal"];
 
+  // Only signup links are tracked, as before 2.622.0 (internal /find-a-provider
+  // links fire nothing). Directory links still fire Get Started Clicked; they
+  // are told apart by cta_action=directory-navigation / destination_path.
   function patientAction(u) {
-    // Reviewed production redirect: /find-a-provider -> signup.nourish.com/providers.
-    // Keep this exact; other marketing hosts/paths need separate routing review.
-    if (u && !u.username && !u.password && u.protocol === "https:" &&
-        u.host === "www.nourish.com" && u.pathname === "/find-a-provider") {
-      return "directory-navigation";
-    }
     if (!isSignupURL(u)) return null;
     var path = normPath(u.pathname);
     if (path === "/") return "direct-signup";
@@ -1245,7 +1242,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     if (vp) payload.landingPageVariation = vp.landingPageVariation;
     if (vp && vp.variationName) payload.variationName = vp.variationName;
     try {
-      window.rudderanalytics.track(eventName || (cta.action === "directory-navigation" ? "Dietitian Directory Clicked" : EVENT), payload); // SDK-default context (full page URL, referrer), as before 2.622.0
+      window.rudderanalytics.track(eventName || EVENT, payload); // SDK-default context (full page URL, referrer), as before 2.622.0
     } catch (e) {} // SDK failures must never prevent navigation
   }
 

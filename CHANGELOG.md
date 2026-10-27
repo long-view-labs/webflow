@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.9] - 2026-10-27
+
+Retire Dietitian Directory Clicked. Provider-directory signup links (signup.nourish.com/providers) fire Get Started Clicked again, as before 2.622.0, and are told apart by cta_action=directory-navigation (plus destination_path). Internal www.nourish.com/find-a-provider links fire nothing again, as before 2.622.0. For Fri Oct 23 - Tue Oct 27 directory clicks are in Dietitian Directory Clicked; combine both events for that window. tools/cta-coverage.cjs updated to match. Verified against v2.621.4 with live homepage clicks. npm test runs 173 tests.
+
 ## [2.622.8] - 2026-10-27
 
 CTA events (Get Started Clicked, Dietitian Directory Clicked, Dietitian Apply Clicked) merge every stored attribution key again, as before 2.622.0 (e.g. custom keys such as utm_adgroup), instead of a fixed allow-list. NOURISH_CTA_ATTRIBUTION_KEYS removed. Verified against v2.621.4 with live homepage clicks. npm test runs 173 tests.
