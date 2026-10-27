@@ -76,7 +76,9 @@ $(document).ready(function () {
   parallaxScroll();
 });
 
-var observer = new IntersectionObserver(
+// Pages without the quotes grid (/employers, /health-systems) skip the slider.
+var employeeQuotesGrid = document.querySelector(".employee-quotes_grid");
+if (employeeQuotesGrid) new IntersectionObserver(
   function (entries, observer) {
     entries.forEach(function (entry) {
       // Check if the element is in view
@@ -160,4 +162,4 @@ var observer = new IntersectionObserver(
     threshold: 0.1, // Trigger when at least 10% of the target is visible
   }
   // Tell the observer which element(s) to track
-).observe(document.querySelector(".employee-quotes_grid"));
+).observe(employeeQuotesGrid);
