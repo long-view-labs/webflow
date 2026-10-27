@@ -745,16 +745,26 @@ function nourishMergePageArgs(args, utms) {
   return arr;
 }
 
+var NOURISH_CTA_ATTRIBUTION_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content",
+  "utm_term", "utm_creative", "utm_page", "gclid", "gbraid", "gad_source", "gad_campaignid",
+  "matchtype", "fbclid", "msclkid", "ttclid", "oppref", "im_ref", "nsh_cam"];
+
 function nourishMergeUtmsIntoArgs(method, args) {
   if (!method) {
     return Array.prototype.slice.call(args || []);
   }
 
+  var utms = nourishGetUtms();
   if (method === "track" && args &&
       (args[0] === "Get Started Clicked" || args[0] === "Dietitian Directory Clicked" || args[0] === "Dietitian Apply Clicked")) {
-    return Array.prototype.slice.call(args || []);
+    // CTA events keep campaign attribution, but only from a fixed list: any
+    // utm_* key is persisted, so arbitrary names could carry personal data.
+    var allowed = {};
+    for (var key in utms) {
+      if (Object.prototype.hasOwnProperty.call(utms, key) && NOURISH_CTA_ATTRIBUTION_KEYS.indexOf(key) !== -1) allowed[key] = utms[key];
+    }
+    return Object.keys(allowed).length ? nourishMergeTrackArgs(args, allowed) : Array.prototype.slice.call(args || []);
   }
-  var utms = nourishGetUtms();
   var hasUtms = utms && Object.keys(utms).length;
   if (!hasUtms && method !== "page") {
     return Array.prototype.slice.call(args || []);
@@ -1194,6 +1204,12 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     // the SDK; the current page's referrer must not overwrite them.
   }
 
+  // Historical patient "cta copy" is the visible link text (Dietitian Apply has
+  // always sent its contract name); cta_name carries the contract name.
+  function ctaCopy(el) {
+    return (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 120) || null;
+  }
+
   function pageAttribute(name) {
     var value = document.documentElement.getAttribute(name);
     return value === null && document.body ? document.body.getAttribute(name) : value;
@@ -1213,7 +1229,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     var legacyElement = el.getAttribute("data-cta") || (el.id ? "#" + el.id : null) ||
       (el.className ? "." + String(el.className).trim().split(/\s+/).join(".") : el.tagName.toLowerCase());
     var payload = Object.assign({
-      location: window.location.pathname || "/", element: eventName === "Dietitian Apply Clicked" ? legacyElement : cta.id, "cta copy": cta.name,
+      location: window.location.pathname || "/", element: legacyElement, "cta copy": eventName === "Dietitian Apply Clicked" ? cta.name : ctaCopy(el),
       url: u.origin + u.pathname, deviceType: deviceType(), cta_id: cta.id,
       cta_name: cta.name, cta_location: cta.location, cta_section: cta.section,
       cta_action: cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,

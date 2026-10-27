@@ -113,7 +113,10 @@ test('body page revision and automatic source path need no manual page label', t
   assert.equal(p.cta_version, '2');
   assert.equal(p.release_version, 'cta-cleanup-2026-10-26-1');
   assert.equal(p.tracking_schema_version, '2');
-  assert.ok(!JSON.stringify(event).includes('SYNTHETIC_PRIVATE'));
+  assert.ok(!JSON.stringify(event).includes('token='));
+  assert.equal(p.utm_source, 'SYNTHETIC_PRIVATE', 'allow-listed campaign attribution is restored');
+  assert.equal(Object.hasOwn(p, 'patientBirthday'), false, 'non-campaign persisted fields never reach CTA events');
+  assert.equal(p['cta copy'], 'SYNTHETIC_PRIVATE', 'historical cta copy is the visible link text');
   assert.ok(a.getAttribute('href').includes('token=SYNTHETIC_PRIVATE'));
   const navigation = new URL(a.getAttribute('href'));
   assert.equal(navigation.searchParams.get('utm_source'), 'SYNTHETIC_PRIVATE');
@@ -145,7 +148,7 @@ test('missing/invalid page revision stays null and no page label is inferred', t
   h.click('https://signup.nourish.com/', patient);
   assert.equal(Object.hasOwn(h.events()[1][1], 'page_name'), false);
   assert.equal(h.events()[1][1].page_version, null);
-  assert.ok(!JSON.stringify(h.events()).includes('SYNTHETIC_PRIVATE'));
+  assert.ok(!JSON.stringify(h.events()).includes('patientBirthday'));
 });
 
 test('dietitian section/revision is explicit while ID, placement and legacy element remain stable', t => {
