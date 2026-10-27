@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.3] - 2026-10-27
+
+become-dietitian.js skips the employee quotes slider on pages without .employee-quotes_grid (/employers, /health-systems threw an IntersectionObserver TypeError on every load). Those pages now pin @v2.622.3 instead of the unversioned URL. Guard test in tests/become-dietitian-guard.test.cjs; npm test runs 169 tests.
+
 ## [2.622.2] - 2026-10-27
 
 Paid landing page CTA mappings (global.js section 8). On /paid, /paid-*, /paidwl the quiz, insurance, how-it-works, approach, testimonials, app, final-CTA, logos, program, sticky-phone and FAQ links now report reviewed cta_id/cta_location/cta_section instead of patient-*-unmapped (113 unmapped links across 10 live pages -> 0). Authored data-cta-* contracts still win; mappings never apply off paid pages. Tests in tests/paid-cta-mappings.test.cjs; npm test runs 167 tests.
