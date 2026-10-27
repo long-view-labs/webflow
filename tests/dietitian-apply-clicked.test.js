@@ -300,7 +300,7 @@ test("Dietitian Apply Clicked", async (t) => {
       assert.equal(events[0].props.release_version, "cta-cleanup-2026-10-26-1");
       assert.equal(events[0].props.destination_path, "/find-a-provider");
       assert.equal(await page.locator(sel).getAttribute("href"), href);
-      assert.ok(!JSON.stringify(events).includes("SYNTHETIC_PRIVATE"));
+      assert.ok(events[0].props.url.includes("/find-a-provider?email=SYNTHETIC_PRIVATE"), "url is the full clicked link");
       assert.deepEqual(await page.evaluate(() => window.__clicks), [{ defaultPrevented: false }]);
       assert.deepEqual(pageErrors, []);
     } finally { await context.close(); }

@@ -1215,17 +1215,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       ? { qa_test: true, qa_run_id: run } : {};
   }
 
-  function cleanCtaContext() {
-    var ref = safeURL(document.referrer || "");
-    return { page: { url: window.location.origin + window.location.pathname,
-      tab_url: window.location.origin + window.location.pathname,
-      path: window.location.pathname, search: "",
-      referrer: document.referrer && ref ? ref.origin + ref.pathname : "",
-      referring_domain: document.referrer && ref ? ref.hostname : "" } };
-    // initial_referrer/initial_referring_domain are first-touch values owned by
-    // the SDK; the current page's referrer must not overwrite them.
-  }
-
   // Historical patient "cta copy" is the visible link text (Dietitian Apply has
   // always sent its contract name); cta_name carries the contract name.
   function ctaCopy(el) {
@@ -1235,22 +1224,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   function pageAttribute(name) {
     var value = document.documentElement.getAttribute(name);
     return value === null && document.body ? document.body.getAttribute(name) : value;
-  }
-
-  // Event "url" keeps the attribution params the clicked link actually carries
-  // (allow-listed only), so charts that read url (e.g. the UTM Passthrough
-  // Rate alert: url contains utm_source=) keep working. Any other query value
-  // and the hash are still dropped. Reads the link itself, not stored UTMs,
-  // so the metric still shows when a link fails to carry them.
-  var CTA_URL_KEEP_KEYS = NOURISH_CTA_ATTRIBUTION_KEYS.concat([VAR_KEY, VAR_NAME_KEY])
-    .map(function (key) { return key.toLowerCase(); });
-  function ctaUrl(u) {
-    var kept = new URLSearchParams();
-    u.searchParams.forEach(function (value, key) {
-      if (CTA_URL_KEEP_KEYS.indexOf(key.toLowerCase()) !== -1) kept.append(key, value);
-    });
-    var qs = kept.toString();
-    return u.origin + u.pathname + (qs ? "?" + qs : "");
   }
 
   function track(el, href, eventName, extraProps) {
@@ -1268,7 +1241,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       (el.className ? "." + String(el.className).trim().split(/\s+/).join(".") : el.tagName.toLowerCase());
     var payload = Object.assign({
       location: window.location.pathname || "/", element: legacyElement, "cta copy": eventName === "Dietitian Apply Clicked" ? cta.name : ctaCopy(el),
-      url: ctaUrl(u), deviceType: deviceType(), cta_id: cta.id,
+      // url is the full clicked link, as before 2.622.0: charts filter on it
+      // (UTM Passthrough Rate: url contains utm_source=).
+      url: href || null, deviceType: deviceType(), cta_id: cta.id,
       cta_name: cta.name, cta_location: cta.location, cta_section: cta.section,
       cta_action: cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
       tracking_schema_version: "2", release_version: CTA_RELEASE,
@@ -1284,7 +1259,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     if (vp) payload.landingPageVariation = vp.landingPageVariation;
     if (vp && vp.variationName) payload.variationName = vp.variationName;
     try {
-      window.rudderanalytics.track(eventName || (cta.action === "directory-navigation" ? "Dietitian Directory Clicked" : EVENT), payload, { context: cleanCtaContext() });
+      window.rudderanalytics.track(eventName || (cta.action === "directory-navigation" ? "Dietitian Directory Clicked" : EVENT), payload); // SDK-default context (full page URL, referrer), as before 2.622.0
     } catch (e) {} // SDK failures must never prevent navigation
   }
 
@@ -1430,8 +1405,8 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // Reuses track() above, so the Get Started schema is preserved (location,
   // element, cta copy, url, deviceType + persisted UTMs), with additive
   // cta_id, cta_name, cta_location, cta_action, page_path, destination_host,
-  // destination_path and locale. url / destination_* are origin + pathname
-  // only (no query, no hash); nothing is read from form fields or DOM text.
+  // destination_path and locale. url is the full clicked link; destination_*
+  // are host and path; nothing is read from form fields or DOM text.
   // The "earnings" CTA says Apply now but opens the pay calculator: that is
   // calculator engagement, not an application start — distinguish it by
   // cta_location / destination_path, never by dropping the event.

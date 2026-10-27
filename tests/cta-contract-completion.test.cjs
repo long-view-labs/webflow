@@ -113,7 +113,7 @@ test('body page revision and automatic source path need no manual page label', t
   assert.equal(p.cta_version, '2');
   assert.equal(p.release_version, 'cta-cleanup-2026-10-26-1');
   assert.equal(p.tracking_schema_version, '2');
-  assert.ok(!JSON.stringify(event).includes('token='));
+  assert.ok(p.url.includes('token=SYNTHETIC_PRIVATE'), 'url is the full clicked link, as before 2.622.0');
   assert.equal(p.utm_source, 'SYNTHETIC_PRIVATE', 'allow-listed campaign attribution is restored');
   assert.equal(Object.hasOwn(p, 'patientBirthday'), false, 'non-campaign persisted fields never reach CTA events');
   assert.equal(p['cta copy'], 'SYNTHETIC_PRIVATE', 'historical cta copy is the visible link text');
@@ -121,8 +121,7 @@ test('body page revision and automatic source path need no manual page label', t
   const navigation = new URL(a.getAttribute('href'));
   assert.equal(navigation.searchParams.get('utm_source'), 'SYNTHETIC_PRIVATE');
   assert.equal(navigation.searchParams.has('patientBirthday'), false);
-  assert.equal(p.url, 'https://signup.nourish.com/');
-  assert.equal(event[2].context.page.search, '');
+  assert.equal(event[2], undefined, 'no context override: SDK sends the full page URL and referrer');
   assert.equal(h.identity.length, 0);
 });
 

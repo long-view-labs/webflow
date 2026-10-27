@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.7] - 2026-10-27
+
+Restore two CTA event fields to exactly their pre-2.622.0 values (neither change was requested). `url` on Get Started Clicked / Dietitian Directory Clicked / Dietitian Apply Clicked is the full clicked link again (all query params, including InsuranceSearchInput, _configname, _stsgnoredir and _gl), and the track call no longer overrides the SDK's page context, so page url/search/referrer carry the full query string again. Verified against v2.621.4 with live homepage clicks. npm test runs 173 tests.
+
 ## [2.622.6] - 2026-10-27
 
 The CTA `url` keep-list now matches landingPageVariation and variationName. 2.622.5 compared lowercased query keys against those mixed-case names, so both were dropped from `url`.

@@ -89,8 +89,8 @@ test('a parameter already on the link is never overwritten', async t => {
   assert.equal(got.gclid, 'qa-gclid');
 });
 
-test('Get Started Clicked url keeps the link UTMs (UTM Passthrough Rate chart) and drops other query values', async t => {
-  const { w, events } = load(t, { body: '<a id="cta" data-cta="nav" href="https://signup.nourish.com/?firstName=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE">Get started</a>' });
+test('Get Started Clicked url is the full clicked link, with the UTMs (UTM Passthrough Rate chart)', async t => {
+  const { w, events } = load(t, { body: '<a id="cta" data-cta="nav" href="https://signup.nourish.com/?InsuranceSearchInput=false&_configname=x">Get started</a>' });
   await settle(w);
   const a = w.document.getElementById('cta');
   w.addEventListener('click', e => e.preventDefault());
@@ -100,6 +100,6 @@ test('Get Started Clicked url keeps the link UTMs (UTM Passthrough Rate chart) a
   const url = started[1].url;
   assert.ok(url.includes('utm_source='), 'url contains utm_source=');
   assertHandoff(url);
-  assert.ok(!url.includes('SYNTHETIC_PRIVATE'), 'non-attribution query and hash are dropped');
+  assert.ok(url.includes('InsuranceSearchInput=false') && url.includes('_configname=x'), 'other link params are kept, as before 2.622.0');
   assert.equal(started[1].utm_source, 'qa_src', 'utm_* properties are still sent');
 });
