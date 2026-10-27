@@ -63,3 +63,22 @@ test('an authored contract still wins over the paid mapping', (t) => {
   assert.equal(p.cta_id, 'patient-signup-custom');
   assert.equal(p.cta_mapping_status, 'explicit');
 });
+
+test('Footer V2 splash with blank placeholder attributes maps to final_cta on any page', (t) => {
+  for (const page of ['/', '/blog', '/paid-google']) {
+    const [p] = clickIn(t, page, '<section class="section_footer-splash"><a data-cta="footer" data-cta-name="" data-cta-location="" data-cta-action="" data-cta-id="">Get started</a></section>', 'a');
+    assert.equal(p.cta_id, 'patient-signup-final-cta', page);
+    assert.equal(p.cta_section, 'final_cta');
+    assert.equal(p.cta_mapping_status, 'reviewed-migration');
+  }
+});
+
+test('Footer V2 splash with a partly filled contract is still invalid', (t) => {
+  const [p] = clickIn(t, '/', '<section class="section_footer-splash"><a data-cta="footer" data-cta-name="Start" data-cta-location="" data-cta-action="" data-cta-id="">Get started</a></section>', 'a');
+  assert.equal(p.cta_mapping_status, 'invalid-contract');
+});
+
+test('blank placeholders outside the footer splash stay invalid', (t) => {
+  const [p] = clickIn(t, '/', '<div class="hero"><a data-cta="nav" data-cta-id="">Get started</a></div>', 'a');
+  assert.equal(p.cta_mapping_status, 'invalid-contract');
+});

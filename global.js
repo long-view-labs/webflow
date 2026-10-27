@@ -1125,6 +1125,8 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     { selector: '.program-slider_component a', page: "/", location: "content", section: "benefits", role: "program" },
     { selector: '.sticky-phone_content a', page: "/", location: "content", section: "app", role: "app" },
     { selector: '[data-cta="hero cta"]', location: "hero", section: "intro", role: "hero" },
+    // Footer V2 splash ("Take your first step…") on every page.
+    { selector: '.section_footer-splash a', location: "footer", section: "final_cta", role: "final-cta" },
     // Paid landing pages (/paid, /paid-*, /paidwl) share these section blocks.
     { selector: '.nav_component-3 a', pages: PAID_PAGES, location: "nav", section: "navigation", role: "nav" },
     { selector: 'a.quiz', pages: PAID_PAGES, location: "hero", section: "quiz", role: "quiz" },
@@ -1165,10 +1167,15 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     // Legacy data-cta alone is a migration hook. Once any explicit contract
     // field is authored, require the complete contract instead of falling back.
     var fields = ["id", "name", "location", "section", "action", "version"];
-    var authored = false;
+    var authored = false, filled = false;
     for (var f = 0; f < fields.length; f++) {
-      if (a.getAttribute("data-cta-" + fields[f]) !== null) authored = true;
+      var value = a.getAttribute("data-cta-" + fields[f]);
+      if (value !== null) authored = true;
+      if (value) filled = true;
     }
+    // Footer V2 emits blank data-cta-* placeholders on every page when its CTA
+    // properties are unset; that splash button falls back to its reviewed mapping.
+    if (authored && !filled && a.matches(".section_footer-splash a")) authored = false;
     if (authored) {
       c = { id: id, name: a.getAttribute("data-cta-name"),
         location: a.getAttribute("data-cta-location"), section: a.getAttribute("data-cta-section"),
