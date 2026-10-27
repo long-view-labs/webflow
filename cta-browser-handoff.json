@@ -1,6 +1,6 @@
 {
   "status": "coverage_inventory_pending_authorized_browser_exports",
-  "source_head": "b5377b99afc12b07c0e00f4799a8418eb5555922",
+  "source_head": "5d4062bdb69bc2b495439801f38edadd4a8324d6",
   "site": {
     "known_project_short_name": "nourish-2-23",
     "staging_origin": "https://nourish-2-23.webflow.io",
@@ -370,7 +370,7 @@
     "page_metadata": "Do not add manual page-name attributes. Source page_path is automatic. Preserve existing reviewed data-page-version on html or body; author a new page revision only when independently needed. Do not remove pre-existing Webflow attributes.",
     "exclusions": "Do not fill blank tracking fields on editorial/privacy/unknown links. Do not change repeated DOM IDs. Inspect destination/attribute bindings before changing shared definitions and verify representative consumers."
   },
-  "source_head_kind": "Runtime source commit; the inventory follow-up does not change global.js.",
+  "source_head_kind": "Runtime source commit (global.js last changed here).",
   "runtime_sha256": "f31cbf95a594e88da5ec1d413746ba8f068e360ceb6ea0cdb0165353149b277a",
   "sitewide_inventory": {
     "collector": "tools/cta-snapshot.js",
