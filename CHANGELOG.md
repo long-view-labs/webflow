@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.0] - 2026-10-27
+
+CTA tracking cleanup (global.js section 8, PR #8). Direct signup links fire Get Started Clicked; provider-directory links (signup /providers, /find-a-provider) fire the new Dietitian Directory Clicked; privacy/settings links fire nothing. Every CTA event carries cta_id, cta_name, cta_location, cta_section, cta_version, release_version=cta-cleanup-2026-10-26-1 and tracking_schema_version=2; incomplete contracts are counted as cta_mapping_status=invalid-contract. Allow-listed UTMs, legacy element and visible-text cta copy are kept; destination/context URLs drop query and hash; first-touch referrer stays SDK-owned. UTM handoff contract locked in tests/utm-handoff.test.cjs; npm test runs 111 tests.
+
+
 ## [2.621.4] - 2026-10-20
 
 Dietitian Apply Clicked: RudderStack click tracking for the Apply now CTAs on /become-a-dietitian (global.js section 8). Attribute-driven (data-cta-action/id/name/location), page-scoped, same property schema as Get Started Clicked plus additive cta_* / destination_* / locale. Mocked Chromium test suite in tests/.
