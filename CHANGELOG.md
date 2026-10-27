@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.2] - 2026-10-27
+
+Paid landing page CTA mappings (global.js section 8). On /paid, /paid-*, /paidwl the quiz, insurance, how-it-works, approach, testimonials, app, final-CTA, logos, program, sticky-phone and FAQ links now report reviewed cta_id/cta_location/cta_section instead of patient-*-unmapped (113 unmapped links across 10 live pages -> 0). Authored data-cta-* contracts still win; mappings never apply off paid pages. Tests in tests/paid-cta-mappings.test.cjs; npm test runs 167 tests.
+
 ## [2.622.1] - 2026-10-27
 
 Fix blog and /paid page script errors. blog.js skips its category/splash/rich-text code on templates without those elements and loads the videsigns multi-step.js only when the page has a quiz; the /paid footer (paid.html) does the same for multi-step.js and skips the testimonial slider when the page has none. Guard tests in tests/blog-guards.test.js and tests/paid-guards.test.js.
