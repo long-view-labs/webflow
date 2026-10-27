@@ -184,6 +184,12 @@
       survivors[0].style.setProperty("display", "block", "important");
     }
 
+    // Load the vendor only when the surviving build actually has a quiz to
+    // bind — multi-step.js snapshots [data-form="step"] at execution time and
+    // throws at top level with nothing to bind — and never more than once.
+    if (!document.querySelector('[data-form="step"]')) return;
+    if (document.querySelector('script[src*="videsigns/webflow-tools"]')) return;
+
     var s = document.createElement("script");
     s.src =
       "https://cdn.jsdelivr.net/gh/videsigns/webflow-tools@latest/multi-step.js";
@@ -451,6 +457,14 @@ onReady(function () {
 <script>
 onReady(function () {
   waitFor(function () { return hasJq() && hasSwiper(); }, function () {
+    // The live OLD build has no testimonial slider (it only existed in the
+    // retired NEW build, removed above), so there is nothing to initialise:
+    // without this guard `new Swiper('.tinyflow-slider')` has no element and
+    // io.observe(swiper.el) throws. The .swiper back-reference keeps a
+    // re-run of this block from initialising the same slider twice.
+    var sliderEl = document.querySelector('.tinyflow-slider');
+    if (!sliderEl || sliderEl.swiper) return;
+
     $('.tinyflow-slider_profile-wrap').each(function () {
       $(this)
         .find('.tinyflow_profile-icon')
@@ -470,7 +484,7 @@ onReady(function () {
         });
     });
 
-    const swiper = new Swiper('.tinyflow-slider', {
+    const swiper = new Swiper(sliderEl, {
       slidesPerView: 1,
       effect: 'fade',
       fadeEffect: { crossFade: true },
@@ -521,7 +535,7 @@ onReady(function () {
       },
       { threshold: 0.3 }
     );
-    io.observe(swiper.el);
+    io.observe(sliderEl);
 
     $(document).on('click', '.tinyflow_profile-trigger', function () {
       const index = Number($(this).attr('data-profile-index'));

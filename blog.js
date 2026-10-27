@@ -26,8 +26,15 @@ function loadMultiStepScript() {
   document.body.appendChild(script);
 }
 
-// Delay loading the script by 5000 milliseconds (5 seconds)
-setTimeout(loadMultiStepScript, 500);
+// Delay loading the script by 500 milliseconds. Only load it when the page
+// has a multi-step quiz to bind: multi-step.js snapshots [data-form="step"]
+// at execution time and throws at top level when its form is missing, and
+// a second copy dies on its top-level `let` declarations.
+setTimeout(function () {
+  if (!document.querySelector('[data-form="step"]')) return;
+  if (document.querySelector('script[src*="videsigns/webflow-tools"]')) return;
+  loadMultiStepScript();
+}, 500);
 
 // Submit multi-form quiz, send results
 $(document).ready(function () {
@@ -137,15 +144,19 @@ $(document).ready(function () {
   var blogCategoryElement = document.getElementById("blog-category");
   var anTagElement = document.getElementById("an-tag");
 
-  // Get the text content of the blog-category element
-  var blogCategoryText = blogCategoryElement.textContent.trim().toLowerCase();
+  // Only templates that render both elements take part (the standard
+  // article template has neither).
+  if (blogCategoryElement && anTagElement) {
+    // Get the text content of the blog-category element
+    var blogCategoryText = blogCategoryElement.textContent.trim().toLowerCase();
 
-  // Check if the text starts with a vowel
-  var startsWithVowel = /^[aeiou]/i.test(blogCategoryText);
+    // Check if the text starts with a vowel
+    var startsWithVowel = /^[aeiou]/i.test(blogCategoryText);
 
-  // Update the an-tag element based on the vowel check
-  if (startsWithVowel) {
-    anTagElement.textContent = "an";
+    // Update the an-tag element based on the vowel check
+    if (startsWithVowel) {
+      anTagElement.textContent = "an";
+    }
   }
 
   // Hide hidden blog posts
@@ -195,11 +206,15 @@ $(document).ready(function () {
 });
 
 function replaceBlogSplash() {
+  // Nothing to do unless the template renders both the category and the
+  // splash (the standard article template renders neither).
+  if (!$("#blog-category").length || !$(".rich-text_splash").length) return;
+
   // Get the text value of the element with ID 'blog-category'
   var blogCategory = $("#blog-category").text().toLowerCase();
 
   // Get the current HTML content of the element with class 'rich-text_splash'
-  var currentHtml = $(".rich-text_splash").html();
+  var currentHtml = $(".rich-text_splash").html() || "";
 
   // Replace all occurrences of category with the blogCategory value
   var newHtml = currentHtml.replace("{category}", blogCategory);
@@ -386,8 +401,9 @@ function updatePageWithLocationData(locationData) {
     }
   });
 }
-// Get the text content of the .blog-post-rtb element
-var blogPostRtbText = document.querySelector(".blog-post-rtb").textContent;
+// Get the text content of the .blog-post-rtb element (absent on some templates)
+var blogPostRtbElement = document.querySelector(".blog-post-rtb");
+var blogPostRtbText = blogPostRtbElement ? blogPostRtbElement.textContent : "";
 
 const cookieName = "userLocationData"; // A generic name for the cookie
 const cachedData = getCookie(cookieName);
