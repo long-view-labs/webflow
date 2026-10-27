@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.6] - 2026-10-27
+
+The CTA `url` keep-list now matches landingPageVariation and variationName. 2.622.5 compared lowercased query keys against those mixed-case names, so both were dropped from `url`.
+
 ## [2.622.5] - 2026-10-27
 
 Get Started Clicked / Dietitian Directory Clicked `url` again carries the attribution params on the clicked link (allow-listed UTMs and click IDs, plus landingPageVariation/variationName). 2.622.0 had reduced `url` to origin + path, which broke the "P2 Alert: UTM Passthrough Rate" chart (url contains utm_source=). Other query values and the hash are still dropped, and the separate utm_* properties are unchanged. Test added in tests/utm-handoff.test.cjs.

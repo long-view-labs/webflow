@@ -1242,7 +1242,8 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // Rate alert: url contains utm_source=) keep working. Any other query value
   // and the hash are still dropped. Reads the link itself, not stored UTMs,
   // so the metric still shows when a link fails to carry them.
-  var CTA_URL_KEEP_KEYS = NOURISH_CTA_ATTRIBUTION_KEYS.concat([VAR_KEY, VAR_NAME_KEY]);
+  var CTA_URL_KEEP_KEYS = NOURISH_CTA_ATTRIBUTION_KEYS.concat([VAR_KEY, VAR_NAME_KEY])
+    .map(function (key) { return key.toLowerCase(); });
   function ctaUrl(u) {
     var kept = new URLSearchParams();
     u.searchParams.forEach(function (value, key) {
