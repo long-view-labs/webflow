@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.4] - 2026-10-27
+
+Footer V2 splash CTA ("Take your first step…", on 1,424 pages) now reports cta_id patient-signup-final-cta / footer / final_cta instead of invalid-contract. The component emits blank data-cta-* placeholders when its CTA properties are unset; only all-blank placeholders on .section_footer-splash links fall back to the mapping. npm test runs 172 tests.
+
 ## [2.622.3] - 2026-10-27
 
 become-dietitian.js skips the employee quotes slider on pages without .employee-quotes_grid (/employers, /health-systems threw an IntersectionObserver TypeError on every load). Those pages now pin @v2.622.3 instead of the unversioned URL. Guard test in tests/become-dietitian-guard.test.cjs; npm test runs 169 tests.
