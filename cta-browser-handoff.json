@@ -13,7 +13,7 @@
   "planned_runtime_contract": {
     "release_version": "cta-cleanup-2026-10-26-1",
     "tracking_schema_version": "2",
-    "patient_contract": "All six authored fields are required together; incomplete, empty or action-mismatched authored contracts will emit no event. Completely unannotated links retain reviewed migration/unmapped fallback.",
+    "patient_contract": "All six authored fields are required together; incomplete, empty or action-mismatched authored contracts are counted under the unmapped ID with cta_mapping_status=invalid-contract, never with the authored identity. Completely unannotated links retain reviewed migration/unmapped fallback.",
     "page_contract": "Source page_path is automatic and is the canonical page dimension; readable reporting labels can be maintained centrally from paths. No manual page-name authoring or page_name emission is required. Read optional data-page-version from html with body fallback only when the html attribute is absent. Missing/invalid revisions remain null; preserve existing unrelated attributes.",
     "dietitian_contract": "Preserve the existing four-field contract and legacy locations. Optional data-cta-section/data-cta-version must be valid when supplied; absent values keep existing location/version-1 defaults."
   },

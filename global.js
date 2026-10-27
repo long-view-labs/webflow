@@ -1149,9 +1149,11 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       c = { id: id, name: a.getAttribute("data-cta-name"),
         location: a.getAttribute("data-cta-location"), section: a.getAttribute("data-cta-section"),
         action: a.getAttribute("data-cta-action"), version: a.getAttribute("data-cta-version") };
+      // An incomplete or mismatched contract never sends its authored identity,
+      // but the click is still counted so authoring gaps cannot hide conversions.
       if (!CTA_TOKEN.test(c.id || "") || !c.name || !c.name.trim() || c.name.length > 120 ||
           CTA_LOCATIONS_V2.indexOf(c.location) < 0 || !CTA_TOKEN.test(c.section || "") ||
-          c.action !== action || !CTA_VERSION.test(c.version || "")) return null;
+          c.action !== action || !CTA_VERSION.test(c.version || "")) return unmappedContract(action, "invalid-contract");
       c.mapping = "explicit";
       return c;
     }
@@ -1163,9 +1165,13 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
         name: (action === "direct-signup" ? "Start signup" : "Find a dietitian") + " | " + m.role,
         location: m.location, section: m.section, action: action, version: "1", mapping: "reviewed-migration" };
     }
+    return unmappedContract(action, "unmapped");
+  }
+
+  function unmappedContract(action, mapping) {
     return { id: "patient-" + (action === "direct-signup" ? "signup" : "directory") + "-unmapped",
       name: (action === "direct-signup" ? "Start signup" : "Find a dietitian") + " | Unmapped placement",
-      location: "unmapped", section: "unmapped", action: action, version: "unmapped", mapping: "unmapped" };
+      location: "unmapped", section: "unmapped", action: action, version: "unmapped", mapping: mapping };
   }
 
   function ctaQaProps() {
@@ -1183,9 +1189,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       tab_url: window.location.origin + window.location.pathname,
       path: window.location.pathname, search: "",
       referrer: document.referrer && ref ? ref.origin + ref.pathname : "",
-      initial_referrer: document.referrer && ref ? ref.origin + ref.pathname : "$direct",
-      referring_domain: document.referrer && ref ? ref.hostname : "",
-      initial_referring_domain: document.referrer && ref ? ref.hostname : "" } };
+      referring_domain: document.referrer && ref ? ref.hostname : "" } };
+    // initial_referrer/initial_referring_domain are first-touch values owned by
+    // the SDK; the current page's referrer must not overwrite them.
   }
 
   function pageAttribute(name) {

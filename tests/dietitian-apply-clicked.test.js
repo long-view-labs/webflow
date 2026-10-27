@@ -254,8 +254,8 @@ test("Dietitian Apply Clicked", async (t) => {
       await page.locator("a:has-text('About Nourish')").click();
       await page.locator("#rd-app-calc").click();
       await page.locator("#mobile-nav-open-getstarted").click();
-      // A dietitian contract on a patient destination is a mapping error;
-      // do not silently relabel it as a patient click.
+      // A dietitian contract on a patient destination is a mapping error: it is
+      // counted by destination, flagged invalid-contract, never as a dietitian event.
       const sel = await insertAnchor(
         page,
         `<a ${attrs("hero")} href="https://signup.nourish.com/">Apply now</a>`,
@@ -266,13 +266,15 @@ test("Dietitian Apply Clicked", async (t) => {
       let getStarted = await page.evaluate(() =>
         window.__trackCalls().filter((c) => c.event === "Get Started Clicked"),
       );
-      assert.equal(getStarted.length, 1, "only the unannotated nav signup click");
+      assert.equal(getStarted.length, 2, "nav signup click plus the flagged mapping error");
+      assert.equal(getStarted[1].props.cta_mapping_status, "invalid-contract");
+      assert.equal(getStarted[1].props.cta_id, "patient-signup-unmapped");
       const patient = await insertAnchor(page,
         '<a data-cta-id="patient-signup-content" data-cta-name="Start signup" data-cta-location="content" data-cta-section="intro" data-cta-action="direct-signup" data-cta-version="2" href="https://signup.nourish.com/">Start signup</a>');
       await page.locator(patient).press("Enter");
       getStarted = await page.evaluate(() => window.__trackCalls().filter(c => c.event === "Get Started Clicked"));
-      assert.equal(getStarted.length, 2, "nav click plus one valid keyboard-activated patient CTA");
-      assert.equal(getStarted[1].props.cta_mapping_status, "explicit");
+      assert.equal(getStarted.length, 3, "plus one valid keyboard-activated patient CTA");
+      assert.equal(getStarted[2].props.cta_mapping_status, "explicit");
       assert.deepEqual(await applyEvents(page), []);
     } finally {
       await context.close();
@@ -304,7 +306,7 @@ test("Dietitian Apply Clicked", async (t) => {
     } finally { await context.close(); }
   });
 
-  await t.test("partial patient attributes and unreviewed signup origins emit nothing", async () => {
+  await t.test("partial patient attributes are counted as invalid; unreviewed signup origins emit nothing", async () => {
     const { page, context } = await openPage(browser);
     try {
       for (const html of [
@@ -315,7 +317,10 @@ test("Dietitian Apply Clicked", async (t) => {
         '<a data-cta="nav" href="https://signup.nourish.com/your-privacy-choices">Privacy</a>',
       ]) await clickFirst(page, await insertAnchor(page, html));
       const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
-      assert.deepEqual(events, []);
+      assert.deepEqual(events.map(e => [e.event, e.props.cta_mapping_status, e.props.cta_id]), [
+        ["Get Started Clicked", "invalid-contract", "patient-signup-unmapped"],
+        ["Get Started Clicked", "invalid-contract", "patient-signup-unmapped"],
+      ]);
     } finally { await context.close(); }
   });
 

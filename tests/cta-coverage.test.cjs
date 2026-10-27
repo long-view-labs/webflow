@@ -20,7 +20,8 @@ test('credentials, alternate ports and privacy destinations are not approved sig
 });
 test('partial metadata is a coverage gap and never a valid explicit contract', () => {
   const partial = { ...item, attributes: { ...attrs, 'data-cta-id': '' } };
-  assert.equal(inspect(partial, snapshot).event, null);
+  assert.equal(inspect(partial, snapshot).status, 'invalid_partial_or_mismatched_contract');
+  assert.equal(inspect(partial, snapshot).event, 'Get Started Clicked');
   assert.equal(build(inventory, [{ ...snapshot, items: [partial] }]).authoring_inventory_complete, false);
 });
 test('unannotated conversions remain visible as authoring gaps', () => {

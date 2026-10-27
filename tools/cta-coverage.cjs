@@ -44,7 +44,8 @@ function inspect(item, snapshot) {
         locations.includes(get('location')) && token.test(get('section') || '') &&
         get('action') === result.action && revision.test(get('version') || '');
       status = valid ? 'valid_explicit_contract' : 'invalid_partial_or_mismatched_contract';
-      if (valid) event = events[result.action];
+      // Runtime still counts invalid contracts, under the unmapped identity.
+      event = events[result.action];
     } else {
       const mapping = handoff.patient_rows.find(row => (item.migration_matches || []).includes(row.selector) && (!row.page || row.page === snapshot.page_path));
       status = mapping ? 'reviewed_migration_requires_browser_readback' : 'unmapped_conversion_requires_authoring';

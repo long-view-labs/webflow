@@ -51,21 +51,32 @@ const apply = {
   'data-cta-location': 'hero', 'data-cta-action': 'apply-dietitian', 'data-cta': 'hero',
 };
 
+function assertInvalidContract(events, name, id) {
+  assert.equal(events.length, 1);
+  const [event, p] = events[0];
+  assert.equal(event, name);
+  assert.equal(p.cta_mapping_status, 'invalid-contract');
+  assert.equal(p.cta_id, id);
+  assert.equal(p.cta_location, 'unmapped');
+  assert.equal(p.cta_section, 'unmapped');
+  assert.notEqual(p.cta_name, 'Start signup | nav');
+}
+
 for (const field of Object.keys(patient)) {
-  for (const invalid of ['absent', 'empty']) test('explicit patient ' + field + ' ' + invalid + ' cannot fall back', t => {
+  for (const invalid of ['absent', 'empty']) test('explicit patient ' + field + ' ' + invalid + ' is counted as invalid, never with its authored or migrated identity', t => {
     const h = setup(t), attrs = { ...patient, 'data-cta': 'nav' };
     if (invalid === 'absent') delete attrs[field]; else attrs[field] = '';
     h.click('https://signup.nourish.com/', attrs);
-    assert.equal(h.events().length, 0);
+    assertInvalidContract(h.events(), 'Get Started Clicked', 'patient-signup-unmapped');
   });
 }
 
-test('a partial contract without any ID is rejected; unauthored migration still works', t => {
+test('a partial contract without any ID is counted as invalid; unauthored migration still works', t => {
   const h = setup(t);
   h.click('https://signup.nourish.com/', { 'data-cta-name': 'Start signup', 'data-cta': 'nav' });
-  assert.equal(h.events().length, 0);
+  assertInvalidContract(h.events(), 'Get Started Clicked', 'patient-signup-unmapped');
   h.click('https://signup.nourish.com/', { 'data-cta': 'nav' });
-  assert.equal(h.events()[0][1].cta_mapping_status, 'reviewed-migration');
+  assert.equal(h.events()[1][1].cta_mapping_status, 'reviewed-migration');
 });
 
 for (const href of ['http://signup.nourish.com/', 'https://signup.nourish.com:444/',

@@ -4,8 +4,8 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {JSDOM} = require(process.env.NOURISH_JSDOM_PATH);
-const jquery = fs.readFileSync(process.env.NOURISH_JQUERY_PATH,'utf8');
+const {JSDOM} = require(process.env.NOURISH_JSDOM_PATH || 'jsdom');
+const jquery = fs.readFileSync(process.env.NOURISH_JQUERY_PATH || require.resolve('jquery/dist/jquery.min.js'),'utf8');
 const globalJs = fs.readFileSync(path.join(__dirname,'../global.js'),'utf8');
 const section8 = globalJs.slice(globalJs.indexOf('// 8. "GET STARTED" TRACKING'));
 function setup({url='https://www.nourish.com/',mobile=false,mode='live',consent=true}={}) {
