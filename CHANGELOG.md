@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.1] - 2026-10-27
+
+Fix blog and /paid page script errors. blog.js skips its category/splash/rich-text code on templates without those elements and loads the videsigns multi-step.js only when the page has a quiz; the /paid footer (paid.html) does the same for multi-step.js and skips the testimonial slider when the page has none. Guard tests in tests/blog-guards.test.js and tests/paid-guards.test.js.
+
+
 ## [2.622.0] - 2026-10-27
 
 CTA tracking cleanup (global.js section 8, PR #8). Direct signup links fire Get Started Clicked; provider-directory links (signup /providers, /find-a-provider) fire the new Dietitian Directory Clicked; privacy/settings links fire nothing. Every CTA event carries cta_id, cta_name, cta_location, cta_section, cta_version, release_version=cta-cleanup-2026-10-26-1 and tracking_schema_version=2; incomplete contracts are counted as cta_mapping_status=invalid-contract. Allow-listed UTMs, legacy element and visible-text cta copy are kept; destination/context URLs drop query and hash; first-touch referrer stays SDK-owned. UTM handoff contract locked in tests/utm-handoff.test.cjs; npm test runs 111 tests.
