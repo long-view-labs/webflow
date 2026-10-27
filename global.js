@@ -1237,6 +1237,21 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     return value === null && document.body ? document.body.getAttribute(name) : value;
   }
 
+  // Event "url" keeps the attribution params the clicked link actually carries
+  // (allow-listed only), so charts that read url (e.g. the UTM Passthrough
+  // Rate alert: url contains utm_source=) keep working. Any other query value
+  // and the hash are still dropped. Reads the link itself, not stored UTMs,
+  // so the metric still shows when a link fails to carry them.
+  var CTA_URL_KEEP_KEYS = NOURISH_CTA_ATTRIBUTION_KEYS.concat([VAR_KEY, VAR_NAME_KEY]);
+  function ctaUrl(u) {
+    var kept = new URLSearchParams();
+    u.searchParams.forEach(function (value, key) {
+      if (CTA_URL_KEEP_KEYS.indexOf(key.toLowerCase()) !== -1) kept.append(key, value);
+    });
+    var qs = kept.toString();
+    return u.origin + u.pathname + (qs ? "?" + qs : "");
+  }
+
   function track(el, href, eventName, extraProps) {
     if (!window.rudderanalytics || typeof window.rudderanalytics.track !== "function") return;
     var u = safeURL(href);
@@ -1252,7 +1267,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       (el.className ? "." + String(el.className).trim().split(/\s+/).join(".") : el.tagName.toLowerCase());
     var payload = Object.assign({
       location: window.location.pathname || "/", element: legacyElement, "cta copy": eventName === "Dietitian Apply Clicked" ? cta.name : ctaCopy(el),
-      url: u.origin + u.pathname, deviceType: deviceType(), cta_id: cta.id,
+      url: ctaUrl(u), deviceType: deviceType(), cta_id: cta.id,
       cta_name: cta.name, cta_location: cta.location, cta_section: cta.section,
       cta_action: cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
       tracking_schema_version: "2", release_version: CTA_RELEASE,

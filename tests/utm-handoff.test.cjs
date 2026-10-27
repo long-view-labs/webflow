@@ -88,3 +88,18 @@ test('a parameter already on the link is never overwritten', async t => {
   assert.equal(got.utm_medium, 'qa_med');
   assert.equal(got.gclid, 'qa-gclid');
 });
+
+test('Get Started Clicked url keeps the link UTMs (UTM Passthrough Rate chart) and drops other query values', async t => {
+  const { w, events } = load(t, { body: '<a id="cta" data-cta="nav" href="https://signup.nourish.com/?firstName=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE">Get started</a>' });
+  await settle(w);
+  const a = w.document.getElementById('cta');
+  w.addEventListener('click', e => e.preventDefault());
+  a.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true }));
+  const started = events.find(e => e[0] === 'Get Started Clicked');
+  assert.ok(started, 'Get Started Clicked fired');
+  const url = started[1].url;
+  assert.ok(url.includes('utm_source='), 'url contains utm_source=');
+  assertHandoff(url);
+  assert.ok(!url.includes('SYNTHETIC_PRIVATE'), 'non-attribution query and hash are dropped');
+  assert.equal(started[1].utm_source, 'qa_src', 'utm_* properties are still sent');
+});

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.5] - 2026-10-27
+
+Get Started Clicked / Dietitian Directory Clicked `url` again carries the attribution params on the clicked link (allow-listed UTMs and click IDs, plus landingPageVariation/variationName). 2.622.0 had reduced `url` to origin + path, which broke the "P2 Alert: UTM Passthrough Rate" chart (url contains utm_source=). Other query values and the hash are still dropped, and the separate utm_* properties are unchanged. Test added in tests/utm-handoff.test.cjs.
+
 ## [2.622.4] - 2026-10-27
 
 Footer V2 splash CTA ("Take your first step…", on 1,424 pages) now reports cta_id patient-signup-final-cta / footer / final_cta instead of invalid-contract. The component emits blank data-cta-* placeholders when its CTA properties are unset; only all-blank placeholders on .section_footer-splash links fall back to the mapping. npm test runs 172 tests.
