@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.622.8] - 2026-10-27
+
+CTA events (Get Started Clicked, Dietitian Directory Clicked, Dietitian Apply Clicked) merge every stored attribution key again, as before 2.622.0 (e.g. custom keys such as utm_adgroup), instead of a fixed allow-list. NOURISH_CTA_ATTRIBUTION_KEYS removed. Verified against v2.621.4 with live homepage clicks. npm test runs 173 tests.
+
 ## [2.622.7] - 2026-10-27
 
 Restore two CTA event fields to exactly their pre-2.622.0 values (neither change was requested). `url` on Get Started Clicked / Dietitian Directory Clicked / Dietitian Apply Clicked is the full clicked link again (all query params, including InsuranceSearchInput, _configname, _stsgnoredir and _gl), and the track call no longer overrides the SDK's page context, so page url/search/referrer carry the full query string again. Verified against v2.621.4 with live homepage clicks. npm test runs 173 tests.
