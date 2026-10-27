@@ -1,6 +1,6 @@
 {
-  "status": "draft_browser_handoff_requires_current_designer_inventory",
-  "source_head": "568b1d92185408e6d994615af48953f78219ed2d",
+  "status": "coverage_inventory_pending_authorized_browser_exports",
+  "source_head": "b5377b99afc12b07c0e00f4799a8418eb5555922",
   "site": {
     "known_project_short_name": "nourish-2-23",
     "staging_origin": "https://nourish-2-23.webflow.io",
@@ -342,11 +342,11 @@
     "Numeric site identity is now verified by the coordinating browser inventory. Resolve per-anchor identity/version conflicts and any new destination/placement before editing; preserve reviewed values."
   ],
   "source_evidence": [
-    "global.js:1103-1160 finite reviewed patient mappings and field validation at the handoff source head.",
-    "global.js:1181-1213 existing event properties/revisions and sanitized SDK context.",
-    "global.js:1388-1410 dietitian allowlist and legacy placements; tests/dietitian-apply-clicked.test.js:50-80 fixture IDs/names/destinations.",
-    "hero-filter-search.js:2338-2352 updates CTA hrefs on existing elements; preserve filter/query behavior.",
-    "global-footer.html:90 OneTrust consentManagement remains owned by the SDK."
+    "global.js: PATIENT_MAPPINGS, patientAction and patientContract define the reviewed migration and explicit patient fields.",
+    "global.js: track, pageAttribute and cleanCtaContext preserve source paths, optional revisions and sanitized context; page_name is not emitted.",
+    "global.js: readCtaContract and tests/dietitian-apply-clicked.test.js preserve the four dietitian IDs, labels, destinations and placements.",
+    "hero-filter-search.js updates existing CTA hrefs; preserve experiment/filter/UTM navigation.",
+    "global-footer.html: consentManagement uses the existing OneTrust provider; live configuration still needs browser verification."
   ],
   "initial_browser_batch": {
     "components": [
@@ -369,5 +369,14 @@
     ],
     "page_metadata": "Do not add manual page-name attributes. Source page_path is automatic. Preserve existing reviewed data-page-version on html or body; author a new page revision only when independently needed. Do not remove pre-existing Webflow attributes.",
     "exclusions": "Do not fill blank tracking fields on editorial/privacy/unknown links. Do not change repeated DOM IDs. Inspect destination/attribute bindings before changing shared definitions and verify representative consumers."
+  },
+  "source_head_kind": "Runtime source commit; the inventory follow-up does not change global.js.",
+  "runtime_sha256": "f31cbf95a594e88da5ec1d413746ba8f068e360ceb6ea0cdb0165353149b277a",
+  "sitewide_inventory": {
+    "collector": "tools/cta-snapshot.js",
+    "compiler": "tools/cta-coverage.cjs",
+    "manifest": "cta-site-inventory.json",
+    "review_handoff": "NOURISH-TRACKING-HANDOFF.md",
+    "coverage_rule": "No complete-site claim until the sitemap and authorized static/CMS/component catalogues, non-sitemap pages and required viewport/conditional snapshots are reconciled. The offline tool cannot assert live receipts or chart acceptance."
   }
 }
