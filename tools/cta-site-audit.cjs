@@ -45,7 +45,7 @@ const isTarget = (href) => {
     const u = new URL(href, ORIGIN);
     if (!["signup.nourish.com", "signup.usenourish.com"].includes(u.hostname)) return false;
     const p = u.pathname.replace(/\/$/, "") || "/";
-    return p === "/" || p === "/providers";
+    return !/^\/(?:your-privacy-choices|settings)(?:\/|$)/.test(p); // same rule as global.js patientAction
   } catch (e) { return false; }
 };
 

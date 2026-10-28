@@ -1202,15 +1202,17 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   var CTA_VERSION = /^[A-Za-z0-9._-]{1,64}$/;
   var CTA_LOCATIONS_V2 = ["nav", "hero", "content", "footer", "sticky_bar", "modal"];
 
-  // Only signup links are tracked, as before 2.622.0 (internal /find-a-provider
-  // links fire nothing). Directory links still fire Get Started Clicked; they
-  // are told apart by cta_action=provider-directory / destination_path.
+  // Every signup-host link is tracked and decorated, as before 2.622.0, whatever
+  // its path (/, /flow/get-started, /1, /2, ...). Internal /find-a-provider links
+  // fire nothing. /providers links are told apart by
+  // cta_action=provider-directory; privacy/settings links are not CTAs.
+  var SIGNUP_NON_CTA = /^\/(?:your-privacy-choices|settings)(?:\/|$)/;
   function patientAction(u) {
     if (!isSignupURL(u)) return null;
     var path = normPath(u.pathname);
-    if (path === "/") return "direct-signup";
-    if (path === "/providers") return "directory-navigation";
-    return null; // privacy/settings and unknown signup paths are not patient CTAs
+    if (SIGNUP_NON_CTA.test(path)) return null;
+    if (path === "/providers" || path.indexOf("/providers/") === 0) return "directory-navigation";
+    return "direct-signup";
   }
 
   function patientContract(a, u) {
