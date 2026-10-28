@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.5] - 2026-10-28
+
+Exclude missing or unmatched utm_term visits from lp-weight-concerns-b before assignment or exposure. Keep those visits on /landing-page/weight-concerns, returning legacy variant-page visits there with their query string and hash intact. Preserve the seven keyword groups, existing buckets for eligible visits, 50/50 allocation, and current event properties. Update only the experiment loader stubs. Validated with 78 offline routing tests; no production analytics events sent.
+
 ## [2.623.4] - 2026-10-28
 
 Stop emitting page_version, experiment_variant, cta_presentation, tracking_schema_version, release_version, qa_test, qa_run_id and custom event locale on Get Started Clicked and Dietitian Apply Clicked. Retain CTA identity, placement/action/version, page and destination paths, legacy properties, attribution, SDK context and navigation. Native SDK language collection is unchanged. Future staging CTA events no longer carry QA markers; existing QA-marker chart filters alone cannot exclude them. No chart or monitor changes. All 203 isolated tests pass without sending production analytics events.

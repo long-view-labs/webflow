@@ -2,25 +2,25 @@
 //
 // CONTROL  /landing-page/weight-concerns   (CMS item on landing-page/{template})
 // VARIANT  the seven group pages under /landing-pages/weight-concerns/{group}
-//          (glp1, bariatric, macros, insurance, fitness, dietitian, diet),
-//          or /landing-pages/weight-concerns-b when utm_term matches nothing.
+//          (glp1, bariatric, macros, insurance, fitness, dietitian, diet).
 //
-// Every visitor to the control URL is bucketed once (sticky per browser via
-// localStorage, cookie fallback) and split 50/50 IN THIS SCRIPT:
+// Only visitors whose utm_term resolves to one of those seven groups enter
+// the experiment. Eligible control-URL visitors are bucketed once (sticky
+// per browser via localStorage, cookie fallback) and split 50/50:
 //   "variant" -> resolve utm_term to a group RIGHT HERE and location.replace()
 //                straight to that group page before first paint (single hop).
-//                No match -> -b, whose own router also finds no match and
-//                exits, so that is a single hop too.
 //   "control" -> stays, fires Experiment Viewed
-// Variant pages (-b + the seven group pages) fire Experiment Viewed only when
-// the stored bucket says "variant", so direct hits, old ad links and
-// control-bucket visitors never pollute the variant arm.
+// Missing/unmatched terms stay on the standard control URL, or return there
+// from a variant URL, without assignment or Experiment Viewed. Existing
+// buckets remain stored for a later eligible visit; they do not bypass this
+// eligibility gate. Group pages fire Experiment Viewed only for eligible
+// terms with a stored "variant" bucket. The legacy -b entry never fires it.
 //
 // KEYWORD MAP: GROUP_PRIORITY, KEYWORDS, PATTERNS and normalize() below are
 // copied VERBATIM from Alexander Litvinov's inline router on -b (captured
 // 2026-10-19). This file is the live copy for ad traffic through the
-// control; his router on -b only ever sees no-match visitors now. Keep the
-// two in step, or retire his and treat this file as the single source.
+// control; his router on -b still handles matched legacy/direct links. Keep
+// the two in step, or retire his and treat this file as the single source.
 // The redirect reproduces his destination URL exactly (query string kept,
 // lp_variant={group} appended) and writes his sessionStorage stash, so the
 // GTM lp_utm_redirect arrival event on the group pages keeps firing unchanged.
@@ -31,9 +31,10 @@
 //      and every other template item.
 //   2. weight-concerns-variant-footer.html -> deferred, pasted on each of the
 //      eight static variant pages (-b + seven group pages); fires the
-//      variant-side event. __wcSplitRan keeps a double include harmless.
+//      variant-side event or returns unmatched legacy traffic to control.
+//      __wcSplitRan keeps a double include harmless.
 //
-// QA:  ?wc_split=variant | ?wc_split=control  force + store a bucket
+// QA:  ?wc_split=variant | ?wc_split=control  force + store an eligible bucket
 //      ?wc_split=reset                         clear the stored bucket
 //      ?wc_debug=1                             log decisions to the console
 //      ?wc_debug=dry                           log, store the bucket, but do NOT redirect
@@ -327,12 +328,30 @@
     try { writeCookie(STORAGE_KEY, "", -1); } catch (e) {}
   }
 
-  // --- QA overrides ---
+  // --- eligibility: resolve BEFORE assignment or exposure on either arm ---
+  var rawTerm = params.get("utm_term");
+  var term = rawTerm ? normalize(rawTerm) : "";
+  var result = resolve(term);
+
+  // Reset remains available even without an eligible term. Forced buckets
+  // below cannot enroll an otherwise ineligible visit.
   var force = params.get("wc_split");
   if (force === "reset") {
     clearBucket();
     log("bucket cleared");
-  } else if (isBucket(force)) {
+  }
+  if (!result.slug) {
+    log("outside experiment", result);
+    if (!onControl) {
+      var standard = CONTROL_PATH + window.location.search + window.location.hash;
+      log("returning to standard landing page", standard);
+      if (debugMode !== "dry") window.location.replace(standard);
+    }
+    return;
+  }
+
+  // --- QA overrides (eligible visits only) ---
+  if (isBucket(force)) {
     setBucket(force);
     log("bucket forced", force);
   }
@@ -340,12 +359,10 @@
   // --- destination for the variant arm ---
   // Group page: same URL Alexander's router would build (every inbound param
   // kept so gclid / utm_* attribution survives, his lp_variant / lp_debug
-  // stripped, lp_variant={group} appended). No match: -b with the query
-  // string untouched.
+  // stripped, lp_variant={group} appended). Only eligible groups reach here.
   function buildDestination(slug) {
     var qs = window.location.search;
     var hash = window.location.hash;
-    if (!slug) return VARIANT_ENTRY + qs + hash;
     var kept = [];
     if (qs && qs.length > 1) {
       var pairs = qs.substring(1).split("&");
@@ -371,11 +388,8 @@
   }
 
   // --- event properties ---
-  var rawTerm = params.get("utm_term");
-  var term = rawTerm ? normalize(rawTerm) : "";
   function keywordGroup() {
     if (onVariantGroup) return path.slice(VARIANT_GROUP_PREFIX.length).split("/")[0] || null;
-    if (onVariantEntry) return "generic";
     return null;
   }
   function track(variation) {
@@ -416,13 +430,12 @@
       log("existing bucket", bucket);
     }
     if (bucket === "variant") {
-      var result = resolve(term);
       var dest = buildDestination(result.slug);
       log("utm_term", rawTerm);
       log("resolved", result);
       log("redirecting", dest);
       if (debugMode === "dry") { log("dry run, not redirecting"); return; }
-      if (result.slug) stashForGtm(result, term);
+      stashForGtm(result, term);
       window.location.replace(dest);
       return; // the variant page fires the event on arrival
     }
@@ -430,7 +443,11 @@
     return;
   }
 
-  // --- variant pages: only count visitors we sent here ---
+  // The legacy entry's inline router sends matched terms to their group.
+  // It is no longer an experiment destination, so never count a -b view.
+  if (onVariantEntry) return;
+
+  // --- variant group pages: only count eligible visitors we sent here ---
   var stored = getBucket();
   if (stored !== "variant") {
     log("on variant page without a variant bucket; not tracking", stored);
