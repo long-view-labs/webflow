@@ -171,3 +171,13 @@ test('cta_action reports signup-flow and provider-directory', (t) => {
   assert.equal(e.cta_id, 'patient-signup-hero');
   assert.equal(e.cta_action, 'signup-flow');
 });
+
+test('older g-* templates and signup paths /flow/get-started and /1 map instead of falling to Other', (t) => {
+  const [n] = clickIn(t, '/partners/ableto', '<a class="nav-link-narrow g-button">Get Started</a>', 'a', 'https://signup.usenourish.com/flow/get-started');
+  assert.equal(n.cta_name, 'Get Started | Partner page | Nav');
+  assert.equal(n.cta_action, 'signup-flow');
+  const [g] = clickIn(t, '/term/a1c', '<section class="g-section"><a class="g-button">Schedule an appointment</a></section>', 'a', 'https://signup.nourish.com/flow/get-started');
+  assert.equal(g.cta_name, 'Get Started | Glossary term | Page content');
+  const [f] = clickIn(t, '/does-my-insurance-cover-nutrition', '<div class="faq_dropdown-list-3"><a>sign-up flow</a></div>', 'a', 'https://signup.nourish.com/1');
+  assert.equal(f.cta_name, 'Get Started | Am I covered | FAQ');
+});

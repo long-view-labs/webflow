@@ -1146,7 +1146,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   var CTA_ID_ALIASES = { "footer": "final-cta", "program": "benefits", "hero-coverage": "hero-insurance-search",
     "insurance": "insurance-logos", "provider-filter": "provider-search" };
   var PATIENT_MAPPINGS = [
-    { selector: '[data-cta="nav"], .nav_component-2 a, .nav_component-3 a', location: "nav", role: "nav" },
+    { selector: '[data-cta="nav"], .nav_component-2 a, .nav_component-3 a, a.nav-link-narrow', location: "nav", role: "nav" },
     // Blog article buttons reuse the #home-filter-cta id, so they come first.
     { selector: '.section_blog-article a, .blog-splash-1 a, .blog-spash-2 a', location: "content", role: "article" },
     { selector: '#home-filter-cta', location: "hero", role: "hero-insurance-search" },
@@ -1163,9 +1163,10 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     { selector: '.section_step-cards a, .section_sticky-phone a, .sticky-phone_content a', location: "content", role: "app" },
     { selector: '.section_condition-cards a', location: "content", role: "condition-cards" },
     { selector: '.section_program-slider a, .program-slider_component a, .section_nourish-program a, .section_benefits a', location: "content", role: "benefits" },
-    { selector: '.faq_dropdown-list a', location: "content", role: "faq" },
+    { selector: '.faq_dropdown-list a, .faq_dropdown-list-3 a, .section_faq8 a', location: "content", role: "faq" },
     { selector: '.section_content a', location: "content", role: "sidebar" },
-    { selector: '.section_inner-container a', location: "content", role: "page-content" }
+    // Older g-* template (glossary, anorexia/bulimia, /landing, partner pages).
+    { selector: '.section_inner-container a, .g-section a', location: "content", role: "page-content" }
   ];
 
   // cta_name = "<action> | <page> | <placement>", e.g. "Get Started | Home | Nav".
