@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.2] - 2026-10-27
+
+cta_action now reports signup-flow (was direct-signup) and provider-directory (was directory-navigation). Authored data-cta-action attributes keep the old spelling and still validate. npm test runs 189 tests.
+
 ## [2.623.1] - 2026-10-27
 
 Every cta_name ends with its placement, Nav, Hero and Footer included: "Get Started | Home | Nav", "Find a Dietitian | Home | Footer" ("Final CTA" is now "Footer", matching cta_section). Ids, sections and other properties are unchanged. npm test runs 188 tests.
