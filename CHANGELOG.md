@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.0] - 2026-10-27
+
+CTA naming consolidation. Every signup and directory CTA on the site is now mapped (sitewide audit: 1,752 links on 173 pages, one per CMS template, 0 unmapped): section-block mappings apply on every template (landing, condition, local and insurance dietitian, partner, employer, blog, quiz, calculator), not only /paid*.
+- cta_name is "<action> | <page> | <placement>", e.g. "Get Started | Home | Insurance logos"; nav, hero and footer CTAs leave the placement out. CMS pages use the template name (Blog post, Condition page, Local dietitians...).
+- cta_section carries nav, hero and footer for those CTAs (hero insurance search and quiz included; final_cta becomes footer) and the block topic for in-page CTAs.
+- cta_location and cta_mapping_status are no longer sent.
+- Ids come from one vocabulary; older ids fold in: footer -> final-cta, program -> benefits, hero-coverage -> hero-insurance-search, insurance -> insurance-logos, provider-filter -> provider-search.
+- The fallback for a CTA nobody mapped is patient-signup-other / "Get Started | <page> | Other" (was -unmapped); the UTM monitor alerts on it.
+- Blank data-cta-* placeholders from the Webflow Button component fall back to the section mapping.
+- tools/cta-site-audit.cjs: sitewide offline CTA audit. npm test runs 188 tests (the 2.622.10 note's count of 174 should have read 173).
+
 ## [2.622.10] - 2026-10-27
 
 Plain http://signup.nourish.com links count again. v2.622.0 only tracked https signup links, so CTAs Webflow authored with http (the blog template's Find a dietitian / Learn more buttons, Check coverage on /does-my-insurance-cover-nutrition) sent no Get Started Clicked event. They are now tracked and their href is upgraded to https; non-default ports and embedded credentials stay excluded. npm test runs 174 tests.
