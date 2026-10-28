@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.1] - 2026-10-27
+
+Every cta_name ends with its placement, Nav, Hero and Footer included: "Get Started | Home | Nav", "Find a Dietitian | Home | Footer" ("Final CTA" is now "Footer", matching cta_section). Ids, sections and other properties are unchanged. npm test runs 188 tests.
+
 ## [2.623.0] - 2026-10-27
 
 CTA naming consolidation. Every signup and directory CTA on the site is now mapped (sitewide audit: 1,752 links on 173 pages, one per CMS template, 0 unmapped): section-block mappings apply on every template (landing, condition, local and insurance dietitian, partner, employer, blog, quiz, calculator), not only /paid*.
