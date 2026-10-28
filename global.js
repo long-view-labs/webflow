@@ -1136,7 +1136,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     "article": { section: "content", label: "Article" },
     "page-content": { section: "content", label: "Page content" },
     "provider-search": { section: "provider_directory", label: "Provider search" },
-    "final-cta": { section: "footer", label: "Final CTA" },
+    "final-cta": { section: "footer", label: "Footer" },
     "other": { section: "other", label: "Other" }
   };
   // Older ids (some authored in Webflow data-cta-id) folded into the vocabulary.
@@ -1165,9 +1165,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     { selector: '.section_inner-container a', location: "content", role: "page-content" }
   ];
 
-  // cta_name = "<action> | <page> | <placement>". Nav, hero and footer CTAs leave
-  // the placement out because cta_section already says it.
-  var NAME_WITHOUT_PLACEMENT = { "nav": 1, "hero": 1, "final-cta": 1 };
+  // cta_name = "<action> | <page> | <placement>", e.g. "Get Started | Home | Nav".
   // CMS collections are named by template; page_path keeps the exact URL.
   var PAGE_TEMPLATES = {
     "blog": "Blog post", "blog-category": "Blog category", "local-dietitians": "Local dietitians",
@@ -1194,8 +1192,8 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
 
   function ctaName(action, suffix) {
     var p = CTA_PLACEMENTS[suffix];
-    var name = (action === "direct-signup" ? "Get Started" : "Find a Dietitian") + " | " + ctaPageName();
-    return NAME_WITHOUT_PLACEMENT[suffix] ? name : name + " | " + (p ? p.label : suffix);
+    return (action === "direct-signup" ? "Get Started" : "Find a Dietitian") + " | " + ctaPageName() +
+      " | " + (p ? p.label : suffix);
   }
   var CTA_TOKEN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
   var CTA_VERSION = /^[A-Za-z0-9._-]{1,64}$/;
