@@ -15,7 +15,9 @@ const OUTPUT = process.env.UTM_MONITOR_OUTPUT || 'utm-handoff-results.json';
 const MARKERS = { utm_source: 'nourish_monitor', utm_medium: 'synthetic', utm_campaign: 'utm_handoff_check', gclid: 'nourish-monitor-check' };
 // Pages whose primary CTA goes to signup: zero signup links there is itself a failure.
 const MUST_HAVE_SIGNUP = ['/', '/paid', '/paid-google'];
-const ROUTES = [...MUST_HAVE_SIGNUP, '/conditions/acid-reflux', '/local-dietitians/akron-ohio', '/does-my-insurance-cover-nutrition', '/blog/10-basic-cooking-skills-everyone-should-know'];
+const ROUTES = [...MUST_HAVE_SIGNUP, '/conditions/acid-reflux', '/local-dietitians/akron-ohio', '/does-my-insurance-cover-nutrition', '/blog/10-basic-cooking-skills-everyone-should-know',
+  // Signup links to /1, /2 and /flow/get-started (untracked in 2.622.0 to 2.623.2).
+  '/landing-pages/meal-planning', '/blog/emotional-eating-books'];
 const PERSISTENCE_JOURNEY = ['/', '/conditions/acid-reflux'];
 const SIGNUP_HOSTS = ['signup.nourish.com', 'signup.usenourish.com'];
 const CLICK_EVENTS = ['Get Started Clicked', 'Dietitian Directory Clicked'];
@@ -109,6 +111,40 @@ async function checkLanding(browser, route, mobile) {
     for (const f of iframes) {
       const { missing } = missingMarkers(f.src);
       if (missing.length) row.failures.push('signup iframe missing ' + missing.join(','));
+    }
+    // Every signup link must send exactly one click event with a mapped CTA,
+    // not just the first one (v2.622.0 silently dropped http:// blog CTAs).
+    // Navigation is suppressed; the SDK call is recorded before any network.
+    const perLink = await page.evaluate(({ hosts, names }) => {
+      const ra = window.rudderanalytics, calls = [];
+      if (!ra || typeof ra.track !== 'function') return { error: 'rudderanalytics.track unavailable' };
+      const original = ra.track;
+      ra.track = function (name, props) { if (names.includes(name)) calls.push(props || {}); return original.apply(this, arguments); };
+      const stop = (e) => e.preventDefault();
+      window.addEventListener('click', stop, true);
+      const out = [];
+      for (const a of document.querySelectorAll('a[href]')) {
+        let u; try { u = new URL(a.getAttribute('href'), location.href); } catch (e) { continue; }
+        const path = u.pathname.replace(/\/$/, '') || '/';
+        // Every signup-host path is a CTA except privacy/settings (same rule as global.js patientAction).
+        if (!hosts.includes(u.hostname) || /^\/(?:your-privacy-choices|settings)(?:\/|$)/.test(path) || u.port || u.username) continue;
+        if (a.closest('.page-wrapper.cc-paid-new')) continue; // retired /paid build, hidden for everyone
+        const before = calls.length;
+        a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        const got = calls.slice(before);
+        out.push({ text: (a.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40), events: got.length, id: got[0] && got[0].cta_id });
+      }
+      window.removeEventListener('click', stop, true);
+      ra.track = original;
+      return { links: out };
+    }, { hosts: SIGNUP_HOSTS, names: CLICK_EVENTS });
+    if (perLink.error) row.failures.push('per-link check: ' + perLink.error);
+    else {
+      row.linksClicked = perLink.links.length;
+      for (const l of perLink.links) {
+        if (l.events !== 1) row.failures.push('link "' + l.text + '" sent ' + l.events + ' click events');
+        else if (/-(other|unmapped)$/.test(l.id || '')) row.failures.push('link "' + l.text + '" reported as ' + l.id + ' (no mapping or broken data-cta-* contract)');
+      }
     }
     const first = page.locator(SIGNUP_HOSTS.map(h => 'a[href*="' + h + '"]').join(',')).filter({ visible: true }).first();
     if (await first.count()) {

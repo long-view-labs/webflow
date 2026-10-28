@@ -21,23 +21,24 @@ function pageFailures(row) {
   for (const error of row.errors || []) failures.push('page error: ' + error);
   for (const asset of row.failedAssets || []) failures.push('asset failure: ' + asset);
   for (const click of row.clicks || []) {
-    if (click.events.length !== 1 || click.events[0].event !== click.expected) failures.push('CTA event count/name: ' + click.id);
+    if (click.expected === null ? click.events.length !== 0 : (click.events.length !== 1 || click.events[0].event !== click.expected)) failures.push('CTA event count/name: ' + click.id);
     if (click.preventedBySite || !click.samePage) failures.push('CTA navigation contract: ' + click.id);
     if (click.expected === 'Dietitian Apply Clicked') {
       const p = click.events[0]?.properties || {};
-      if (p.cta_id !== click.id || !p.cta_name || !p.cta_location || p.destination_path !== '/dietitian-application') failures.push('CTA properties: ' + click.id);
+      if (p.cta_id !== click.id || !p.cta_name || !p.cta_section || p.destination_path !== '/dietitian-application') failures.push('CTA properties: ' + click.id);
       if ('cta_version' in p && !/^[A-Za-z0-9._-]{1,64}$/.test(String(p.cta_version))) failures.push('malformed CTA version: ' + click.id);
     }
   }
   return failures;
 }
-// CTA release contract: signup root -> Get Started Clicked; provider directory
-// destinations -> Dietitian Directory Clicked; Become a Dietitian -> Apply.
+// CTA contract (v2.623.3+): every signup link, any path except privacy/settings, fires
+// Get Started Clicked (as before 2.622.0); internal /find-a-provider links
+// fire nothing (null); Become a Dietitian -> Apply.
 function expectedCtaEvent(route, href) {
   if (route === '/become-a-dietitian') return 'Dietitian Apply Clicked';
   let u; try { u = new URL(href, 'https://www.nourish.com'); } catch { return 'Get Started Clicked'; }
   const path = u.pathname.replace(/\/$/, '') || '/';
-  if ((/^signup\.(use)?nourish\.com$/.test(u.hostname) && path === '/providers') || path === '/find-a-provider') return 'Dietitian Directory Clicked';
+  if (!/^signup\.(use)?nourish\.com$/.test(u.hostname) && path === '/find-a-provider') return null;
   return 'Get Started Clicked';
 }
 function incidentDecision(previous, failures) {
