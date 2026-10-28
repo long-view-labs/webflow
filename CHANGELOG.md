@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.623.3] - 2026-10-28
+## [2.623.3] - 2026-10-27
 
 Every signup-host link fires Get Started Clicked and gets UTM/landingPageVariation decoration again, whatever its path, as before 2.622.0. Since 2.622.0 only signup / and /providers counted, so about 560 live links to /flow/get-started, /1 and /2 (partner and partnership pages, glossary, eating-disorder and /landing pages, landing-pages, blog, Am I covered, Paid Labs) fired nothing. /providers paths report cta_action=provider-directory, everything else signup-flow; privacy/settings links stay excluded. Older templates now map to Nav, FAQ or Page content. The site audit uses the same rule. npm test runs 191 tests.
 
