@@ -203,7 +203,6 @@ function expectedProps(key, { destinationPath, pagePath = PAGE_PATH, element }) 
     page_path: pagePath,
     destination_host: "www.nourish.com",
     destination_path: destinationPath,
-    locale: "en",
   };
 }
 
@@ -225,6 +224,11 @@ test("Dietitian Apply Clicked", async (t) => {
 
         const events = await applyEvents(page);
         assert.equal(events.length, 4, "one event per CTA click");
+        for (const event of events) {
+          for (const key of ["page_version", "experiment_variant", "cta_presentation", "tracking_schema_version", "release_version", "qa_test", "qa_run_id", "locale"]) {
+            assert.equal(Object.hasOwn(event.props, key), false, key + " must not be emitted");
+          }
+        }
         assert.deepEqual(events.map((e) => pickSchema(e.props)), [
           expectedProps("hero", {
             destinationPath: "/dietitian-application",
@@ -295,9 +299,9 @@ test("Dietitian Apply Clicked", async (t) => {
       assert.equal(events[0].props.cta_action, "provider-directory");
       assert.equal(Object.hasOwn(events[0].props, "page_name"), false);
       assert.equal(events[0].props.page_path, "/");
-      assert.equal(events[0].props.page_version, "2");
+      assert.equal(Object.hasOwn(events[0].props, "page_version"), false);
       assert.equal(events[0].props.cta_version, "2");
-      assert.equal(events[0].props.release_version, "cta-cleanup-2026-10-26-1");
+      assert.equal(Object.hasOwn(events[0].props, "release_version"), false);
       assert.equal(events[0].props.destination_path, "/providers");
       assert.ok((await page.locator(sel).getAttribute("href")).startsWith("https://signup.nourish.com/providers?email=SYNTHETIC_PRIVATE"));
       assert.ok(events[0].props.url.includes("/providers?email=SYNTHETIC_PRIVATE"), "url is the full clicked link");

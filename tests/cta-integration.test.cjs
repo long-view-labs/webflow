@@ -31,9 +31,88 @@ scenario('privacy/settings, non-navigation and lookalike hosts excluded; privacy
 scenario('dynamic insertion after initialization, both exact signup hosts; directory links fire Get Started Clicked once with cta_action=directory-navigation',t=>{for(const host of ['signup.nourish.com','signup.usenourish.com']){const a=add(t,`<a data-cta="nav" href="https://${host}/providers">Find</a>`);click(t,a);}assert.equal(t.tracks().length,2);assert.ok(t.tracks().every(x=>x[1].cta_action==='provider-directory'&&x[0]==='Get Started Clicked'));});
 scenario('repeat initialization does not bind twice',t=>{t.w.eval(section8);t.w.eval(section8);click(t,add(t,'<a href="https://signup.nourish.com/">Start</a>'));assert.equal(t.tracks().length,1);});
 scenario('event url is the full clicked link and context is left to the SDK, as before 2.622.0',t=>{const a=add(t,'<a data-cta="nav" href="https://signup.nourish.com/?firstName=SYNTHETIC_PRIVATE&patientBirthday=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE">Start</a>');click(t,a);const x=t.tracks()[0];assert.ok(x[1].url.startsWith('https://signup.nourish.com/?firstName=SYNTHETIC_PRIVATE'));assert.ok(a.href.includes('firstName='));assert.equal(x[2],undefined);assert.equal(t.identityCalls,0);});
-scenario('explicit new section and revision independent of changed presentation/copy',t=>{const a=add(t,'<a data-cta-id="patient-signup-how-it-works" data-cta-name="Start signup | How it works" data-cta-location="content" data-cta-section="how_it_works" data-cta-action="direct-signup" data-cta-version="2" data-experiment-variant="control" href="https://signup.nourish.com/">Texto nuevo</a>');click(t,a);const p=t.tracks()[0][1];assert.equal(p.cta_version,'2');assert.equal(p.cta_id,'patient-signup-how-it-works');assert.equal(p.experiment_variant,'control');assert.equal(p.cta_section,'how_it_works');});
+scenario('explicit new section and revision independent of changed presentation/copy',t=>{const a=add(t,'<a data-cta-id="patient-signup-how-it-works" data-cta-name="Start signup | How it works" data-cta-location="content" data-cta-section="how_it_works" data-cta-action="direct-signup" data-cta-version="2" data-experiment-variant="control" href="https://signup.nourish.com/">Texto nuevo</a>');click(t,a);const p=t.tracks()[0][1];assert.equal(p.cta_version,'2');assert.equal(p.cta_id,'patient-signup-how-it-works');assert.equal(Object.hasOwn(p,'experiment_variant'),false);assert.equal(a.getAttribute('data-experiment-variant'),'control');assert.equal(p.cta_section,'how_it_works');});
 test('dietitian event name, IDs and placements retained; no patient double event',()=>{const t=setup({url:'https://www.nourish.com/become-a-dietitian'});try{for(const loc of ['hero','earnings','platform','footer'])click(t,add(t,`<a data-cta-id="dietitian-apply-${loc}" data-cta-name="Apply now" data-cta-location="${loc}" data-cta-action="apply-dietitian" href="/dietitian-application">Apply</a>`));assert.equal(t.tracks().length,4);assert.ok(t.tracks().every(x=>x[0]==='Dietitian Apply Clicked'));assert.deepEqual(t.tracks().map(x=>x[1].cta_section),['hero','earnings','platform','footer']);assert.ok(t.tracks().every(x=>!('cta_location' in x[1])));}finally{t.close()}});
 for(const mode of ['live','queue','throwing'])test('SDK mode '+mode+' does not block navigation',()=>{const t=setup({mode});try{const a=add(t,'<a href="https://signup.nourish.com/">Start</a>');assert.equal(click(t,a).defaultPrevented,false);if(mode!=='throwing')assert.equal(t.tracks().length,1);}finally{t.close()}});
 test('consent remains owned by SDK; denied spy delivers no event',()=>{const t=setup({consent:false});try{click(t,add(t,'<a href="https://signup.nourish.com/">Start</a>'));assert.equal(t.tracks().length,0);assert.equal(t.identityCalls,0);}finally{t.close()}});
-test('mobile device property and staging-only explicit QA markers',()=>{const t=setup({url:'https://nourish-2-23.webflow.io/?qa_test=true&qa_run_id=nourish-cta-qa-offline-test',mobile:true});try{click(t,add(t,'<a href="https://signup.nourish.com/">Start</a>'));const p=t.tracks()[0][1];assert.equal(p.deviceType,'mobile');assert.equal(p.qa_test,true);assert.equal(p.qa_run_id,'nourish-cta-qa-offline-test');}finally{t.close()}});
+test('mobile device property is retained without staging QA event properties',()=>{const t=setup({url:'https://nourish-2-23.webflow.io/?qa_test=true&qa_run_id=nourish-cta-qa-offline-test',mobile:true});try{click(t,add(t,'<a href="https://signup.nourish.com/">Start</a>'));const p=t.tracks()[0][1];assert.equal(p.deviceType,'mobile');assert.equal(Object.hasOwn(p,'qa_test'),false);assert.equal(Object.hasOwn(p,'qa_run_id'),false);}finally{t.close()}});
 test('production URL QA params do not activate test markers and page context is left to the SDK',()=>{const t=setup({url:'https://www.nourish.com/?qa_test=true&qa_run_id=nourish-cta-qa-offline-test'});try{click(t,add(t,'<a href="https://signup.nourish.com/">Start</a>'));assert.ok(!('qa_test' in t.tracks()[0][1]));assert.equal(t.tracks()[0][2],undefined);}finally{t.close()}});
+
+const removedCtaFields = ['page_version', 'experiment_variant', 'cta_presentation',
+  'tracking_schema_version', 'release_version', 'qa_test', 'qa_run_id', 'locale'];
+const attribution = {utm_source: 'fixture-source', utm_custom: 'fixture-custom',
+  gclid: 'fixture-gclid', fbclid: 'fixture-fbclid'};
+const metadataCases = [
+  {kind: 'signup', page: '/paid-labs', destination: 'https://signup.nourish.com/flow/get-started',
+    id: 'patient-signup-fixture', action: 'direct-signup', reportedAction: 'signup-flow',
+    name: 'Start signup', location: 'content', event: 'Get Started Clicked', variation: 'Labs_LP'},
+  {kind: 'directory', page: '/', destination: 'https://signup.usenourish.com/providers',
+    id: 'patient-directory-fixture', action: 'directory-navigation', reportedAction: 'provider-directory',
+    name: 'Find a dietitian', location: 'content', event: 'Get Started Clicked', variation: 'Organic_Homepage'},
+  {kind: 'dietitian', page: '/become-a-dietitian', destination: '/dietitian-application',
+    id: 'dietitian-apply-hero', action: 'apply-dietitian', reportedAction: 'apply-dietitian',
+    name: 'Apply now', location: 'hero', event: 'Dietitian Apply Clicked'},
+];
+
+for (const host of ['www.nourish.com', 'nourish-2-23.webflow.io']) {
+  for (const mode of ['live', 'queue']) {
+    for (const c of metadataCases) test(`removed CTA metadata stays absent; retained ${c.kind} contract (${host}, ${mode})`, () => {
+      const t = setup({url: `https://${host}${c.page}?qa_test=true&qa_run_id=nourish-cta-qa-fixture`, mode});
+      try {
+        t.w.NOURISH_GET_UTMS = () => ({...attribution});
+        t.w.document.documentElement.setAttribute('lang', 'fr-FR');
+        t.w.document.documentElement.setAttribute('data-page-version', 'page-3');
+        t.w.document.body.setAttribute('data-page-version', 'page-2');
+        // Prevent fixture navigation only after production's document handler.
+        t.w.addEventListener('click', e => e.preventDefault());
+        const a = add(t, `<a data-cta="fixture" data-cta-id="${c.id}" data-cta-name="${c.name}"
+          data-cta-location="${c.location}" data-cta-section="fixture_section" data-cta-action="${c.action}"
+          data-cta-version="3" data-experiment-variant="control" data-cta-presentation="text_link"
+          href="${c.destination}?utm_source=authored&amp;gclid=authored-click&amp;filter=fixture#fragment">Visible text</a>`);
+        const before = a.getAttribute('href');
+        click(t, a);
+        assert.equal(t.tracks().length, 1);
+        const [event, p, options] = t.tracks()[0];
+        assert.equal(event, c.event);
+        for (const key of removedCtaFields) assert.equal(Object.hasOwn(p, key), false, key);
+        const destination = new URL(c.destination, t.w.location.origin);
+        const retained = {
+          location: c.page, element: 'fixture', 'cta copy': c.kind === 'dietitian' ? c.name : 'Visible text',
+          url: c.kind === 'dietitian' ? destination.origin + destination.pathname : new URL(before, t.w.location.origin).href,
+          deviceType: 'desktop', cta_id: c.id, cta_name: c.name, cta_section: 'fixture_section',
+          cta_action: c.reportedAction, cta_version: '3', page_path: c.page,
+          destination_host: destination.hostname, destination_path: destination.pathname, ...attribution,
+        };
+        if (c.variation) retained.landingPageVariation = c.variation;
+        if (c.kind === 'signup') retained.variationName = 'labsPromotionVariation';
+        assert.deepEqual(JSON.parse(JSON.stringify(p)), retained);
+        assert.equal(options, undefined, 'SDK context is still left to the SDK');
+        assert.equal(t.identityCalls, 0);
+        assert.equal(t.w.document.documentElement.getAttribute('lang'), 'fr-FR');
+        assert.equal(t.w.document.documentElement.getAttribute('data-page-version'), 'page-3');
+        assert.equal(t.w.document.body.getAttribute('data-page-version'), 'page-2');
+        assert.equal(a.getAttribute('data-experiment-variant'), 'control');
+        assert.equal(a.getAttribute('data-cta-presentation'), 'text_link');
+        if (c.kind === 'dietitian') assert.equal(a.getAttribute('href'), before);
+        else {
+          const nav = new URL(a.href);
+          assert.equal(nav.searchParams.get('utm_source'), 'authored');
+          assert.equal(nav.searchParams.get('gclid'), 'authored-click');
+          assert.equal(nav.searchParams.get('fbclid'), attribution.fbclid);
+          assert.equal(nav.searchParams.get('filter'), 'fixture');
+          assert.equal(nav.hash, '#fragment');
+          assert.equal(nav.searchParams.get('landingPageVariation'), c.variation);
+          assert.equal(nav.searchParams.has('qa_test'), false);
+          assert.equal(nav.searchParams.has('qa_run_id'), false);
+        }
+        // This change must not strip unrelated event properties or SDK context.
+        const sdkOptions = {context: {locale: 'fr-FR'}};
+        t.w.rudderanalytics.track('Unrelated fixture event', {locale: 'fr-FR', qa_test: true}, sdkOptions);
+        const unrelated = t.tracks().at(-1);
+        assert.equal(unrelated[1].locale, 'fr-FR');
+        assert.equal(unrelated[1].qa_test, true);
+        assert.equal(unrelated[2], sdkOptions);
+      } finally { t.close(); }
+    });
+  }
+}

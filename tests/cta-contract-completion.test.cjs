@@ -102,17 +102,17 @@ test('an unapproved signup origin cannot become a dietitian event', t => {
   assert.equal(h.events().length, 0);
 });
 
-test('body page revision and automatic source path need no manual page label', t => {
+test('removed page/release metadata leaves source path, CTA revision and attribution intact', t => {
   const h = setup(t);
   h.w.document.body.setAttribute('data-page-version', '3');
   const a = h.click('https://signup.nourish.com/?token=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE', patient);
   const event = h.events()[0], p = event[1];
   assert.equal(Object.hasOwn(p, 'page_name'), false);
   assert.equal(p.page_path, '/');
-  assert.equal(p.page_version, '3');
+  assert.equal(Object.hasOwn(p, 'page_version'), false);
   assert.equal(p.cta_version, '2');
-  assert.equal(p.release_version, 'cta-cleanup-2026-10-26-1');
-  assert.equal(p.tracking_schema_version, '2');
+  assert.equal(Object.hasOwn(p, 'release_version'), false);
+  assert.equal(Object.hasOwn(p, 'tracking_schema_version'), false);
   assert.ok(p.url.includes('token=SYNTHETIC_PRIVATE'), 'url is the full clicked link, as before 2.622.0');
   assert.equal(p.utm_source, 'SYNTHETIC_PRIVATE', 'allow-listed campaign attribution is restored');
   assert.equal(p.patientBirthday, 'SYNTHETIC_PRIVATE', 'every stored attribution key reaches CTA events, as before 2.622.0');
@@ -125,28 +125,30 @@ test('body page revision and automatic source path need no manual page label', t
   assert.equal(h.identity.length, 0);
 });
 
-test('html page revision takes precedence while pre-existing page-name attributes stay untouched', t => {
+test('page revision is not emitted and pre-existing page attributes stay untouched', t => {
   const h = setup(t);
   for (const [key, value] of Object.entries({ 'data-page-name': 'Reviewed home', 'data-page-version': '4' })) h.w.document.documentElement.setAttribute(key, value);
   h.w.document.body.setAttribute('data-page-name', 'Body fallback');
   h.w.document.body.setAttribute('data-page-version', '1');
   h.click('https://signup.nourish.com/', patient);
   assert.equal(Object.hasOwn(h.events()[0][1], 'page_name'), false);
-  assert.equal(h.events()[0][1].page_version, '4');
+  assert.equal(Object.hasOwn(h.events()[0][1], 'page_version'), false);
+  assert.equal(h.w.document.documentElement.getAttribute('data-page-version'), '4');
+  assert.equal(h.w.document.body.getAttribute('data-page-version'), '1');
   assert.equal(h.w.document.documentElement.getAttribute('data-page-name'), 'Reviewed home');
   assert.equal(h.w.document.body.getAttribute('data-page-name'), 'Body fallback');
 });
 
-test('missing/invalid page revision stays null and no page label is inferred', t => {
+test('missing or invalid page revision remains absent and no page label is inferred', t => {
   const h = setup(t);
   h.click('https://signup.nourish.com/', patient);
   assert.equal(Object.hasOwn(h.events()[0][1], 'page_name'), false);
-  assert.equal(h.events()[0][1].page_version, null);
+  assert.equal(Object.hasOwn(h.events()[0][1], 'page_version'), false);
   h.w.document.documentElement.setAttribute('data-page-version', 'invalid revision');
   h.w.document.body.setAttribute('data-page-version', '1');
   h.click('https://signup.nourish.com/', patient);
   assert.equal(Object.hasOwn(h.events()[1][1], 'page_name'), false);
-  assert.equal(h.events()[1][1].page_version, null);
+  assert.equal(Object.hasOwn(h.events()[1][1], 'page_version'), false);
   assert.ok(JSON.stringify(h.events()).includes('patientBirthday'), 'stored keys merge into CTA events like any other event');
 });
 

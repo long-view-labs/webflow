@@ -1111,7 +1111,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // Section blocks are shared by the paid, landing, condition, partner and
   // employer templates, so these apply on every page (first match wins, so
   // nested blocks are listed before the sections that contain them).
-  var CTA_RELEASE = "cta-cleanup-2026-10-26-1";
   // One vocabulary for every CTA: id suffix -> section and readable label.
   // cta_section is where the CTA sits (nav, hero, footer) or, for in-page CTAs,
   // the block's topic. cta_location and cta_mapping_status are not sent; a
@@ -1274,24 +1273,10 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       location: "other", section: "other", action: action, version: "1", mapping: mapping };
   }
 
-  function ctaQaProps() {
-    // Staging QA is deliberately opt-in and never propagated to signup URLs.
-    if (window.location.hostname !== "nourish-2-23.webflow.io") return {};
-    var p = new URLSearchParams(window.location.search);
-    var run = p.get("qa_run_id") || "";
-    return p.get("qa_test") === "true" && /^nourish-cta-qa-[a-z0-9-]{1,64}$/.test(run)
-      ? { qa_test: true, qa_run_id: run } : {};
-  }
-
   // Historical patient "cta copy" is the visible link text (Dietitian Apply has
   // always sent its contract name); cta_name carries the contract name.
   function ctaCopy(el) {
     return (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 120) || null;
-  }
-
-  function pageAttribute(name) {
-    var value = document.documentElement.getAttribute(name);
-    return value === null && document.body ? document.body.getAttribute(name) : value;
   }
 
   function track(el, href, eventName, extraProps) {
@@ -1304,25 +1289,18 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       version: extra.cta_version || "1", mapping: "existing-dietitian-contract" } : patientContract(el, u);
     if (!cta) return;
     var version = el.getAttribute("data-cta-version");
-    var pageVersion = pageAttribute("data-page-version");
     var legacyElement = el.getAttribute("data-cta") || (el.id ? "#" + el.id : null) ||
       (el.className ? "." + String(el.className).trim().split(/\s+/).join(".") : el.tagName.toLowerCase());
-    var payload = Object.assign({
+    var payload = {
       location: window.location.pathname || "/", element: legacyElement, "cta copy": eventName === "Dietitian Apply Clicked" ? cta.name : ctaCopy(el),
       // url is the full clicked link, as before 2.622.0: charts filter on it
       // (UTM Passthrough Rate: url contains utm_source=).
       url: href || null, deviceType: deviceType(), cta_id: cta.id,
       cta_name: cta.name, cta_section: cta.section,
       cta_action: CTA_ACTION_NAMES[cta.action] || cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
-      tracking_schema_version: "2", release_version: CTA_RELEASE,
-      page_version: CTA_VERSION.test(pageVersion || "") ? pageVersion : null,
       page_path: window.location.pathname || "/", destination_host: u.hostname,
-      destination_path: u.pathname, locale: pageLocale()
-    }, ctaQaProps());
-    var variant = el.getAttribute("data-experiment-variant");
-    if (CTA_VERSION.test(variant || "")) payload.experiment_variant = variant;
-    var presentation = el.getAttribute("data-cta-presentation");
-    if (presentation === "button" || presentation === "text_link") payload.cta_presentation = presentation;
+      destination_path: u.pathname
+    };
     var vp = getVariationParams(window.location.pathname);
     if (vp) payload.landingPageVariation = vp.landingPageVariation;
     if (vp && vp.variationName) payload.variationName = vp.variationName;
@@ -1476,7 +1454,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // Reuses track() above, so the Get Started schema is preserved (location,
   // element, cta copy, url, deviceType + persisted UTMs), with additive
   // cta_id, cta_name, cta_section, cta_action, page_path, destination_host,
-  // destination_path and locale. url is the full clicked link; destination_*
+  // destination_path. url is the full clicked link; destination_*
   // are host and path; nothing is read from form fields or DOM text.
   // The "earnings" CTA says Apply now but opens the pay calculator: that is
   // calculator engagement, not an application start — distinguish it by
@@ -1535,11 +1513,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       section: section === null ? location : section,
       version: version === null ? "1" : version,
     };
-  }
-
-  function pageLocale() {
-    var lang = document.documentElement.getAttribute("lang");
-    return lang && /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(lang) ? lang : null;
   }
 
 })();
