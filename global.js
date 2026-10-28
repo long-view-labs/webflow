@@ -1139,6 +1139,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     "final-cta": { section: "footer", label: "Footer" },
     "other": { section: "other", label: "Other" }
   };
+  // cta_action values as reported (authored data-cta-action keeps the internal
+  // direct-signup / directory-navigation spelling).
+  var CTA_ACTION_NAMES = { "direct-signup": "signup-flow", "directory-navigation": "provider-directory" };
   // Older ids (some authored in Webflow data-cta-id) folded into the vocabulary.
   var CTA_ID_ALIASES = { "footer": "final-cta", "program": "benefits", "hero-coverage": "hero-insurance-search",
     "insurance": "insurance-logos", "provider-filter": "provider-search" };
@@ -1201,7 +1204,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
 
   // Only signup links are tracked, as before 2.622.0 (internal /find-a-provider
   // links fire nothing). Directory links still fire Get Started Clicked; they
-  // are told apart by cta_action=directory-navigation / destination_path.
+  // are told apart by cta_action=provider-directory / destination_path.
   function patientAction(u) {
     if (!isSignupURL(u)) return null;
     var path = normPath(u.pathname);
@@ -1307,7 +1310,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       // (UTM Passthrough Rate: url contains utm_source=).
       url: href || null, deviceType: deviceType(), cta_id: cta.id,
       cta_name: cta.name, cta_section: cta.section,
-      cta_action: cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
+      cta_action: CTA_ACTION_NAMES[cta.action] || cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
       tracking_schema_version: "2", release_version: CTA_RELEASE,
       page_version: CTA_VERSION.test(pageVersion || "") ? pageVersion : null,
       page_path: window.location.pathname || "/", destination_host: u.hostname,

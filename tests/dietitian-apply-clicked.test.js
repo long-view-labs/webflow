@@ -292,7 +292,7 @@ test("Dietitian Apply Clicked", async (t) => {
       const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
       assert.equal(events.length, 1);
       assert.equal(events[0].event, "Get Started Clicked");
-      assert.equal(events[0].props.cta_action, "directory-navigation");
+      assert.equal(events[0].props.cta_action, "provider-directory");
       assert.equal(Object.hasOwn(events[0].props, "page_name"), false);
       assert.equal(events[0].props.page_path, "/");
       assert.equal(events[0].props.page_version, "2");

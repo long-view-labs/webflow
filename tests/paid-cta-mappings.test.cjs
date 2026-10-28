@@ -160,3 +160,14 @@ test('a signup link in an unknown block is counted as "<action> | <page> | Other
   assert.equal(d.cta_id, 'patient-directory-other');
   assert.equal(d.cta_name, 'Find a Dietitian | Home | Other');
 });
+
+test('cta_action reports signup-flow and provider-directory', (t) => {
+  const [s] = clickIn(t, '/', '<a data-cta="nav">x</a>', 'a');
+  assert.equal(s.cta_action, 'signup-flow');
+  const [d] = clickIn(t, '/', '<a data-cta="nav">x</a>', 'a', 'https://signup.nourish.com/providers');
+  assert.equal(d.cta_action, 'provider-directory');
+  const authored = '<a data-cta-id="patient-signup-hero" data-cta-name="x" data-cta-location="hero" data-cta-section="hero" data-cta-action="direct-signup" data-cta-version="1">x</a>';
+  const [e] = clickIn(t, '/', authored, 'a');
+  assert.equal(e.cta_id, 'patient-signup-hero');
+  assert.equal(e.cta_action, 'signup-flow');
+});
