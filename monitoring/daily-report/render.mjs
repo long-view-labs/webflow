@@ -4,7 +4,7 @@
 import {checker, siteAudit} from './checker.mjs';
 import {overall, localAreas, MARK} from './summary.mjs';
 import {pageName} from './performance.mjs';
-import {privately, perfTable, cardAnalytics, METRICS_CSS} from './page-metrics.mjs';
+import {privately, cardAnalytics, METRICS_CSS} from './page-metrics.mjs';
 
 const {renderDailyReport, renderComparisonPage, deriveIssues, caseParts} = await checker('src/report-html.mjs');
 const {chartsSection, seriesCards} = await siteAudit('src/daily/charts.mjs');
@@ -81,11 +81,11 @@ export function renderNourishReport(report, root) {
     .replace(/<details class="tech"><summary>Home hero heading[\s\S]*?<\/details>\n?/, '');
   // Page cards: Nourish names instead of config ids (the checker only knows Unify's labels).
   const re = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // Each card also gets the page's Lighthouse scores and lab vitals (desktop and mobile) and its
-  // Amplitude line, above its links; the full gauges and charts are on the detail page.
+  // Each card also gets its Amplitude line above its links. Lighthouse scores and lab vitals are on
+  // the detail pages only (Gemin, Oct 29 2026: "detail pages only"), never on the cards.
   for (const id of new Set((report.runs ?? []).flatMap((r) => r.results).map((r) => caseParts(r.key).pageId))) {
     const name = escape(pageName(id));
-    const metrics = `<div class="pm-card">${perfTable((report.performance?.rows ?? []).filter((r) => r.pageId === id))}${cardAnalytics(report.pageAnalytics, id)}</div>`;
+    const metrics = `<div class="pm-card">${cardAnalytics(report.pageAnalytics, id)}</div>`;
     html = html.replace(new RegExp(`(<h3><a href="pages/${re(id)}\\.html">)[^<]*(</a>)`), `$1${name}$2`)
       .replace(new RegExp(`(<a href="pages/${re(id)}\\.html" aria-label=")[^"]*(")`), `$1${name} details$2`)
       .replace(`<p><a href="pages/${id}.html">Details and analytics →</a>`, (m) => metrics + m);

@@ -340,17 +340,15 @@ test('detail page: states, health, nav and forms, the four gauges per viewport w
   assert.doesNotMatch(home, /score dropped/);
 });
 
-test('main report: page cards carry Lighthouse scores, lab vitals and the private Amplitude line; gauges only on the detail pages', async () => {
+test('main report: page cards carry the private Amplitude line and no Lighthouse scores or vitals; gauges only on the detail pages', async () => {
   const {renderNourishReport} = await import('../monitoring/daily-report/render.mjs');
   const html = renderNourishReport(reportFixture(), RROOT);
   assert.match(html, /<h3><a href="pages\/home\.html">Home<\/a>/); assert.match(html, /<h3><a href="pages\/paid\.html">Paid<\/a>/);
   assert.match(html, /<a href="pages\/paid\.html" aria-label="Paid details"><img/);
   assert.equal((html.match(/Details and analytics →/g) || []).length, 2);
-  // Card: scores per viewport (bands as chips), LCP/CLS/TBT, then the Amplitude line, before the card's links.
+  // Card: the Amplitude line before the card's links; no score chips, no LCP/CLS/TBT (Gemin: detail pages only).
   const paid = html.slice(html.indexOf('<h3><a href="pages/paid.html">'), html.indexOf('<a href="pages/paid.html">Details and analytics'));
-  assert.match(paid, /<td>desktop<\/td><td><span class="b ok">90<\/span><\/td><td><span class="b ok">90<\/span><\/td><td><span class="b ok">96<\/span><\/td><td><span class="b warn">85<\/span><\/td><td><span class="v ok">1\.2 s<\/span><\/td><td><span class="v ok">0\.001<\/span><\/td><td><span class="v ok">50 ms<\/span><\/td>/);
-  assert.match(paid, /<td>mobile<\/td><td><span class="b warn">61<\/span>/);
-  assert.match(paid, /median of 3 loads per viewport, analytics blocked\. Performance spread today: desktop 88–95/);
+  assert.doesNotMatch(paid, /class="pm"|<th>Lighthouse<\/th>|<span class="b ok">90<\/span>|1\.2 s|50 ms|spread today/);
   assert.match(paid, /<!--analytics:start--><p class="pm-amp"><span class="muted">Amplitude, last 7 days:<\/span> <strong>700<\/strong> page views · <strong>70<\/strong> Get Started clicks <span class="muted">\(10% of views\)<\/span> · <strong>40%<\/strong> of 50 clickers reached FlowLoaded<\/p><!--analytics:end-->/);
   assert.match(html, /\.pm-amp\{/);
   assert.equal((html.match(/<figure class="gauge"/g) || []).length, 0);

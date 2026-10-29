@@ -1,38 +1,17 @@
-// Per-page performance and Amplitude blocks, shared by the page cards (render.mjs) and the detail
-// pages (detail-page.mjs). Pure: data in, HTML out, inline SVG only. Amplitude numbers are wrapped in
+// Per-page Amplitude blocks, shared by the page cards (render.mjs: one line) and the detail pages
+// (detail-page.mjs: charts). Lighthouse scores and vitals live on the detail pages only (gauges). Pure: data in, HTML out, inline SVG only. Amplitude numbers are wrapped in
 // the analytics markers, so publish.mjs keeps them off the public copy unless publishAnalytics is set.
 import {checker} from './checker.mjs';
 import {cardNumbers, FUNNEL_WINDOW_SECONDS} from './page-analytics.mjs';
 
 const {escape} = await checker('src/report-html.mjs');
-const {band} = await checker('src/gauges.mjs');
 const {columnsChart, funnelChart, CHART_CSS} = await checker('src/charts.mjs');
 
 export const PRIVATE_START = '<!--analytics:start-->', PRIVATE_END = '<!--analytics:end-->';
 export const privately = (html) => `${PRIVATE_START}${html}${PRIVATE_END}`;
 
-const CHIP = {good: 'ok', average: 'warn', poor: 'bad'};
 const num = (n) => (n == null ? '–' : Math.round(n).toLocaleString('en-US'));
 const pct = (n) => (n == null ? '–' : `${n < 10 ? n.toFixed(1) : Math.round(n)}%`);
-const chip = (v) => (Number.isFinite(v) ? `<span class="b ${CHIP[band(v)]}">${Math.round(v)}</span>` : '<span class="b">–</span>');
-const secs = (ms) => (Number.isFinite(ms) ? `${(ms / 1000).toFixed(1)} s` : '–');
-const ms = (v) => (Number.isFinite(v) ? `${Math.round(v)} ms` : '–');
-const cls = (v) => (Number.isFinite(v) ? v.toFixed(3) : '–');
-
-// Lab Core Web Vitals thresholds (LCP and CLS as in CWV; TBT stands in for INP in a lab load).
-const vital = (value, good, poor, text) => (Number.isFinite(value) ? `<span class="v ${value <= good ? 'ok' : value > poor ? 'bad' : 'warn'}">${text}</span>` : '–');
-
-// Desktop and mobile: the four Lighthouse scores and LCP / CLS / TBT, median of the day's loads.
-export function perfTable(rows) {
-  const byVp = ['desktop', 'mobile'].map((vp) => rows.find((r) => r.viewport === vp)).filter(Boolean);
-  if (!byVp.length) return '<p class="muted pm-none">Lighthouse was not measured for this page today.</p>';
-  const runs = Math.max(0, ...byVp.map((r) => r.runs ?? 1));
-  return `<table class="pm"><tr><th>Lighthouse</th><th>Perf.</th><th>Access.</th><th>Best pr.</th><th>SEO</th><th>LCP</th><th>CLS</th><th>TBT</th></tr>${byVp.map((r) => {
-    if (r.status !== 'measured') return `<tr><td>${escape(r.viewport)}</td><td colspan="7" class="muted">not measured (${escape(r.error ?? 'no score')})</td></tr>`;
-    const s = r.scores ?? {};
-    return `<tr><td>${escape(r.viewport)}</td><td>${chip(r.score)}</td><td>${chip(s.accessibility)}</td><td>${chip(s.bestPractices)}</td><td>${chip(s.seo)}</td><td>${vital(r.lcpMs, 2500, 4000, secs(r.lcpMs))}</td><td>${vital(r.cls, 0.1, 0.25, cls(r.cls))}</td><td>${vital(r.tbtMs, 200, 600, ms(r.tbtMs))}</td></tr>`;
-  }).join('')}</table><p class="muted pm-note">Lab, ${runs > 1 ? `median of ${runs} loads` : 'one load'} per viewport, analytics blocked.${byVp.some((r) => r.spread && r.spread[1] - r.spread[0] > 0) ? ` Performance spread today: ${byVp.filter((r) => r.spread).map((r) => `${escape(r.viewport)} ${r.spread[0]}–${r.spread[1]}`).join(', ')}.` : ''}</p>`;
-}
 
 // One line on the card: last 7 days of views, Get Started clicks and click → FlowLoaded.
 export function cardAnalytics(analytics, pageId) {
@@ -64,5 +43,5 @@ export function analyticsSection(analytics, pageId) {
 <p class="muted">Last ${days.length} Pacific days ending yesterday, Amplitude project 373727, matched on the page path (${escape(p.path)}). Counts only; no individual visitors are shown.</p>`);
 }
 
-export const METRICS_CSS = '.pm{margin-top:10px}.pm td,.pm th{padding:5px 6px}.pm-note,.pm-none{font-size:13px;margin:4px 0 0}.pm-amp{margin:10px 0 0;font-size:14px}.v{font-weight:600}.v.ok{color:var(--good)}.v.warn{color:var(--warn)}.v.bad{color:var(--bad)}';
+export const METRICS_CSS = '.pm-amp{margin:10px 0 0;font-size:14px}';
 export {CHART_CSS};
