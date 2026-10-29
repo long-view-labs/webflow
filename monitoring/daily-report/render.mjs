@@ -4,14 +4,14 @@
 import {checker, siteAudit} from './checker.mjs';
 import {overall, localAreas, MARK} from './summary.mjs';
 import {pageName} from './performance.mjs';
+import {privately, perfTable, cardAnalytics, METRICS_CSS} from './page-metrics.mjs';
 
 const {renderDailyReport, renderComparisonPage, deriveIssues, caseParts} = await checker('src/report-html.mjs');
 const {chartsSection, seriesCards} = await siteAudit('src/daily/charts.mjs');
 
-// Traffic and conversion numbers sit between these markers; publish.mjs removes
-// them from the public copy unless site-audit config/daily.json sets publishAnalytics.
-export const PRIVATE_START = '<!--analytics:start-->', PRIVATE_END = '<!--analytics:end-->';
-const privately = (html) => `${PRIVATE_START}${html}${PRIVATE_END}`;
+// Traffic and conversion numbers sit between the analytics markers (page-metrics.mjs); publish.mjs
+// removes them from the public copy unless site-audit config/daily.json sets publishAnalytics.
+export {PRIVATE_START, PRIVATE_END} from './page-metrics.mjs';
 
 const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const when = (iso) => (iso ? new Date(iso).toLocaleString('en-US', {timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}) + ' PT' : 'never');
@@ -78,16 +78,19 @@ export function renderNourishReport(report, root) {
   let html = renderDailyReport(report, root)
     .replaceAll('Unify daily visual check', 'Nourish daily site check')
     .replace('runs around 8 AM PT while this Mac is on', 'runs around 8:30 AM PT while this Mac is on')
-    .replace(/<details class="tech"><summary>Home hero heading[\s\S]*?<\/details>\n?/, '')
-    // Detail pages (pages/<id>.html) carry no analytics charts for Nourish.
-    .replaceAll('Details and analytics →', 'Details →');
+    .replace(/<details class="tech"><summary>Home hero heading[\s\S]*?<\/details>\n?/, '');
   // Page cards: Nourish names instead of config ids (the checker only knows Unify's labels).
   const re = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Each card also gets the page's Lighthouse scores and lab vitals (desktop and mobile) and its
+  // Amplitude line, above its links; the full gauges and charts are on the detail page.
   for (const id of new Set((report.runs ?? []).flatMap((r) => r.results).map((r) => caseParts(r.key).pageId))) {
     const name = escape(pageName(id));
+    const metrics = `<div class="pm-card">${perfTable((report.performance?.rows ?? []).filter((r) => r.pageId === id))}${cardAnalytics(report.pageAnalytics, id)}</div>`;
     html = html.replace(new RegExp(`(<h3><a href="pages/${re(id)}\\.html">)[^<]*(</a>)`), `$1${name}$2`)
-      .replace(new RegExp(`(<a href="pages/${re(id)}\\.html" aria-label=")[^"]*(")`), `$1${name} details$2`);
+      .replace(new RegExp(`(<a href="pages/${re(id)}\\.html" aria-label=")[^"]*(")`), `$1${name} details$2`)
+      .replace(`<p><a href="pages/${id}.html">Details and analytics →</a>`, (m) => metrics + m);
   }
+  html = html.replace('</style>', () => METRICS_CSS + '</style>');
   const top = `<section class="verdict ${o.tone}"><strong>${escape(o.headline)}</strong>Pages: ${o.newIssues.length} new issue${o.newIssues.length === 1 ? '' : 's'}, ${o.standing.length} still open, ${o.pageChanges.length} visual change${o.pageChanges.length === 1 ? '' : 's'}. Tracking and analytics: ${o.trackingIssues.length} issue${o.trackingIssues.length === 1 ? '' : 's'}, ${o.trackingChanges.length} change${o.trackingChanges.length === 1 ? '' : 's'}.</section>
 ${privately(`<table class="areas">${[...localAreas(report, o), ...(report.areas ?? [])].map((a) => `<tr><td>${MARK[a.status] ?? '⚪'}</td><th>${escape(a.label)}</th><td>${escape(a.text)}</td></tr>`).join('')}</table>
 ${chartsSection({cards: seriesCards({amplitude: report.tracking?.events, google: report.google}), links: report.dashboardLinks ?? [], note: 'Last 14 days per day; the darkest column is the latest day.'})}

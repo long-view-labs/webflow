@@ -1,11 +1,12 @@
 // One static page per Nourish page in the daily report (pages/<id>.html): captured states,
 // health findings, the nav and quiz/insurance-search results, the four Lighthouse gauges with
-// LCP/CLS/TBT and the 7-day Performance score strip. Modelled on the checker's detail page
-// without its PostHog section: Nourish has no PostHog project, and its Amplitude volumes are
-// site-wide (main report). Pure: data in, HTML out. No scripts; inline SVG only.
+// LCP/CLS/TBT and the 7-day Performance score strip, and per-page Amplitude charts. Modelled on
+// the checker's detail page, with Amplitude (page-analytics.mjs) where Unify has PostHog.
+// Pure: data in, HTML out. No scripts; inline SVG only.
 import path from 'node:path';
 import {checker} from './checker.mjs';
 import {pageName} from './performance.mjs';
+import {analyticsSection, METRICS_CSS, CHART_CSS} from './page-metrics.mjs';
 
 const {caseStatus, caseParts, STATE_LABELS, escape} = await checker('src/report-html.mjs');
 const {pageGauges, GAUGE_CSS, band} = await checker('src/gauges.mjs');
@@ -70,7 +71,7 @@ export function renderDetailPage({page, report, root, history = null}) {
   const drops = (report.performance?.regressions ?? []).filter((g) => g.pageId === page.id).map((g) => `<p class="issue-note">${escape(g.viewport)} Performance score dropped from ${escape(g.before)} to ${escape(g.after)} since yesterday.</p>`).join('');
   const lab = perfRows.length ? `${drops}${pageGauges(perfRows)}<table><tr><th>Viewport</th><th>LCP (ms)</th><th>CLS</th><th>Total blocking time (ms)</th><th>Analytics requests answered</th></tr>${['desktop', 'mobile'].map((vp) => perfRows.find((r) => r.viewport === vp)).filter(Boolean).map((r) => `<tr><td>${escape(r.viewport)}</td><td>${escape(r.lcpMs ?? '–')}</td><td>${escape(r.cls ?? '–')}</td><td>${escape(r.tbtMs ?? '–')}</td><td>${r.analyticsRequests > 0 ? `<span class="b bad">${escape(r.analyticsRequests)}</span>` : escape(r.analyticsRequests ?? 'not verified')}</td></tr>`).join('')}</table>
 ${strip(history, `${page.id}--desktop`, 'Desktop score, last 7 days')}${strip(history, `${page.id}--mobile`, 'Mobile score, last 7 days')}
-<p class="muted">Lab data only: a throttled simulated load on this Mac, one run per page, with analytics blocked. A few points of day-to-day movement is normal.</p>` : '<p class="muted">Lighthouse was not measured for this page today.</p>';
+<p class="muted">Lab data only: throttled simulated loads on this Mac, ${Math.max(...perfRows.map((r) => r.runs ?? 1)) > 1 ? `the median of ${Math.max(...perfRows.map((r) => r.runs ?? 1))} loads per viewport` : 'one load per viewport'}, with analytics blocked. A few points of day-to-day movement is normal.</p>` : '<p class="muted">Lighthouse was not measured for this page today.</p>';
 
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${escape(name)} · Nourish daily site check</title><style>
 :root{--fg:#1d2026;--muted:#5d6470;--line:#e3e6ea;--bg:#f6f7f9;--good:#127a3d;--goodbg:#e3f5ea;--warn:#8a5a00;--warnbg:#fff3d6;--bad:#b42318;--badbg:#fde7e5}
@@ -84,6 +85,8 @@ table{border-collapse:collapse;width:100%;font-size:14px;margin-top:10px}th,td{p
 .issue-note{color:var(--bad);font-weight:600;margin:6px 0}.strip{margin-top:12px}.strip ul{list-style:none;display:flex;flex-wrap:wrap;gap:6px 12px;padding:0;margin:4px 0}.strip li{font-size:13px}
 .lab{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 14px 14px;max-width:560px}
 ${GAUGE_CSS}
+${CHART_CSS}
+${METRICS_CSS}
 </style><main>
 <p><a href="../index.html">← All pages</a></p>
 <h1>${escape(name)} ${BADGE[worst]}</h1>
@@ -93,6 +96,6 @@ ${GAUGE_CSS}
 <h2>Health findings</h2>${findings ? `<ul class="issues">${findings}</ul>` : '<p class="muted">Nothing new on this page today.</p>'}${known.length ? `<p class="muted">Known third-party error, not counted: ${escape(known[0].message)} (${escape(known[0].reason)}).</p>` : ''}${a11y.size ? `<p class="muted">Automated accessibility rules flagged (reference only): ${escape([...a11y].join(', '))}.</p>` : ''}
 <h2>Navigation, quiz and insurance search</h2>${checksTable(report, page.id)}
 <h2>Lighthouse (lab)</h2><div class="lab">${lab}</div>
-<h2>Analytics</h2><p class="muted">No per-page analytics charts: Nourish has no PostHog project. Amplitude event volumes for the whole site are in the main report when the key is configured.</p>
+<h2>Analytics (Amplitude)</h2>${analyticsSection(report.pageAnalytics, page.id)}
 </main></html>`;
 }

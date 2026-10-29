@@ -127,7 +127,7 @@ const quietReport = (over = {}) => ({outcome: 'no-change', startedAt: '2026-10-2
     rows: KEYS.map((k) => ({key: k.replace('--default', ''), pageId: k.split('--')[0], viewport: k.split('--')[2], status: 'measured', score: 90, analyticsRequests: 0}))},
   areas: [], ...over});
 const PAGES = {now: []};
-const OPTS = {link: 'https://nourish-visual-report.pages.dev/', published: true};
+const OPTS = {link: 'https://nourish-web-report.pages.dev/', published: true};
 const message = (report, pages = PAGES, opts = OPTS) => {
   const n = dailyNotification(report, pages, opts);
   return {n, text: renderDailyMessage(n)};
@@ -139,7 +139,7 @@ test('slack: a complete no-change day is a three-line message and stays quiet', 
   const lines = text.split('\n');
   assert.match(lines[0], /^✅ \*Nourish daily site check — no change\*  ·  Thu, Oct 29, 9:12 AM PT$/);
   assert.equal(lines[1], '4/4 pages captured (desktop + mobile) · 0 visual changes · 0 new issues · quiz and insurance search 6/6 working');
-  assert.equal(lines[2], '🔗 https://nourish-visual-report.pages.dev/');
+  assert.equal(lines[2], '🔗 https://nourish-web-report.pages.dev/');
   assert.equal(lines.length, 3);
   assert.doesNotMatch(text, /Tracking|Amplitude|Performance|stale text|⚠️|→ /);
   assert.equal(shouldPost(n, null), false, 'history unknown: stay quiet');
@@ -295,6 +295,7 @@ test('lab: publication needs zero answered analytics requests proven on every at
 
 // --------------------------------------------------------- report and detail page ---
 const RROOT = '/run/2026-10-29';
+const DAYS30 = Array.from({length: 30}, (_, i) => new Date(Date.parse('2026-09-29T00:00:00Z') + i * 864e5).toISOString().slice(0, 10));
 const result = (key, extra = {}) => ({key, pageId: key.split('--')[0], url: 'https://www.nourish.com/' + (key.startsWith('home') ? '' : key.split('--')[0]), visual: {measurementStatus: 'captured', image: `${RROOT}/shots/${key}.png`},
   health: {status: 'ok', httpStatus: 200, errors: [], failedAssets: [], metadataIssues: [], content: {failures: []}, accessibility: {violations: []}, ...extra}});
 const reportFixture = () => ({schemaVersion: 1, client: 'nourish', startedAt: '2026-10-29T15:30:00Z', finishedAt: '2026-10-29T16:12:00Z', outcome: 'no-change', errors: [], expectedCases: 4,
@@ -306,24 +307,31 @@ const reportFixture = () => ({schemaVersion: 1, client: 'nourish', startedAt: '2
   tracking: {monitor: {status: 'ok', issues: [], runsLast24h: 24, failingRunsLast24h: 0, lastCheckedAt: '2026-10-29T15:00:00Z', reportOnly: []}, events: {status: 'not-configured', events: [], issues: []}},
   performance: {schemaVersion: 1, status: 'issue', regressed: true, text: 'Paid (mobile) dropped 15 points since yesterday (76 → 61); other pages steady', expected: 4, labAvailable: true,
     regressions: [{key: 'paid--mobile', pageId: 'paid', viewport: 'mobile', before: 76, after: 61}], analyticsLeaks: [],
-    rows: [prow('home', 'desktop', 92), prow('home', 'mobile', 70), prow('paid', 'desktop', 90), prow('paid', 'mobile', 61)]},
+    rows: [prow('home', 'desktop', 92), prow('home', 'mobile', 70), prow('paid', 'desktop', 90, {runs: 3, spread: [88, 95]}), prow('paid', 'mobile', 61, {runs: 3, spread: [61, 61]})]},
+  pageAnalytics: {status: 'ok', cardDays: 7, days: DAYS30, pages: {
+    paid: {path: '/paid', views: DAYS30.map(() => 100), clicks: DAYS30.map(() => 10), funnel: [{event: 'Get Started Clicked', label: 'Clicked', people: 50}, {event: 'FlowLoaded', label: 'Reached', people: 20}], errors: {}},
+    home: {path: '/', views: DAYS30.map(() => 0), clicks: DAYS30.map(() => 0), funnel: [{event: 'Get Started Clicked', label: 'Clicked', people: 0}, {event: 'FlowLoaded', label: 'Reached', people: 0}], errors: {}}}},
   areas: [{id: 'performance', label: 'Performance', status: 'issue', text: 'Paid (mobile) dropped 15 points since yesterday (76 → 61); other pages steady'}]});
 const history = {days: ['2026-10-23', '2026-10-24', '2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29'], scores: {'paid--mobile': [null, 60, 61, 70, null, 76, 61]}};
 
-test('detail page: states, health, nav and forms, the four gauges per viewport with metrics, the 7-day strip, no analytics charts', async () => {
+test('detail page: states, health, nav and forms, the four gauges per viewport with metrics, the 7-day strip, Amplitude charts kept private', async () => {
   const {renderDetailPage} = await import('../monitoring/daily-report/detail-page.mjs');
   const h = renderDetailPage({page: {id: 'paid', url: 'https://www.nourish.com/paid'}, report: reportFixture(), root: RROOT, history});
-  const order = ['<h1>Paid', 'Captured states', 'Previous run vs latest', 'Health findings', 'Navigation, quiz and insurance search', 'Lighthouse (lab)', '<h2>Analytics</h2>'].map((t) => h.indexOf(t));
+  const order = ['<h1>Paid', 'Captured states', 'Previous run vs latest', 'Health findings', 'Navigation, quiz and insurance search', 'Lighthouse (lab)', '<h2>Analytics (Amplitude)</h2>'].map((t) => h.indexOf(t));
   assert.ok(order.every((i) => i > 0), String(order)); assert.deepEqual([...order].sort((a, b) => a - b), order);
   assert.match(h, /<h3>Desktop<\/h3>/); assert.match(h, /<h3>Mobile<\/h3>/);
   assert.match(h, /src="\.\.\/shots\/paid--default--desktop\.png"/); assert.doesNotMatch(h, /home--default/);
-  assert.match(h, /1 broken asset/); assert.doesNotMatch(h, /token=1/);
+  assert.match(h, /1 file failed to load/); assert.doesNotMatch(h, /token=1/);
   assert.equal((h.match(/<figure class="gauge"/g) || []).length, 8);
   assert.match(h, /<td>mobile<\/td><td>1200<\/td><td>0\.001<\/td><td>50<\/td><td>0<\/td>/);
   assert.match(h, /mobile Performance score dropped from 76 to 61 since yesterday/);
   assert.match(h, /aria-label="Mobile score, last 7 days 2026-10-28: 76 of 100"/); assert.match(h, /aria-label="not measured">–/);
-  assert.match(h, /No per-page analytics charts: Nourish has no PostHog project/);
-  assert.doesNotMatch(h, /<script|PostHog\)|unifygtm/);
+  assert.match(h, /the median of 3 loads per viewport/);
+  assert.match(h, /<!--analytics:start-->\s*<h3>Page views per day \(Viewed Page\)<\/h3><svg class="chart"/);
+  assert.match(h, /Get Started clicks per day/); assert.match(h, /40% of people who clicked Get Started here reached FlowLoaded within 24 hours/);
+  assert.doesNotMatch(h, /<script|PostHog|unifygtm/);
+  const none = renderDetailPage({page: {id: 'paid', url: 'https://www.nourish.com/paid'}, report: {...reportFixture(), pageAnalytics: {status: 'unavailable', reason: 'no Amplitude key in the Keychain item "nourish-amplitude-api"'}}, root: RROOT, history});
+  assert.match(none, /Amplitude per-page numbers not available today \(no Amplitude key/);
   assert.match(h, /Nourish daily site check/);
   const home = renderDetailPage({page: {id: 'home', url: 'https://www.nourish.com/'}, report: reportFixture(), root: RROOT, history});
   assert.match(home, /<td>desktop<\/td><td>Navigation \(main\)<\/td><td><span class="b ok">OK<\/span><\/td><td>Nav bar shows 7 links\/buttons/);
@@ -332,12 +340,19 @@ test('detail page: states, health, nav and forms, the four gauges per viewport w
   assert.doesNotMatch(home, /score dropped/);
 });
 
-test('main report: links every page card to its detail page by name, one Performance line, gauges only on the detail pages', async () => {
+test('main report: page cards carry Lighthouse scores, lab vitals and the private Amplitude line; gauges only on the detail pages', async () => {
   const {renderNourishReport} = await import('../monitoring/daily-report/render.mjs');
   const html = renderNourishReport(reportFixture(), RROOT);
   assert.match(html, /<h3><a href="pages\/home\.html">Home<\/a>/); assert.match(html, /<h3><a href="pages\/paid\.html">Paid<\/a>/);
   assert.match(html, /<a href="pages\/paid\.html" aria-label="Paid details"><img/);
-  assert.match(html, /Details →/); assert.doesNotMatch(html, /Details and analytics/);
+  assert.equal((html.match(/Details and analytics →/g) || []).length, 2);
+  // Card: scores per viewport (bands as chips), LCP/CLS/TBT, then the Amplitude line, before the card's links.
+  const paid = html.slice(html.indexOf('<h3><a href="pages/paid.html">'), html.indexOf('<a href="pages/paid.html">Details and analytics'));
+  assert.match(paid, /<td>desktop<\/td><td><span class="b ok">90<\/span><\/td><td><span class="b ok">90<\/span><\/td><td><span class="b ok">96<\/span><\/td><td><span class="b warn">85<\/span><\/td><td><span class="v ok">1\.2 s<\/span><\/td><td><span class="v ok">0\.001<\/span><\/td><td><span class="v ok">50 ms<\/span><\/td>/);
+  assert.match(paid, /<td>mobile<\/td><td><span class="b warn">61<\/span>/);
+  assert.match(paid, /median of 3 loads per viewport, analytics blocked\. Performance spread today: desktop 88–95/);
+  assert.match(paid, /<!--analytics:start--><p class="pm-amp"><span class="muted">Amplitude, last 7 days:<\/span> <strong>700<\/strong> page views · <strong>70<\/strong> Get Started clicks <span class="muted">\(10% of views\)<\/span> · <strong>40%<\/strong> of 50 clickers reached FlowLoaded<\/p><!--analytics:end-->/);
+  assert.match(html, /\.pm-amp\{/);
   assert.equal((html.match(/<figure class="gauge"/g) || []).length, 0);
   assert.match(html, /<h2>Performance<\/h2><section class="verdict bad"[^>]*>.*Paid \(mobile\) dropped 15 points since yesterday/);
   assert.match(html, /<th>Performance<\/th><td>Paid \(mobile\) dropped 15 points/);
@@ -373,6 +388,8 @@ test('publish: analytics numbers and charts stay off the public copy', async () 
   const html = '<h1>Report</h1><!--analytics:start--><svg>sessions 1,234</svg><!--analytics:end--><h2>Pages</h2>';
   assert.equal(stripAnalytics(html), '<h1>Report</h1><p class="muted">Traffic and conversion numbers are in the local copy of this report and the Slack DM.</p><h2>Pages</h2>');
   assert.equal(stripAnalytics('<p>a</p><!--analytics:start-->unterminated 1,234'), '<p>a</p>');
+  // One note per page, however many page cards had numbers.
+  assert.equal(stripAnalytics(html + '<!--analytics:start--><p>700 views</p><!--analytics:end--><p>card</p>'), '<h1>Report</h1><p class="muted">Traffic and conversion numbers are in the local copy of this report and the Slack DM.</p><h2>Pages</h2><p>card</p>');
   const src = fs.mkdtempSync(path.join(os.tmpdir(), 'nourish-pub2-')), out = path.join(os.tmpdir(), 'nourish-pub2-out-' + process.pid);
   fs.writeFileSync(path.join(src, 'index.html'), html);
   stage(src, out);
@@ -404,4 +421,70 @@ test('form check helpers: script source from a stack, link expectations', async 
   assert.deepEqual(linkFailures(before, new URLSearchParams('landingPageVariation=Organic_Homepage&nourishPayerId=3&state=CA'), {nourishPayerId: true, state: 'CA'}), []);
   assert.deepEqual(linkFailures(before, new URLSearchParams('nourishPayerId=3'), {nourishPayerId: true, state: 'CA'}), ['link has no state after choosing it', 'link lost landingPageVariation']);
   assert.deepEqual(linkFailures(before, new URLSearchParams('landingPageVariation=x&state=NY'), {state: 'CA'}), ['link state=NY, expected CA']);
+});
+
+test('lab: the median of the day\'s loads is kept; any leak counts; a load with no log is ignored when another is verified', async () => {
+  const {medianRun, median, LAB_RUNS} = await import('../monitoring/daily-report/performance.mjs');
+  assert.equal(LAB_RUNS, 3); assert.equal(median([3, 1, 2]), 2); assert.equal(median([1, 4]), 2.5); assert.equal(median([null]), null);
+  const load = (score, extra = {}) => ({status: 'measured', score, scores: {performance: score, accessibility: score + 1, bestPractices: 90, seo: 80}, metrics: {lcpMs: score * 100, cls: 0.01, tbtMs: 1000 - score * 10}, analyticsRequests: 0, ...extra});
+  const r = medianRun([load(40), load(75), load(60)]);
+  assert.equal(r.score, 60); assert.equal(r.scores.accessibility, 61); assert.equal(r.metrics.lcpMs, 6000); assert.equal(r.metrics.tbtMs, 400);
+  assert.equal(r.runs, 3); assert.deepEqual(r.spread, [40, 75]); assert.equal(r.analyticsRequests, 0);
+  assert.equal(medianRun([load(50), load(60, {analyticsRequests: 2}), load(70)]).analyticsRequests, 2);
+  const partial = medianRun([{status: 'capture-failure', error: 'x', analyticsRequests: null}, load(70), load(72)]);
+  assert.equal(partial.runs, 2); assert.equal(partial.score, 71); assert.equal(partial.analyticsRequests, 0);
+  const failed = medianRun([{status: 'capture-failure', error: 'x', analyticsRequests: null}, {status: 'capture-failure', error: 'y', analyticsRequests: null}]);
+  assert.equal(failed.status, 'capture-failure'); assert.equal(failed.error, 'y'); assert.equal(failed.analyticsRequests, null); assert.equal(failed.runs, 0);
+});
+
+test('page analytics: no Keychain key means unavailable, never a failed run', async () => {
+  const {fetchPageAnalytics} = await import('../monitoring/daily-report/page-analytics.mjs');
+  const r = await fetchPageAnalytics({pageUrls: {paid: 'https://www.nourish.com/paid'}, creds: null, fetcher: () => { throw new Error('no call'); }});
+  assert.equal(r.status, 'unavailable'); assert.match(r.reason, /nourish-amplitude-api/); assert.equal(r.days.length, 30);
+});
+
+test('page analytics: views by path, clicks by location, one funnel per clicked page, trailing slashes merged', async () => {
+  const {fetchPageAnalytics, cardNumbers, lastDays} = await import('../monitoring/daily-report/page-analytics.mjs');
+  const now = new Date('2026-10-29T16:00:00Z'), days = lastDays(now);
+  assert.equal(days[0], '2026-09-29'); assert.equal(days.at(-1), '2026-10-28');
+  const calls = [];
+  const fetcher = async (url, opts) => {
+    const u = new URL(url); calls.push(u);
+    assert.match(opts.headers.Authorization, /^Basic /);
+    if (u.pathname.endsWith('/segmentation')) {
+      const e = JSON.parse(u.searchParams.get('e'));
+      assert.equal(u.searchParams.get('start'), '20260929'); assert.equal(u.searchParams.get('end'), '20261028');
+      const series = e.event_type === 'Viewed Page'
+        ? {seriesLabels: [[0, '/paid'], [0, '/paid/'], [0, '(none)'], [0, '/']], series: [days.map(() => 100), days.map(() => 1), days.map(() => 5), days.map(() => 3)]}
+        : {seriesLabels: ['/paid'], series: [days.map(() => 10)]};
+      assert.deepEqual(e.group_by, [{type: 'event', value: e.event_type === 'Viewed Page' ? 'path' : 'location'}]);
+      return {ok: true, json: async () => ({data: {...series, xValues: days}})};
+    }
+    const steps = u.searchParams.getAll('e').map((x) => JSON.parse(x));
+    assert.deepEqual(steps[0].filters[0], {subprop_type: 'event', subprop_key: 'location', subprop_op: 'is', subprop_value: ['/paid', '/paid/']});
+    assert.equal(steps[1].event_type, 'FlowLoaded'); assert.equal(u.searchParams.get('cs'), '86400'); assert.equal(u.searchParams.get('start'), '20261022');
+    return {ok: true, json: async () => ({data: [{cumulativeRaw: [50, 20]}]})};
+  };
+  const r = await fetchPageAnalytics({pageUrls: {paid: 'https://www.nourish.com/paid', home: 'https://www.nourish.com/', faq: 'https://www.nourish.com/faq'}, now, creds: {apiKey: 'k', secret: 's'}, fetcher});
+  assert.equal(r.status, 'ok'); assert.equal(r.queries, 3);
+  assert.equal(calls.filter((u) => u.pathname.endsWith('/funnels')).length, 1); // only /paid had clicks
+  assert.equal(r.pages.paid.views[0], 101); assert.equal(r.pages.home.views[0], 3); assert.equal(r.pages.faq.views[0], 0);
+  assert.deepEqual(cardNumbers(r.pages.paid), {views: 707, clicks: 70, clickRate: 70 * 100 / 707, clickers: 50, flowLoaded: 20, conversion: 40});
+  assert.equal(cardNumbers(r.pages.home).conversion, null);
+});
+
+test('page analytics: an HTTP error is kept per metric and never echoes the key', async () => {
+  const {fetchPageAnalytics} = await import('../monitoring/daily-report/page-analytics.mjs');
+  const r = await fetchPageAnalytics({pageUrls: {paid: 'https://www.nourish.com/paid'}, creds: {apiKey: 'SECRETKEY', secret: 'SECRET2'}, fetcher: async () => ({ok: false, status: 429})});
+  assert.equal(r.status, 'unavailable'); assert.equal(r.reason, 'Amplitude HTTP 429');
+  assert.doesNotMatch(JSON.stringify(r), /SECRET/);
+});
+
+test('publish: the report goes to nourish-web-report; the old address only redirects there', async () => {
+  const {PROJECT, OLD_PROJECT, REPORT_URL, stageRedirect} = await import('../monitoring/daily-report/publish.mjs');
+  assert.equal(PROJECT, 'nourish-web-report'); assert.equal(REPORT_URL, 'https://nourish-web-report.pages.dev/'); assert.equal(OLD_PROJECT, 'nourish-visual-report');
+  const out = stageRedirect(path.join(os.tmpdir(), 'nourish-redirect-' + process.pid));
+  assert.deepEqual(fs.readdirSync(out).sort(), ['_headers', '_redirects', 'index.html']);
+  assert.equal(fs.readFileSync(path.join(out, '_redirects'), 'utf8'), '/* https://nourish-web-report.pages.dev/:splat 301\n');
+  assert.match(fs.readFileSync(path.join(out, '_headers'), 'utf8'), /noindex/);
 });

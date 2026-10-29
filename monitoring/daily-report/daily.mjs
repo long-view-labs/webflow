@@ -6,7 +6,7 @@
 //   node monitoring/daily-report/daily.mjs            scheduled: at most one completed run per PT day
 //   node monitoring/daily-report/daily.mjs --now      run regardless of today's run
 //   --no-slack     skip the post (prints it, and whether it would have posted)
-//   --no-publish   don't update nourish-visual-report.pages.dev
+//   --no-publish   don't update nourish-web-report.pages.dev
 import fs from 'node:fs';
 import path from 'node:path';
 import {spawn, execFileSync} from 'node:child_process';
@@ -22,7 +22,7 @@ const REPO = path.resolve(HERE, '../..');
 const STORE = process.env.NOURISH_DAILY_DIR || path.join(REPO, 'monitoring-local/daily-report');
 const RUNS = path.join(STORE, 'runs');
 const STATE = path.join(STORE, 'state.json');
-const TIMEOUT_MS = 120 * 60 * 1000; // 86 page states, repeat captures, nav + form checks, 86 Lighthouse loads
+const TIMEOUT_MS = 150 * 60 * 1000; // 86 page states, repeat captures, nav + form checks, 3 × 86 Lighthouse loads
 const RETAIN_RUNS = 30;
 const RETAIN_BYTES = 2 * 1024 ** 3;
 

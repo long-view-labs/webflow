@@ -14,7 +14,8 @@ import {checkForms} from './form-check.mjs';
 import {summarizeMonitor, eventVolumes} from './tracking.mjs';
 import {renderNourishReport, renderNourishComparison} from './render.mjs';
 import {renderDetailPage} from './detail-page.mjs';
-import {labCases, measureLab, labRow, buildPerformance, nourishLaunch, performanceArea} from './performance.mjs';
+import {labCases, measureLab, medianRun, LAB_RUNS, labRow, buildPerformance, nourishLaunch, performanceArea} from './performance.mjs';
+import {fetchPageAnalytics} from './page-analytics.mjs';
 import {applyExpectedNoindex, applyKnownErrors, combineInteraction} from './summary.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -23,8 +24,9 @@ const REPO = path.resolve(HERE, '../..');
 export const SITES = [['core', 'pages/core.json'], ['paid', 'pages/paid.json'], ['landing', 'pages/landing.json']].map(([name, f]) => [name, path.join(HERE, f)]);
 export const STORE = process.env.NOURISH_DAILY_DIR || path.join(REPO, 'monitoring-local/daily-report');
 const MONITOR_DIR = process.env.TRACKING_MONITOR_DIR || path.join(REPO, 'monitoring-local');
-// 86 Lighthouse loads at roughly 10 s each; the coordinator allows 120 minutes for the whole run.
-const PERF_BUDGET_SECONDS = Number(process.env.NOURISH_PERF_BUDGET_SECONDS) || 1800;
+// 86 page states × LAB_RUNS (3) Lighthouse loads at roughly 10 s each; the coordinator allows 150
+// minutes for the whole run.
+const PERF_BUDGET_SECONDS = Number(process.env.NOURISH_PERF_BUDGET_SECONDS) || 3600;
 
 const {runChecks} = await checker('src/runner.mjs');
 const {readJson, writeJson, selectCases} = await checker('src/model.mjs');
@@ -125,13 +127,13 @@ async function main() {
     const cases = labCases(sets), rows = [], begin = Date.now();
     for (const c of cases) {
       if ((Date.now() - begin) / 1000 > PERF_BUDGET_SECONDS) { rows.push(labRow({pageId: c.pageId, viewport: c.viewport.id, status: 'skipped', error: 'performance time budget used'})); continue; }
-      console.log(`Lab performance ${c.pageId} ${c.viewport.id}`);
-      let r;
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        r = await measureLab(c, root);
-        if (r.status === 'measured' && Number.isFinite(r.score)) break;
-      }
-      rows.push(labRow({pageId: c.pageId, viewport: c.viewport.id, ...r}));
+      console.log(`Lab performance ${c.pageId} ${c.viewport.id} (${LAB_RUNS} loads, median kept)`);
+      const loads = [];
+      for (let i = 0; i < LAB_RUNS; i++) loads.push(await measureLab(c, root));
+      // One extra attempt when no load scored, as before.
+      if (!loads.some((l) => l.status === 'measured' && Number.isFinite(l.score))) loads.push(await measureLab(c, root));
+      const r = medianRun(loads);
+      rows.push({...labRow({pageId: c.pageId, viewport: c.viewport.id, ...r}), runs: r.runs, spread: r.spread});
       report.performance = {rows, partial: true};
       await save();
     }
@@ -151,6 +153,14 @@ async function main() {
     const {dashboardLinks} = await siteAudit('src/daily/charts.mjs');
     report.dashboardLinks = dashboardLinks(siteConfig('nourish'));
   } catch (e) { report.areas = [performanceArea(report.performance)]; report.errors.push('site-audit areas: ' + e.message); }
+
+  // Per-page Amplitude numbers (page cards and detail pages). Never fails the run; without the
+  // Keychain key the cards say so.
+  try {
+    const pageUrls = Object.fromEntries(sets.flatMap((s) => s.site.pages.map((p) => [p.id, p.url])));
+    report.pageAnalytics = await fetchPageAnalytics({pageUrls});
+  } catch (e) { report.pageAnalytics = {status: 'unavailable', reason: String(e.message).split('\n')[0].slice(0, 120), days: [], pages: {}}; }
+  await save();
 
   report.finishedAt = new Date().toISOString();
   report.previousCandidates = {status: previousRoot ? 'comparison-attempted' : 'first-run-no-previous-candidates', rows: []};

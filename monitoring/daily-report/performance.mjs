@@ -77,6 +77,35 @@ export async function measureLab(c, runDir, {measure = measurePerformance, launc
   return {...r, analyticsRequests};
 }
 
+// Lighthouse on this site moves 10+ points between identical loads, so each page and viewport is
+// loaded LAB_RUNS times and the report keeps the median (scores, LCP, CLS, TBT). The score drop rule
+// and the 7-day strip then compare medians, not single loads.
+export const LAB_RUNS = Math.max(1, Number(process.env.NOURISH_PERF_RUNS) || 3);
+export function median(values) {
+  const v = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!v.length) return null;
+  const m = Math.floor(v.length / 2);
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+}
+// Combines one page+viewport's loads into one result. Every load with a network log counts toward
+// the leak proof (a leak in any load is a leak); a load that threw before writing a log is ignored
+// when another load is verified, as a failed first attempt was before. No measured load: the last
+// failure is returned as is.
+export function medianRun(runs) {
+  const measured = runs.filter((r) => r.status === 'measured' && Number.isFinite(r.score));
+  const counts = runs.map((r) => r.analyticsRequests).filter(Number.isFinite);
+  const analyticsRequests = counts.length ? counts.reduce((a, b) => a + b, 0) : null;
+  if (!measured.length) return {...runs.at(-1), analyticsRequests, runs: 0, spread: null};
+  const pick = (f) => median(measured.map(f));
+  const keys = Object.keys(measured[0].scores ?? {});
+  const metricKeys = Object.keys(measured[0].metrics ?? {});
+  const scores = measured.map((r) => r.score);
+  return {...measured.at(-1), status: 'measured', score: pick((r) => r.score),
+    scores: Object.fromEntries(keys.map((k) => [k, pick((r) => r.scores?.[k])])),
+    metrics: Object.fromEntries(metricKeys.map((k) => [k, pick((r) => r.metrics?.[k])])),
+    analyticsRequests, runs: measured.length, spread: [Math.round(Math.min(...scores)), Math.round(Math.max(...scores))]};
+}
+
 // Readable page names for Slack and the detail pages (config ids stay in report.json).
 const NAMES = {home: 'Home', 'insurance-coverage': 'Insurance coverage', refer: 'Refer', 'become-a-dietitian': 'Become a dietitian', about: 'About',
   outcomes: 'Outcomes', employers: 'Employers', 'for-health-plans': 'For health plans', 'health-systems': 'Health systems', careers: 'Careers', blog: 'Blog',
