@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.6] - 2026-10-29
+
+Control Experiment Viewed events for lp-weight-concerns-b now carry keyword_group, set to the group the visitor's utm_term resolved to. Variant events are unchanged. Both arms can now be compared by keyword_group for traffic after this release. Routing, eligibility, buckets and 50/50 allocation are unchanged. Validated with 78 offline routing tests; no production analytics events sent.
+
 ## [2.623.5] - 2026-10-28
 
 Exclude missing or unmatched utm_term visits from lp-weight-concerns-b before assignment or exposure. Keep those visits on /landing-page/weight-concerns, returning legacy variant-page visits there with their query string and hash intact. Preserve the seven keyword groups, existing buckets for eligible visits, 50/50 allocation, and current event properties. Update only the experiment loader stubs. Validated with 78 offline routing tests; no production analytics events sent.

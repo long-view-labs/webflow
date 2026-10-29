@@ -129,7 +129,7 @@ for (const [group, term] of Object.entries(groups)) {
     assert.deepEqual(result.redirects, []);
     assert.deepEqual(result.events, [['Experiment Viewed', {
       experiment_name: 'lp-weight-concerns-b', variation: 'control', landing_page: CONTROL,
-      keyword_group: null, utm_term: term,
+      keyword_group: group, utm_term: term,
     }]]);
     result.runAgain();
     assert.equal(result.events.length, 1);

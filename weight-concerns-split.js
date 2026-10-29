@@ -42,6 +42,8 @@
 // Event (RudderStack -> Amplitude):
 //   Experiment Viewed { experiment_name, variation, landing_page,
 //                       keyword_group, utm_term }
+//   keyword_group is the resolved group on both arms (path on variant pages,
+//   utm_term match on control).
 (function () {
   if (window.__wcSplitRan) return;
   window.__wcSplitRan = true;
@@ -388,9 +390,11 @@
   }
 
   // --- event properties ---
+  // Control reports the group its utm_term resolved to, so both arms can be
+  // broken down by keyword_group.
   function keywordGroup() {
     if (onVariantGroup) return path.slice(VARIANT_GROUP_PREFIX.length).split("/")[0] || null;
-    return null;
+    return result.slug || null;
   }
   function track(variation) {
     var props = {
