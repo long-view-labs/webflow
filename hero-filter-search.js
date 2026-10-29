@@ -2240,6 +2240,55 @@ $(function () {
     }, 80);
   }
 
+  // Signup prefill that must stay out of the DOM. The values live in jQuery
+  // data (not attributes); the CTA only carries yes/no flags, which global.js
+  // reports as has_first_name / has_last_name / has_birthday.
+  var PRIVATE_PREFILL_FLAGS = {
+    firstName: "data-prefill-first-name",
+    lastName: "data-prefill-last-name",
+    patientBirthday: "data-prefill-birthday",
+  };
+
+  function setPrivatePrefill($cta, privateParams) {
+    $cta.data("nourishPrivatePrefill", privateParams.toString());
+    Object.keys(PRIVATE_PREFILL_FLAGS).forEach(function (key) {
+      $cta.attr(PRIVATE_PREFILL_FLAGS[key], privateParams.has(key) ? "true" : "false");
+    });
+    bindPrivatePrefill($cta);
+  }
+
+  // Adds the private prefill only at navigation. Runs before the delegated
+  // document handlers (global.js tracking, pixels), which therefore see the
+  // clean href; navigation waits one tick so their href edits (variation,
+  // https upgrade) are kept. Modified clicks open the clean href.
+  function bindPrivatePrefill($cta) {
+    if ($cta.data("nourishPrivatePrefillBound")) return;
+    $cta.data("nourishPrivatePrefillBound", true);
+    $cta.on("click", function (e) {
+      var extra = $(this).data("nourishPrivatePrefill");
+      if (!extra || e.isDefaultPrevented()) return;
+      if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var link = this;
+      e.preventDefault();
+      setTimeout(function () {
+        var url;
+        try {
+          url = new URL(link.href, window.location.origin);
+        } catch (err) {
+          return;
+        }
+        new URLSearchParams(extra).forEach(function (value, key) {
+          url.searchParams.set(key, value);
+        });
+        if (link.target === "_blank") {
+          window.open(url.toString(), "_blank", "noopener");
+        } else {
+          window.location.assign(url.toString());
+        }
+      }, 0);
+    });
+  }
+
   function updateWidgetCTA($widget) {
     if (!$widget || !$widget.length) return;
 
@@ -2295,21 +2344,25 @@ $(function () {
       params.append("state", normalizeStateForSignup(selectedState));
     }
 
+    // Name and DOB prefill never go on the href: analytics, ad pixels and
+    // anything else reading links on the page would see them. They are kept
+    // off-DOM and added only when the click navigates (see bindPrivatePrefill).
+    var privateParams = new URLSearchParams();
     if (isInsuranceCheck) {
       window.InsuranceSearchInput = true;
       var firstName = findLocal($widget, "#first-name").val();
       if (firstName) {
-        params.append("firstName", firstName);
+        privateParams.append("firstName", firstName);
       }
       var lastName = findLocal($widget, "#last-name").val();
       if (lastName) {
-        params.append("lastName", lastName);
+        privateParams.append("lastName", lastName);
       }
       var dob = findLocal($widget, "#dob").val();
       if (dob && dob.length === 10) {
         var convertedDOB = convertDOBForQuery(dob);
         if (convertedDOB) {
-          params.append("patientBirthday", convertedDOB);
+          privateParams.append("patientBirthday", convertedDOB);
         }
       }
     } else {
@@ -2350,6 +2403,7 @@ $(function () {
         } catch (e) {}
       }
       $cta.attr("href", ctaBaseUrl + "?" + merged.toString());
+      setPrivatePrefill($cta, privateParams);
     }
 
     var $cta = findWidgetCTA($widget);

@@ -1279,6 +1279,32 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     return (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 120) || null;
   }
 
+  // Signup prefill that must never reach analytics or pixels. The hero widget
+  // keeps these off the href and marks the CTA with data-prefill-* flags; any
+  // that still arrive on a link (older widget builds, hand-built links) are
+  // stripped from the event url. Only filled / not filled is reported.
+  var PRIVATE_PREFILL = [
+    ["firstName", "data-prefill-first-name", "has_first_name"],
+    ["lastName", "data-prefill-last-name", "has_last_name"],
+    ["patientBirthday", "data-prefill-birthday", "has_birthday"]
+  ];
+
+  function privatePrefill(el, href, u) {
+    var clean = new URL(u.toString());
+    var stripped = false;
+    var flags = null;
+    PRIVATE_PREFILL.forEach(function (f) {
+      var onLink = clean.searchParams.has(f[0]);
+      var marked = el.getAttribute(f[1]);
+      if (onLink) { clean.searchParams.delete(f[0]); stripped = true; }
+      if (onLink || marked !== null) {
+        flags = flags || {};
+        flags[f[2]] = onLink || marked === "true";
+      }
+    });
+    return { url: stripped ? clean.toString() : href || null, flags: flags };
+  }
+
   function track(el, href, eventName, extraProps) {
     if (!window.rudderanalytics || typeof window.rudderanalytics.track !== "function") return;
     var u = safeURL(href);
@@ -1291,16 +1317,18 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     var version = el.getAttribute("data-cta-version");
     var legacyElement = el.getAttribute("data-cta") || (el.id ? "#" + el.id : null) ||
       (el.className ? "." + String(el.className).trim().split(/\s+/).join(".") : el.tagName.toLowerCase());
+    var prefill = privatePrefill(el, href, u);
     var payload = {
       location: window.location.pathname || "/", element: legacyElement, "cta copy": eventName === "Dietitian Apply Clicked" ? cta.name : ctaCopy(el),
-      // url is the full clicked link, as before 2.622.0: charts filter on it
+      // url is the clicked link minus name/DOB prefill: charts filter on it
       // (UTM Passthrough Rate: url contains utm_source=).
-      url: href || null, deviceType: deviceType(), cta_id: cta.id,
+      url: prefill.url, deviceType: deviceType(), cta_id: cta.id,
       cta_name: cta.name, cta_section: cta.section,
       cta_action: CTA_ACTION_NAMES[cta.action] || cta.action, cta_version: CTA_VERSION.test(version || "") ? version : cta.version,
       page_path: window.location.pathname || "/", destination_host: u.hostname,
       destination_path: u.pathname
     };
+    if (prefill.flags) Object.assign(payload, prefill.flags);
     var vp = getVariationParams(window.location.pathname);
     if (vp) payload.landingPageVariation = vp.landingPageVariation;
     if (vp && vp.variationName) payload.variationName = vp.variationName;
