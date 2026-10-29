@@ -14,7 +14,7 @@ import {checkForms} from './form-check.mjs';
 import {summarizeMonitor, eventVolumes} from './tracking.mjs';
 import {renderNourishReport, renderNourishComparison} from './render.mjs';
 import {renderDetailPage} from './detail-page.mjs';
-import {labCases, measureLab, medianRun, LAB_RUNS, labRow, buildPerformance, nourishLaunch, performanceArea} from './performance.mjs';
+import {labCases, measureLab, medianRun, LAB_RUNS, labRow, buildPerformance, performanceArea} from './performance.mjs';
 import {fetchPageAnalytics} from './page-analytics.mjs';
 import {applyExpectedNoindex, applyKnownErrors, combineInteraction} from './summary.mjs';
 
@@ -30,7 +30,7 @@ const PERF_BUDGET_SECONDS = Number(process.env.NOURISH_PERF_BUDGET_SECONDS) || 3
 
 const {runChecks} = await checker('src/runner.mjs');
 const {readJson, writeJson, selectCases} = await checker('src/model.mjs');
-const {protectPage} = await checker('src/browser.mjs');
+const {browserOptions, protectPage} = await checker('src/browser.mjs');
 const {buildConfig, executeVisual} = await checker('src/adapter/backstop.mjs');
 const {compareCandidateImages, VISUAL_CHANGE_PERCENT} = await checker('src/candidate-diff.mjs');
 const {healthSignature, newHealthFindings, classifyOutcome} = await checker('src/daily-outcome.mjs');
@@ -77,7 +77,7 @@ async function main() {
       for (const c of captured) { const res = run.results.find((r) => r.key === c.key); await fs.copyFile(res.visual.image, path.join(refs, path.basename(res.visual.image))); }
       const rows = run.results.filter((r) => r.visual.measurementStatus !== 'captured').map((r) => ({key: r.key, capture: 'initial-capture-failed', mismatchPercent: null}));
       if (captured.length) {
-        const config = buildConfig({site, cases: captured, runDir: dir, baselineDir: refs, launch: nourishLaunch()});
+        const config = buildConfig({site, cases: captured, runDir: dir, baselineDir: refs, launch: browserOptions()});
         const raw = await executeVisual(config);
         for (const c of captured) {
           const t = raw.report?.tests?.find((t) => t.pair.label === c.key);
@@ -91,8 +91,12 @@ async function main() {
 
     let browser;
     try {
-      // The checker's protection plus Nourish's own unresolvable analytics hosts (performance.mjs).
-      browser = await chromium.launch(nourishLaunch());
+      // The checker's own launch options, the same as the primary captures (runChecks) and the repeat
+      // capture: its analytics hosts are unresolvable, protectPage aborts every non-GET request and
+      // drops beacons, and nav-check's extraBlock aborts the RudderStack dataplane proxy. Nourish's
+      // wider host list (performance.mjs) is for Lighthouse only, which has no request routing; using
+      // it here would let the page under test resolve a different Statsig variant from the captured one.
+      browser = await chromium.launch(browserOptions());
       for (const c of cases) {
         const page = site.pages.find((p) => p.id === c.pageId);
         const nav = await checkNav(browser, {url: c.url, viewport: c.viewport, nav: page.nav}, {protectPage});

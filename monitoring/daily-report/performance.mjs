@@ -33,6 +33,13 @@ export const NOURISH_ANALYTICS_HOSTS = [
   'jssdk-proxy.nourish.com', 'jssdk-proxy.usenourish.com',
   'featureassets.org', '*.featureassets.org', 'prodregistryv2.org', '*.prodregistryv2.org', 'statsigapi.net', '*.statsigapi.net',
   'statsigcdn.com', '*.statsigcdn.com', '*.statsig.com', 'cloudflare-dns.com',
+  // Answered in the first lab run (Oct 29 2026): Intercom's messenger ping registers a visitor
+  // session, Cloudflare Web Analytics beacons pageviews, Sentry receives error events.
+  '*.intercom.io', '*.intercomcdn.com', 'cloudflareinsights.com', '*.cloudflareinsights.com', '*.sentry.io',
+  // /become-a-dietitian (Oct 29 2026): posts client performance metrics to Axiom, and runs a second
+  // Statsig client through a self-hosted proxy on this Lambda function URL (/v1/initialize?k=client-…),
+  // which would also receive that client's event logging.
+  '*.axiom.co', '5b67j7hp7hvv5wbh7jzzdxardy0crlkc.lambda-url.us-east-2.on.aws',
   'snap.licdn.com', 'analytics.tiktok.com', '*.googletagmanager.com',
 ];
 export const BLOCKED_HOSTS = [...ANALYTICS_HOSTS, ...NOURISH_ANALYTICS_HOSTS];
@@ -44,8 +51,9 @@ export function isNourishAnalyticsRequest(url) {
   return NOURISH_ANALYTICS_HOSTS.some((p) => hostMatches(u.hostname, p));
 }
 export const hostResolverFlag = (hosts = BLOCKED_HOSTS) => `--host-resolver-rules=${hosts.map((h) => `MAP ${h} ~NOTFOUND`).join(', ')}`;
-// Chrome launch options for Nourish's own browsers (nav/form checks, Lighthouse): the checker's
+// Chrome launch options for the Lighthouse run, which has no request routing: the checker's
 // executable and headless flags with the extended unresolvable-host list in place of its own.
+// The capture, repeat, nav and form browsers keep the checker's own options (see worker.mjs).
 export function nourishLaunch(base = browserOptions()) {
   return {...base, args: [...(base.args ?? []).filter((a) => !a.startsWith('--host-resolver-rules=')), hostResolverFlag()]};
 }

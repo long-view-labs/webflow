@@ -229,7 +229,7 @@ test('lab: every Nourish page on both viewports, with the analytics hosts the li
   assert.ok(cases.every((c) => c.url.startsWith('https://www.nourish.com/') && ['desktop', 'mobile'].includes(c.viewport.id)));
   assert.ok(!cases.some((c) => /dietitian-application/.test(c.url)));
   const flag = hostResolverFlag();
-  for (const h of ['dataplane-proxy.usenourish.com', 'dataplane-proxy.nourish.com', 'jssdk-proxy.usenourish.com', 'jssdk-proxy.nourish.com', 'prodregistryv2.org', '*.prodregistryv2.org', 'featureassets.org', 'statsigapi.net', 'cloudflare-dns.com', '*.amplitude.com', '*.rudderstack.com', 'px.ads.linkedin.com', 'bat.bing.com', '*.posthog.com'])
+  for (const h of ['dataplane-proxy.usenourish.com', 'dataplane-proxy.nourish.com', 'jssdk-proxy.usenourish.com', 'jssdk-proxy.nourish.com', 'prodregistryv2.org', '*.prodregistryv2.org', 'featureassets.org', 'statsigapi.net', 'cloudflare-dns.com', '*.intercom.io', 'cloudflareinsights.com', '*.sentry.io', '*.axiom.co', '5b67j7hp7hvv5wbh7jzzdxardy0crlkc.lambda-url.us-east-2.on.aws', '*.amplitude.com', '*.rudderstack.com', 'px.ads.linkedin.com', 'bat.bing.com', '*.posthog.com'])
     assert.ok(flag.includes(`MAP ${h} ~NOTFOUND`), h);
   const launch = nourishLaunch({executablePath: '/x', headless: true, args: ['--host-resolver-rules=MAP *.posthog.com ~NOTFOUND', '--other']});
   assert.deepEqual(launch.args, ['--other', flag]);
@@ -237,7 +237,7 @@ test('lab: every Nourish page on both viewports, with the analytics hosts the li
 });
 
 test('lab: answered requests to Nourish or shared analytics hosts count as leaks; blocked ones do not', () => {
-  for (const u of ['https://dataplane-proxy.usenourish.com/v1/batch', 'https://jssdk-proxy.nourish.com/v3/modern/rsa.min.js', 'https://prodregistryv2.org/v1/rgstr', 'https://featureassets.org/v1/initialize', 'https://cloudflare-dns.com/dns-query?name=featureassets.org', 'https://api2.amplitude.com/2/httpapi', 'https://px.ads.linkedin.com/collect/?pid=1', 'https://us.i.posthog.com/e/', 'https://www.google-analytics.com/g/collect'])
+  for (const u of ['https://dataplane-proxy.usenourish.com/v1/batch', 'https://jssdk-proxy.nourish.com/v3/modern/rsa.min.js', 'https://prodregistryv2.org/v1/rgstr', 'https://featureassets.org/v1/initialize', 'https://cloudflare-dns.com/dns-query?name=featureassets.org', 'https://api-iam.intercom.io/messenger/web/ping', 'https://cloudflareinsights.com/cdn-cgi/rum', 'https://o4505229715963904.ingest.sentry.io/api/1/envelope/', 'https://api.axiom.co/v1/datasets/client-performance/ingest', 'https://5b67j7hp7hvv5wbh7jzzdxardy0crlkc.lambda-url.us-east-2.on.aws/v1/initialize?k=x', 'https://api2.amplitude.com/2/httpapi', 'https://px.ads.linkedin.com/collect/?pid=1', 'https://us.i.posthog.com/e/', 'https://www.google-analytics.com/g/collect'])
     assert.ok(isNourishAnalyticsRequest(u), u);
   for (const u of ['https://www.nourish.com/paid', 'https://cdn.prod.website-files.com/x.css', 'https://cdn.jsdelivr.net/npm/statsig-sidecar/dist/index.min.js', 'https://cdn.cookielaw.org/scripttemplates/otSDKStub.js', 'not a url'])
     assert.ok(!isNourishAnalyticsRequest(u), u);
