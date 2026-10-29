@@ -187,7 +187,7 @@ export function renderDailyMessage(n) {
   const cap = one('Capture');
   if (cap) lines.push(`❌ *Not captured:* ${cap.caseIds?.length ? list(cap.caseIds) : safeText(cap.summary)}`);
   const ch = one('Changed');
-  if (ch) lines.push(`🔍 *Changed:* ${ch.caseIds?.length ? list(ch.caseIds) : `${changes} pages (see report)`}`);
+  if (ch) lines.push(`🔍 *Changed:* ${ch.caseIds?.length ? list(ch.caseIds) : `${changes} visual change${changes === 1 ? '' : 's'} (see report)`}`);
   const ni = one('New issues');
   if (ni) lines.push(`🩺 *New issues:* ${ni.caseIds?.length ? list(ni.caseIds) : `${issues} (see report)`}`);
   const so = one('Still open');
