@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.7] - 2026-10-29
+
+Keep signup prefill out of analytics and ad pixels. The hero insurance widget no longer writes firstName, lastName, patientBirthday, nourishPayerId or planName onto the signup link; they are added only when the click navigates, so signup prefill still works. Get Started Clicked reports has_first_name, has_last_name, has_birthday and has_insurance instead, and its url no longer carries those params (stripped even if an older widget build adds them). UTMs, gclid and the Google linker are unchanged. footer.js now loads hero-filter-search.js, timed-tabs.js and navbar.js from this tag (no other code changes). Validated with 287 offline tests, the UTM handoff monitor (20/20, intercepted) and a live intercepted probe; no production analytics events sent.
+
 ## [2.623.6] - 2026-10-29
 
 Control Experiment Viewed events for lp-weight-concerns-b now carry keyword_group, set to the group the visitor's utm_term resolved to. Variant events are unchanged. Both arms can now be compared by keyword_group for traffic after this release. Routing, eligibility, buckets and 50/50 allocation are unchanged. Validated with 78 offline routing tests; no production analytics events sent.
