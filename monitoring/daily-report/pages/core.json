@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 1,
+  "client": {
+    "id": "nourish",
+    "name": "Nourish"
+  },
+  "id": "core",
+  "allowedHosts": [
+    "www.nourish.com"
+  ],
+  "firstPartyAssetHosts": [
+    "www.nourish.com",
+    "cdn.prod.website-files.com",
+    "cdn.website-files.com",
+    "cdn.jsdelivr.net",
+    "d3e54v103j8qbb.cloudfront.net",
+    "jssdk-proxy.nourish.com"
+  ],
+  "nonVisualAssetPaths": [
+    "\\.mp4$",
+    "\\.webm$"
+  ],
+  "viewports": [
+    {
+      "id": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "id": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "selectors": {},
+  "knownErrors": [
+    {
+      "message": "Cannot read properties of null (reading 'querySelectorAll')",
+      "script": "videsigns/webflow-tools",
+      "reason": "multi-step.js setup self-check expects data-form=\"multistep\"; the quiz still works (walked by the form check)"
+    }
+  ],
+  "pages": [
+    {
+      "id": "home",
+      "url": "https://www.nourish.com/",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "insurance-coverage",
+      "url": "https://www.nourish.com/does-my-insurance-cover-nutrition",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      },
+      "requiredContent": [
+        {
+          "selector": "h2",
+          "textRequired": true
+        },
+        {
+          "selector": "#wf-form-Insurance-Check",
+          "textRequired": false
+        }
+      ]
+    },
+    {
+      "id": "refer",
+      "url": "https://www.nourish.com/refer",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "become-a-dietitian",
+      "url": "https://www.nourish.com/become-a-dietitian",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "about",
+      "url": "https://www.nourish.com/about",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "outcomes",
+      "url": "https://www.nourish.com/outcomes",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "employers",
+      "url": "https://www.nourish.com/employers",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "for-health-plans",
+      "url": "https://www.nourish.com/for-health-plans",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "health-systems",
+      "url": "https://www.nourish.com/health-systems",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "careers",
+      "url": "https://www.nourish.com/careers",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "blog",
+      "url": "https://www.nourish.com/blog",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "faq",
+      "url": "https://www.nourish.com/faq",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "condition-acid-reflux",
+      "url": "https://www.nourish.com/conditions/acid-reflux",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "local-dietitians-akron",
+      "url": "https://www.nourish.com/local-dietitians/akron-ohio",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "insurance-aetna",
+      "url": "https://www.nourish.com/insurance-dietitians/aetna",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "blog-post",
+      "url": "https://www.nourish.com/blog/10-basic-cooking-skills-everyone-should-know",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "main"
+      }
+    },
+    {
+      "id": "partner-nurx",
+      "url": "https://www.nourish.com/partners/nurx",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "burger"
+      },
+      "expectNoindex": true,
+      "maskSelectors": [
+        ".condition-hero_image"
+      ]
+    }
+  ]
+}

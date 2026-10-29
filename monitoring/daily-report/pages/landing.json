@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "client": {
+    "id": "nourish",
+    "name": "Nourish"
+  },
+  "id": "landing",
+  "allowedHosts": [
+    "www.nourish.com"
+  ],
+  "firstPartyAssetHosts": [
+    "www.nourish.com",
+    "cdn.prod.website-files.com",
+    "cdn.website-files.com",
+    "cdn.jsdelivr.net",
+    "d3e54v103j8qbb.cloudfront.net",
+    "jssdk-proxy.nourish.com"
+  ],
+  "nonVisualAssetPaths": [
+    "\\.mp4$",
+    "\\.webm$"
+  ],
+  "viewports": [
+    {
+      "id": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "id": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "selectors": {},
+  "knownErrors": [
+    {
+      "message": "Cannot read properties of null (reading 'querySelectorAll')",
+      "script": "videsigns/webflow-tools",
+      "reason": "multi-step.js setup self-check expects data-form=\"multistep\"; the quiz still works (walked by the form check)"
+    }
+  ],
+  "pages": [
+    {
+      "id": "landing-meal-planning",
+      "url": "https://www.nourish.com/landing-pages/meal-planning",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-glp-1s",
+      "url": "https://www.nourish.com/landing-pages/glp-1s",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-pcos-b",
+      "url": "https://www.nourish.com/landing-pages/pcos-b",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-gut-health-b",
+      "url": "https://www.nourish.com/landing-pages/gut-health-b",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-online-sports-nutritionist-b",
+      "url": "https://www.nourish.com/landing-pages/online-sports-nutritionist-b",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-menopause-b",
+      "url": "https://www.nourish.com/landing-pages/menopause-b",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-fitness-health",
+      "url": "https://www.nourish.com/landing-pages/fitness-health",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-intuitive-eating",
+      "url": "https://www.nourish.com/landing-pages/intuitive-eating",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-anti-inflammatory",
+      "url": "https://www.nourish.com/landing-pages/anti-inflammatory",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "landing-mediterranean-diet",
+      "url": "https://www.nourish.com/landing-pages/mediterranean-diet",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "ad-binge-eating-disorder-treatment",
+      "url": "https://www.nourish.com/landing/binge-eating-disorder-treatment",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      },
+      "expectNoindex": true
+    },
+    {
+      "id": "ad-eating-disorder-therapist",
+      "url": "https://www.nourish.com/landing/eating-disorder-therapist",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      },
+      "expectNoindex": true
+    },
+    {
+      "id": "ad-ibd-nutritionist",
+      "url": "https://www.nourish.com/landing/ibd-nutritionist",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      },
+      "expectNoindex": true
+    },
+    {
+      "id": "ad-nutrition-for-diabetes",
+      "url": "https://www.nourish.com/landing/nutrition-for-diabetes",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      },
+      "expectNoindex": true,
+      "requiredContent": [
+        {
+          "selector": "h2",
+          "textRequired": true
+        }
+      ]
+    },
+    {
+      "id": "ad-nutritionists-for-ibs",
+      "url": "https://www.nourish.com/landing/nutritionists-for-ibs",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      },
+      "expectNoindex": true
+    }
+  ]
+}

@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "client": {
+    "id": "nourish",
+    "name": "Nourish"
+  },
+  "id": "paid",
+  "allowedHosts": [
+    "www.nourish.com"
+  ],
+  "firstPartyAssetHosts": [
+    "www.nourish.com",
+    "cdn.prod.website-files.com",
+    "cdn.website-files.com",
+    "cdn.jsdelivr.net",
+    "d3e54v103j8qbb.cloudfront.net",
+    "jssdk-proxy.nourish.com"
+  ],
+  "nonVisualAssetPaths": [
+    "\\.mp4$",
+    "\\.webm$"
+  ],
+  "viewports": [
+    {
+      "id": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "id": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "selectors": {},
+  "knownErrors": [
+    {
+      "message": "Cannot read properties of null (reading 'querySelectorAll')",
+      "script": "videsigns/webflow-tools",
+      "reason": "multi-step.js setup self-check expects data-form=\"multistep\"; the quiz still works (walked by the form check)"
+    }
+  ],
+  "pages": [
+    {
+      "id": "paid",
+      "url": "https://www.nourish.com/paid",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "requiredContent": [
+        {
+          "selector": "h1",
+          "textRequired": true
+        },
+        {
+          "selector": "a[href*=\"signup.nourish.com\"]",
+          "textRequired": false
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paid-b",
+      "url": "https://www.nourish.com/paid-b",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paid-c",
+      "url": "https://www.nourish.com/paid-c",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paid-google",
+      "url": "https://www.nourish.com/paid-google",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "requiredContent": [
+        {
+          "selector": "h1",
+          "textRequired": true
+        },
+        {
+          "selector": "a[href*=\"signup.nourish.com\"]",
+          "textRequired": false
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paid-labs",
+      "url": "https://www.nourish.com/paid-labs",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "requiredContent": [
+        {
+          "selector": "h1",
+          "textRequired": true
+        },
+        {
+          "selector": "a[href*=\"signup.nourish.com\"]",
+          "textRequired": false
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paid-outcome",
+      "url": "https://www.nourish.com/paid-outcome",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paid-qa",
+      "url": "https://www.nourish.com/paid-qa",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paid-quiz",
+      "url": "https://www.nourish.com/paid-quiz",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paid-sp",
+      "url": "https://www.nourish.com/paid-sp",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "paidwl",
+      "url": "https://www.nourish.com/paidwl",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      }
+    },
+    {
+      "id": "start",
+      "url": "https://www.nourish.com/start",
+      "smoke": true,
+      "templateId": "webflow-marketing",
+      "states": [
+        {
+          "id": "default",
+          "kind": "default"
+        }
+      ],
+      "nav": {
+        "kind": "minimal"
+      },
+      "expectNoindex": true
+    }
+  ]
+}
