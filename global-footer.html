@@ -1,3 +1,29 @@
+<!-- ===== multi-step.js placeholder =====
+     videsigns multi-step.js (quiz pages: /paid*, /quiz/*, /forbes) ends with
+     a "Formly Support" debug panel that requires form[data-form="multistep"]
+     and throws "Cannot read properties of null (reading 'querySelectorAll')"
+     without one. Our quiz forms use data-form="multi-step", and renaming them
+     would switch on vendor behaviour we don't want (container submit,
+     localStorage input saving, post-submit reset). This empty, hidden form
+     satisfies the debug check only: it has no inputs, never submits, and the
+     real quiz is untouched. Must run before multi-step.js, so it lives here
+     at the top of the site footer (page-level code loads the vendor later). -->
+<script>
+  (function () {
+    if (!document.querySelector('[data-form="step"]')) return;
+    if (document.querySelector('form[data-form="multistep"]')) return;
+    var f = document.createElement("form");
+    f.setAttribute("data-form", "multistep");
+    f.setAttribute("data-nourish-placeholder", "");
+    f.setAttribute("aria-hidden", "true");
+    f.hidden = true;
+    f.onsubmit = function () {
+      return false;
+    };
+    document.body.appendChild(f);
+  })();
+</script>
+
 <!-- =========================================================================
      GLOBAL FOOTER — LOADER STUB
      Paste into Webflow Site Settings -> Custom Code -> Footer.
