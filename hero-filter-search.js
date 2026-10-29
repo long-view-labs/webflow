@@ -2242,11 +2242,13 @@ $(function () {
 
   // Signup prefill that must stay out of the DOM. The values live in jQuery
   // data (not attributes); the CTA only carries yes/no flags, which global.js
-  // reports as has_first_name / has_last_name / has_birthday.
+  // reports as has_first_name / has_last_name / has_birthday / has_insurance.
+  // planName travels with the carrier and has no flag of its own.
   var PRIVATE_PREFILL_FLAGS = {
     firstName: "data-prefill-first-name",
     lastName: "data-prefill-last-name",
     patientBirthday: "data-prefill-birthday",
+    nourishPayerId: "data-prefill-insurance",
   };
 
   function setPrivatePrefill($cta, privateParams) {
@@ -2318,36 +2320,38 @@ $(function () {
       params.append("landingPageModuleType", landingPageModuleType);
     }
 
+    // Insurance, name and DOB prefill never go on the href: analytics, ad
+    // pixels and anything else reading links on the page would see them.
+    // They are kept off-DOM and added only when the click navigates (see
+    // bindPrivatePrefill).
+    var privateParams = new URLSearchParams();
+
     if (selectedInsurance) {
       var normalized = normalizeValue(selectedInsurance);
       if (normalized === "i'm paying for myself") {
-        params.append("nourishPayerId", -1);
+        privateParams.append("nourishPayerId", -1);
       } else if (normalized === "other") {
-        params.append("nourishPayerId", -2);
+        privateParams.append("nourishPayerId", -2);
       } else if (normalized === "my insurance is not listed") {
-        params.append("nourishPayerId", -3);
+        privateParams.append("nourishPayerId", -3);
       } else if (normalized === "i'll choose my insurance later") {
         // do not send nourishPayerId
       } else {
         var payerId = findPayerId(selectedInsurance);
         if (payerId) {
-          params.append("nourishPayerId", payerId);
+          privateParams.append("nourishPayerId", payerId);
         }
       }
     }
 
     if (selectedInsurancePlan) {
-      params.append("planName", selectedInsurancePlan);
+      privateParams.append("planName", selectedInsurancePlan);
     }
 
     if (selectedState) {
       params.append("state", normalizeStateForSignup(selectedState));
     }
 
-    // Name and DOB prefill never go on the href: analytics, ad pixels and
-    // anything else reading links on the page would see them. They are kept
-    // off-DOM and added only when the click navigates (see bindPrivatePrefill).
-    var privateParams = new URLSearchParams();
     if (isInsuranceCheck) {
       window.InsuranceSearchInput = true;
       var firstName = findLocal($widget, "#first-name").val();

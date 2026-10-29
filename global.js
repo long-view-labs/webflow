@@ -1279,14 +1279,17 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     return (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 120) || null;
   }
 
-  // Signup prefill that must never reach analytics or pixels. The hero widget
+  // Signup prefill (name, DOB, insurance) that must never reach analytics or
+  // pixels. The hero widget
   // keeps these off the href and marks the CTA with data-prefill-* flags; any
   // that still arrive on a link (older widget builds, hand-built links) are
   // stripped from the event url. Only filled / not filled is reported.
   var PRIVATE_PREFILL = [
     ["firstName", "data-prefill-first-name", "has_first_name"],
     ["lastName", "data-prefill-last-name", "has_last_name"],
-    ["patientBirthday", "data-prefill-birthday", "has_birthday"]
+    ["patientBirthday", "data-prefill-birthday", "has_birthday"],
+    ["nourishPayerId", "data-prefill-insurance", "has_insurance"],
+    ["planName", null, null] // travels with the carrier; stripped, no flag
   ];
 
   function privatePrefill(el, href, u) {
@@ -1295,9 +1298,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     var flags = null;
     PRIVATE_PREFILL.forEach(function (f) {
       var onLink = clean.searchParams.has(f[0]);
-      var marked = el.getAttribute(f[1]);
+      var marked = f[1] ? el.getAttribute(f[1]) : null;
       if (onLink) { clean.searchParams.delete(f[0]); stripped = true; }
-      if (onLink || marked !== null) {
+      if (f[2] && (onLink || marked !== null)) {
         flags = flags || {};
         flags[f[2]] = onLink || marked === "true";
       }

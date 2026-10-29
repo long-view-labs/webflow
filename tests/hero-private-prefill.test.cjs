@@ -11,7 +11,7 @@ const jquery = fs.readFileSync(process.env.NOURISH_JQUERY_PATH || require.resolv
 const hero = fs.readFileSync(path.join(__dirname, '../hero-filter-search.js'), 'utf8');
 const globalJs = fs.readFileSync(path.join(__dirname, '../global.js'), 'utf8');
 
-const PRIVATE = ['firstName', 'lastName', 'patientBirthday'];
+const PRIVATE = ['firstName', 'lastName', 'patientBirthday', 'nourishPayerId', 'planName'];
 
 async function setup({ first = 'Synthfirst', last = 'Synthlast', dob = '01/02/1990', target = '' } = {}) {
   const dom = new JSDOM(`<!doctype html><html><body>
@@ -52,6 +52,8 @@ test('name and DOB never appear on the CTA href or in the DOM', async () => {
     assert.equal(t.cta.getAttribute('data-prefill-first-name'), 'true');
     assert.equal(t.cta.getAttribute('data-prefill-last-name'), 'true');
     assert.equal(t.cta.getAttribute('data-prefill-birthday'), 'true');
+    assert.equal(t.cta.getAttribute('data-prefill-insurance'), 'false', 'no carrier picked');
+    assert.equal(href.searchParams.has('nourishPayerId'), false);
   } finally { t.close(); }
 });
 
@@ -87,6 +89,7 @@ test('empty fields: flags false, no interception, plain navigation', async () =>
     assert.equal(p.has_first_name, false);
     assert.equal(p.has_last_name, false);
     assert.equal(p.has_birthday, false);
+    assert.equal(p.has_insurance, false);
   } finally { t.close(); }
 });
 
