@@ -1,0 +1,671 @@
+<link href="https://fengyuanchen.github.io/datepicker/css/datepicker.css" rel="stylesheet" />
+<script src="https://fengyuanchen.github.io/datepicker/js/datepicker.js"></script>
+
+<script>
+  $(document).ready(function () {
+    var $dob = $('#dob-cal');
+
+    $dob.datepicker({
+      format: 'mm/dd/yyyy',
+      autoHide: true,
+      endDate: new Date(),
+      startView: 2,
+    });
+
+    $dob.on('focus click', function () {
+      $dob.datepicker('show');
+    });
+  });
+</script>
+
+<!-- =========================================================================
+     PASTE INTO: Webflow → Project/Page Settings → CUSTOM CODE → HEAD
+     ---------------------------------------------------------------------
+     `defer` = non-blocking download, GUARANTEED execution order, and all
+     three finish BEFORE DOMContentLoaded. This is what makes every
+     init below safe by construction. Do NOT use `async` here.
+========================================================================== -->
+<script defer src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+<!-- =========================================================================
+     PASTE INTO: Webflow → Settings → CUSTOM CODE → FOOTER (before </body>)
+     ---------------------------------------------------------------------
+     This block MUST come first — it defines the shared helpers every
+     other block uses.
+========================================================================== -->
+<script>
+  // Shared init helpers (global on purpose — every <script> below uses them)
+  function onReady(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+      fn();
+    }
+  }
+
+  // Polls `test` until truthy, then runs `cb`. Resolves instantly when the
+  // dependency is already present (the normal case with defer). The retries
+  // are insurance for anything that loads on its own clock (e.g. Slater).
+  function waitFor(test, cb, tries) {
+    tries = tries == null ? 100 : tries; // 100 * 50ms = 5s ceiling
+    if (test()) return cb();
+    if (tries <= 0) {
+      console.warn('[init] dependency never appeared:', test.toString());
+      return;
+    }
+    setTimeout(function () {
+      waitFor(test, cb, tries - 1);
+    }, 50);
+  }
+
+  var hasGsap = function () {
+    return window.gsap && window.ScrollTrigger;
+  };
+  var hasSwiper = function () {
+    return typeof window.Swiper !== 'undefined';
+  };
+  var hasJq = function () {
+    return typeof window.jQuery !== 'undefined';
+  };
+</script>
+
+<!-- ===== Nav: scroll state (blur, color swap, pills) ===== -->
+<script>
+  onReady(function () {
+    waitFor(hasGsap, function () {
+      gsap.registerPlugin(ScrollTrigger);
+
+      const SCROLL_THRESHOLD = 50;
+
+      // Start blur at 0 so it animates cleanly both directions
+      gsap.set('.nav_container-2', {
+        backdropFilter: 'blur(0px)',
+        webkitBackdropFilter: 'blur(0px)',
+      });
+
+      // Scrolled-state timeline (paused, we play/reverse on scroll)
+      const navTL = gsap.timeline({
+        paused: true,
+        defaults: { duration: 0.4, ease: 'power2.out' },
+      });
+
+      navTL
+        .to(
+          '.nav_container-2',
+          {
+            backgroundColor: 'rgba(254, 254, 254, 0.9)',
+            backdropFilter: 'blur(80px)',
+            webkitBackdropFilter: 'blur(80px)',
+          },
+          0,
+        )
+        .to('.logo-embed', { color: '#fe5000' }, 0)
+        .to(['.menu_link-text', '.menu_link-padding'], { color: '#151514' }, 0)
+        .to(
+          '.btn.alternate.is-round.cc-start',
+          {
+            borderColor: '#151514',
+            color: '#151514',
+          },
+          0,
+        )
+        .to('.m-line-2.cc-white', { backgroundColor: '#000000' }, 0)
+        .to('.m-line-2-2.cc-white', { backgroundColor: '#000000' }, 0)
+        .to('.m-line-3-2.cc-white', { backgroundColor: '#000000' }, 0);
+
+      // Pill targets: menu_link-padding elements, excluding any that are
+      // (or sit directly next to) a .cc-dropdown
+      const pillTargets = gsap.utils.toArray('.menu_link-padding').filter((el) => {
+        const selfIsDropdown = el.classList.contains('cc-dropdown');
+        const siblingIsDropdown = (el.nextElementSibling && el.nextElementSibling.classList.contains('cc-dropdown')) || (el.previousElementSibling && el.previousElementSibling.classList.contains('cc-dropdown'));
+        return !selfIsDropdown && !siblingIsDropdown;
+      });
+
+      const addPill = () => pillTargets.forEach((el) => el.classList.add('cc-pill'));
+      const removePill = () => pillTargets.forEach((el) => el.classList.remove('cc-pill'));
+
+      // Single source of truth. Idempotent: only acts when state changes.
+      let navScrolled = false;
+
+      function syncNav(animate) {
+        const scrolled = window.scrollY > SCROLL_THRESHOLD;
+        if (scrolled === navScrolled) return;
+        navScrolled = scrolled;
+
+        if (scrolled) {
+          animate ? navTL.play() : navTL.progress(1).pause();
+          removePill();
+        } else {
+          animate ? navTL.reverse() : navTL.progress(0).pause();
+          addPill();
+        }
+      }
+
+      // Initialize in the top/transparent state (matches head CSS, no flash).
+      navTL.progress(0).pause();
+      addPill();
+
+      ScrollTrigger.create({
+        start: SCROLL_THRESHOLD,
+        end: 'max',
+        onEnter: () => syncNav(true), // scrolled down past threshold
+        onLeaveBack: () => syncNav(true), // scrolled back to the top
+      });
+
+      // Resolve the real state only after the browser has finished restoring
+      // scroll position. Kills the intermittent "scrolled at top" bug.
+      window.addEventListener('load', () => {
+        ScrollTrigger.refresh();
+        syncNav(false); // snap instantly to correct state
+        requestAnimationFrame(() => syncNav(false)); // re-confirm next frame
+      });
+    });
+  });
+</script>
+
+<!-- NOTE: the standalone `gsap.registerPlugin(ScrollTrigger)` block was REMOVED.
+     It ran at parse time and threw if gsap was even slightly late; every block
+     that needs it already registers it inside its own ready handler. -->
+
+<!-- ===== Blog Cards Slider — mobile only (≤767px) ===== -->
+<script>
+  onReady(function () {
+    const mq = window.matchMedia('(max-width: 767px)');
+    let swiper = null;
+
+    function init() {
+      if (swiper) return; // already running
+      waitFor(hasSwiper, function () {
+        if (swiper) return; // re-check after the wait
+        swiper = new Swiper('.blog-home_wrap .swiper', {
+          slidesPerView: 1,
+          spaceBetween: 16,
+          loop: true,
+          autoplay: {
+            delay: 4000,
+            disableOnInteraction: false, // keep autoplaying after a manual swipe
+            pauseOnMouseEnter: true,
+          },
+        });
+      });
+    }
+
+    function destroy() {
+      if (!swiper) return;
+      swiper.destroy(true, true); // clean up styles + DOM
+      swiper = null;
+    }
+
+    function handle(e) {
+      e.matches ? init() : destroy();
+    }
+
+    handle(mq); // run on load
+    mq.addEventListener('change', handle); // run on resize across the breakpoint
+  });
+</script>
+
+<!-- ===== FAQ see-more / see-less toggle ===== -->
+<script>
+  onReady(function () {
+    waitFor(hasJq, function () {
+      $('#see-more').on('click', function () {
+        $('.see-more-faq').hide();
+        $('.see-less-faq').css('display', 'flex');
+      });
+      $('#see-less').on('click', function () {
+        $('.see-more-faq').css('display', 'flex');
+        $('.see-less-faq').hide();
+      });
+    });
+  });
+</script>
+
+<!-- ===== Program slider ===== -->
+<script>
+  onReady(function () {
+    waitFor(hasSwiper, function () {
+      document.querySelectorAll('.program-slider').forEach(function (el) {
+        var speed = parseInt(el.dataset.speed, 10) || 600;
+        el.style.setProperty('--data-speed', speed);
+
+        // scope arrows to THIS section only (element refs, not global selectors)
+        var pscope = el.closest('.program-slider_component') || el.closest('.section_program-slider') || document;
+        var pPrev = Array.from(pscope.querySelectorAll('.team_button-wrap .slider_button.is-prev'));
+        var pNext = Array.from(pscope.querySelectorAll('.team_button-wrap .slider_button.is-next'));
+
+        new Swiper(el, {
+          speed: speed,
+          grabCursor: true,
+          slidesPerView: 1.2,
+          spaceBetween: 20,
+          loop: false,
+          navigation: { nextEl: pNext, prevEl: pPrev },
+          breakpoints: {
+            479: { slidesPerView: 1.2, spaceBetween: 20 },
+            768: { slidesPerView: 2, spaceBetween: 20 },
+            992: { slidesPerView: 3, spaceBetween: 24 },
+          },
+        });
+      });
+    });
+  });
+</script>
+
+<!-- ===== FAQ Guarantee deep-link / dropdown opener ===== -->
+<script>
+  // Pure DOM + sessionStorage — no library dependency, safe at parse time.
+  if (location.hash === '#faqs-guarantee') {
+    sessionStorage.setItem('deferredHash', '#faqs-guarantee');
+  }
+
+  function openGuaranteeDropdown() {
+    const dropdowns = document.querySelectorAll('.faq_dropdown-toggle-2');
+    const dropdown = dropdowns[6];
+    if (!dropdown) {
+      console.error('Dropdown at index 6 not found. Available dropdowns:', dropdowns.length);
+      return;
+    }
+    dropdown.classList.add('w--open');
+    dropdown.setAttribute('aria-expanded', 'true');
+    const dropdownList = dropdown.nextElementSibling;
+    if (dropdownList) {
+      dropdownList.classList.add('faq_dropdown-list-3', 'w-dropdown-list', 'w--open');
+      dropdownList.style.height = 'auto';
+    } else {
+      console.error('Dropdown list not found');
+    }
+    const icon = dropdown.querySelector('.faq_icon-2');
+    if (icon) {
+      icon.style.transform = 'translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(-45deg) skew(0deg, 0deg)';
+      icon.style.transformStyle = 'preserve-3d';
+    }
+    dropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  onReady(function () {
+    setTimeout(() => {
+      if (window.location.hash.toLowerCase().includes('#faqs-guarantee')) {
+        openGuaranteeDropdown();
+      }
+    }, 500);
+
+    document.addEventListener('click', function (e) {
+      const link = e.target.closest('a[href*="#faqs-guarantee"]');
+      if (link) {
+        e.preventDefault();
+        window.location.hash = '#faqs-guarantee';
+        openGuaranteeDropdown();
+      }
+    });
+
+    window.addEventListener('hashchange', function () {
+      if (window.location.hash.toLowerCase().includes('#faqs-guarantee')) {
+        openGuaranteeDropdown();
+      }
+    });
+  });
+</script>
+
+<!-- ===== Trust Pilot slider, auto progress ===== -->
+<script>
+  onReady(function () {
+    waitFor(
+      function () {
+        return hasJq() && hasSwiper();
+      },
+      function () {
+        // /about has no testimonial slider, so there is nothing to initialise:
+        // without this guard `new Swiper('.tinyflow-slider')` has no element and
+        // io.observe(swiper.el) throws on every load (same guard as /paid). The
+        // .swiper back-reference keeps a re-run from initialising it twice.
+        var sliderEl = document.querySelector('.tinyflow-slider');
+        if (!sliderEl || sliderEl.swiper) return;
+
+        $('.tinyflow-slider_profile-wrap').each(function () {
+          $(this)
+            .find('.tinyflow_profile-icon')
+            .each(function (index) {
+              const $img = $(this);
+              if (!$img.parent().hasClass('tinyflow_profile-trigger')) {
+                $img.wrap(`<button type="button" class="tinyflow_profile-trigger" data-profile-index="${index}" aria-label="Show testimonial ${index + 1}"></button>`);
+              }
+              const $trigger = $img.parent('.tinyflow_profile-trigger');
+              $trigger.attr('data-profile-index', index);
+              $trigger.find('.tinyflow_profile-progress').remove();
+              $img.before(`
+          <svg class="tinyflow_profile-progress" viewBox="0 0 40 40" aria-hidden="true">
+            <circle class="tinyflow_profile-progress__circle" cx="20" cy="20" r="19" pathLength="100"></circle>
+          </svg>
+        `);
+            });
+        });
+
+        const swiper = new Swiper('.tinyflow-slider', {
+          slidesPerView: 1,
+          effect: 'fade',
+          fadeEffect: { crossFade: true },
+          loop: true,
+          autoplay: { disableOnInteraction: false },
+          keyboard: { enabled: true, onlyInViewport: true },
+          navigation: {
+            nextEl: '[data-slider-arrow="next"]',
+            prevEl: '[data-slider-arrow="prev"]',
+          },
+          on: {
+            beforeInit(swiper) {
+              const speed = Number(swiper.el.dataset.speed) || swiper.params.speed;
+              const delay = Number(swiper.el.dataset.autoplayDelay) || swiper.params.autoplay.delay;
+              swiper.el.style.setProperty('--data-speed', speed);
+              swiper.params.speed = speed;
+              swiper.params.autoplay.delay = delay;
+            },
+            init(swiper) {
+              swiper.autoplay.stop(); // don't run until in view
+              resetProfileProgress();
+              updateProfileIcons(swiper, 0);
+            },
+            slideChangeTransitionStart(swiper) {
+              resetProfileProgress();
+              updateProfileIcons(swiper, 0);
+            },
+            slideChangeTransitionEnd(swiper) {
+              resetProfileProgress();
+              updateProfileIcons(swiper, 0);
+            },
+            autoplayTimeLeft(swiper, time, progress) {
+              updateProfileIcons(swiper, (1 - progress) * 100);
+            },
+          },
+        });
+
+        // Start autoplay only when the slider scrolls into view
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                swiper.autoplay.start();
+              } else {
+                swiper.autoplay.stop();
+              }
+            });
+          },
+          { threshold: 0.3 },
+        );
+        io.observe(swiper.el);
+
+        $(document).on('click', '.tinyflow_profile-trigger', function () {
+          const index = Number($(this).attr('data-profile-index'));
+          resetProfileProgress();
+          swiper.slideToLoop(index);
+        });
+
+        function resetProfileProgress() {
+          $('.tinyflow_profile-trigger').removeClass('is-active');
+          $('.tinyflow_profile-progress__circle').css('stroke-dashoffset', 100);
+        }
+        function updateProfileIcons(swiper, progress) {
+          const activeIndex = swiper.realIndex;
+          $('.tinyflow_profile-trigger').each(function () {
+            const $trigger = $(this);
+            const iconIndex = Number($trigger.attr('data-profile-index'));
+            const isActive = iconIndex === activeIndex;
+            const dashOffset = isActive ? 100 - progress : 100;
+            $trigger.toggleClass('is-active', isActive);
+            $trigger.find('.tinyflow_profile-progress__circle').css('stroke-dashoffset', dashOffset);
+          });
+        }
+      },
+    );
+  });
+</script>
+
+<!-- ===== Children fade in ===== -->
+<script>
+  onReady(function () {
+    waitFor(hasGsap, function () {
+      gsap.registerPlugin(ScrollTrigger);
+
+      document.querySelectorAll('[data-fade-in]').forEach((group) => {
+        // Optional child selector. Falls back to direct children.
+        const sel = group.getAttribute('data-fade-target');
+        const items = sel ? group.querySelectorAll(sel) : group.children;
+        if (!items.length) return;
+
+        // Optional per-instance overrides via data attributes
+        const distance = parseFloat(group.dataset.fadeY) || 24;
+        const duration = parseFloat(group.dataset.fadeDuration) || 0.8;
+        const stagger = parseFloat(group.dataset.fadeStagger) || 0.12;
+        const start = group.dataset.fadeStart || 'top 80%';
+
+        gsap.set(items, { opacity: 0, y: distance });
+
+        gsap.to(items, {
+          opacity: 1,
+          y: 0,
+          duration,
+          ease: 'power2.out',
+          stagger,
+          scrollTrigger: { trigger: group, start, once: true },
+        });
+      });
+    });
+  });
+</script>
+
+<!-- ===== Text fade in ===== -->
+<script>
+  onReady(function () {
+    waitFor(hasGsap, function () {
+      gsap.registerPlugin(ScrollTrigger);
+
+      const read = (el, group, key, def) => el.dataset[key] ?? (group && group.dataset[key]) ?? def;
+
+      const animate = (el, group) => {
+        const distance = parseFloat(read(el, group, 'slideY', 40));
+        const duration = parseFloat(read(el, group, 'slideDuration', 0.9));
+        const start = read(el, group, 'slideStart', 'top 85%');
+
+        gsap.set(el, { opacity: 0, y: distance });
+        gsap.to(el, {
+          opacity: 1,
+          y: 0,
+          duration,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: el, start, once: true },
+        });
+      };
+
+      const seen = new Set();
+
+      // 1. Any element tagged directly
+      document.querySelectorAll('[data-slide-up]').forEach((el) => {
+        if (seen.has(el)) return;
+        seen.add(el);
+        animate(el, null);
+      });
+
+      // 2. All headings inside a tagged wrapper
+      document.querySelectorAll('[data-slide-up-group]').forEach((group) => {
+        const sel = group.getAttribute('data-slide-target') || 'h1,h2,h3,h4,h5,h6';
+        group.querySelectorAll(sel).forEach((el) => {
+          if (seen.has(el)) return;
+          seen.add(el);
+          animate(el, group);
+        });
+      });
+    });
+  });
+</script>
+
+<!-- ===== Sticky phone: desktop ScrollTrigger / mobile Swiper fade ===== -->
+<script>
+  (function () {
+    function boot() {
+      // Wait for ALL THREE before proceeding so neither branch can bail silently.
+      if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined' || typeof Swiper === 'undefined') {
+        return setTimeout(boot, 50);
+      }
+      gsap.registerPlugin(ScrollTrigger);
+      var mm = gsap.matchMedia();
+
+      /* ---------- DESKTOP/TABLET (≥768): ScrollTrigger, .is-desktop ONLY ---------- */
+      mm.add('(min-width: 768px)', function () {
+        var container = document.querySelector('.section_sticky-phone.is-desktop [data-sticky-steps-init]');
+        if (!container) return;
+
+        var items = [].slice.call(container.querySelectorAll('[data-sticky-steps-item]'));
+        if (!items.length) return;
+
+        var activeIndex = -1;
+        function setActiveStep(nextIndex) {
+          if (nextIndex === activeIndex) return;
+          activeIndex = nextIndex;
+          items.forEach(function (item, index) {
+            var status = 'active';
+            if (index < activeIndex) status = 'before';
+            if (index > activeIndex) status = 'after';
+            item.setAttribute('data-sticky-steps-item-status', status);
+          });
+        }
+
+        items.forEach(function (item, index) {
+          var anchor = item.querySelector('[data-sticky-steps-anchor]') || item;
+          ScrollTrigger.create({
+            trigger: anchor,
+            start: 'top 65%',
+            end: 'bottom 35%',
+            onEnter: function () {
+              setActiveStep(index);
+            },
+            onEnterBack: function () {
+              setActiveStep(index);
+            },
+          });
+        });
+
+        setActiveStep(0);
+        ScrollTrigger.refresh();
+
+        return function () {
+          items.forEach(function (item) {
+            item.removeAttribute('data-sticky-steps-item-status');
+          });
+        };
+      });
+
+      /* ---------- MOBILE (≤767): Swiper fade, .is-mobile ONLY ---------- */
+      mm.add('(max-width: 767px)', function () {
+        // Swiper is guaranteed present by the boot() gate above.
+        var root = document.querySelector('.section_sticky-phone.is-mobile [data-sticky-steps-init]');
+        if (!root || root.swiper) return;
+
+        var swiper = new Swiper(root, {
+          effect: 'fade',
+          fadeEffect: { crossFade: true },
+          speed: 600,
+          rewind: true,
+          autoHeight: true,
+          grabCursor: true,
+          slidesPerView: 1,
+          observer: true, // re-measure if the element's box changes
+          observeParents: true, // ...or if a parent's display/size changes
+          keyboard: { enabled: true, onlyInViewport: true },
+          a11y: { enabled: true },
+          on: {
+            init: setStatuses,
+            slideChange: setStatuses,
+          },
+        });
+
+        function setStatuses(s) {
+          s.slides.forEach(function (slide, i) {
+            slide.setAttribute('data-sticky-steps-item-status', i < s.activeIndex ? 'before' : i > s.activeIndex ? 'after' : 'active');
+          });
+        }
+
+        // Force a measure pass once layout settles, then again after images load
+        // (autoHeight needs real heights).
+        requestAnimationFrame(function () {
+          swiper.update();
+        });
+        var onLoad = function () {
+          swiper.update();
+        };
+        window.addEventListener('load', onLoad, { once: true });
+
+        root._arrowHandler = function (e) {
+          var next = e.target.closest('.slider_button.is-next');
+          var prev = e.target.closest('.slider_button.is-prev');
+          if (!next && !prev) return;
+          e.preventDefault();
+          next ? swiper.slideNext() : swiper.slidePrev();
+        };
+        root.addEventListener('click', root._arrowHandler);
+
+        root._linkHandler = function (e) {
+          var a = e.target.closest('.sticky-text_wrapper');
+          if (!a) return;
+          var href = a.getAttribute('href');
+          if (!href || href === '#') e.preventDefault();
+        };
+        root.addEventListener('click', root._linkHandler);
+
+        return function () {
+          window.removeEventListener('load', onLoad);
+          root.removeEventListener('click', root._arrowHandler);
+          root.removeEventListener('click', root._linkHandler);
+          root._arrowHandler = root._linkHandler = null;
+          swiper.destroy(true, true);
+          root.querySelectorAll('[data-sticky-steps-item]').forEach(function (item) {
+            item.removeAttribute('data-sticky-steps-item-status');
+          });
+        };
+      });
+    }
+
+    document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
+  })();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const section = document.querySelector('.section_slider-articles');
+  if (!section) return;
+
+  const swiper = new Swiper(section.querySelector('.swiper'), {
+    slidesPerView: 1,
+    spaceBetween: 16,
+    grabCursor: true,
+    watchOverflow: true,
+    breakpoints: {
+      480: { slidesPerView: 1, spaceBetween: 16 },
+      768: { slidesPerView: 1, spaceBetween: 16 },
+      992: { slidesPerView: 3,   spaceBetween: 24 }
+    }
+    // note: no `navigation` block here
+  });
+
+  // collect both desktop + mobile sets
+  const prevBtns = section.querySelectorAll('.pagination-btn.is-prev');
+  const nextBtns = section.querySelectorAll('.pagination-btn.is-next');
+
+  prevBtns.forEach(btn => btn.addEventListener('click', () => swiper.slidePrev()));
+  nextBtns.forEach(btn => btn.addEventListener('click', () => swiper.slideNext()));
+
+  function updateArrows() {
+    prevBtns.forEach(btn =>
+      btn.classList.toggle('swiper-button-disabled', swiper.isBeginning));
+    nextBtns.forEach(btn =>
+      btn.classList.toggle('swiper-button-disabled', swiper.isEnd));
+  }
+
+  swiper.on('slideChange', updateArrows);
+  swiper.on('reachBeginning', updateArrows);
+  swiper.on('reachEnd', updateArrows);
+  swiper.on('resize', updateArrows);
+  updateArrows(); // set initial state
+});
+</script>
