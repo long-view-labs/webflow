@@ -30,6 +30,50 @@ Missing configuration, Slack HTTP errors and Slack API `ok:false` all fail visib
 
 Do not activate this replacement with an unverified credential. Once approved, verify cloud failure delivery end to end using a sealed failing fixture, using the one additionally approved cloud-to-DM test (the earlier interactive connector test was already used). Then verify a recovery and a scheduled run. Keep the existing cloud/local schedules in place until replacement delivery is confirmed. Retire only the exact local Nourish cron entry afterward, preserving other cron entries. The local wrapper's historical email/macOS paths are not part of the replacement and must not be reused.
 
+## Local diagnostic artifacts
+
+The local launchd wrapper retains each UTM and synthetic attempt separately in
+`monitoring-local/attempts/`: `attempt.json` records start/end times and exit/timeout
+classification, `stdout.log` and `stderr.log` retain redacted child output, and
+`report.json` retains a bounded summary when the child produced a report. A timeout
+is a **monitor execution failure**; it does not establish a production tracking
+regression. Partial reports never count as passing results.
+
+Both checks also write `progress.json` before each awaited phase and after each
+completed case. It includes completed case summaries, the current
+route/device/consent/operation, and the last 32 operation timestamps so timeout
+cleanup cannot erase the preceding stalled operation. UTM cases additionally keep
+their last 24 phase timestamps and elapsed times. Original case failures and
+separate cleanup failures survive in the latest report. Retry artifacts are never
+overwritten by the next attempt.
+
+UTM diagnostics distinguish a navigation failure, a rejected browser click, and a
+completed browser click with no expected emission observed within the existing
+1,500 ms window. A rejected click retains its redacted first error line and
+recognized actionability reasons, without retaining DOM snippets from Playwright
+logs. If an expected event was captured before an intercepted navigation rejected
+the click, the error remains diagnostic evidence rather than a missing-event claim.
+The selected CTA's ID, sanitized destination and target are measured immediately
+before the click. Document readiness, SDK object/queue/track-function presence and
+available consent-group codes are recorded after loading and before clicking.
+These observations do not prove SDK readiness or downstream ingestion. Missing
+measurements are `null`; measured `false` and zero remain distinct. No cookies,
+form values, event payloads or raw URL parameters are added to these diagnostics.
+
+Retention is bounded to the latest 168 attempts and seven days, pruned when a new
+attempt starts. Each retained stdout/stderr file is capped at 64 KiB; JSON artifacts
+are capped at 256 KiB. Summaries retain at most 50 cases and eight redacted failure
+messages per list (with total failure counts). Oversized JSON is first compacted;
+if necessary, message/phase details are shortened and `diagnosticsTruncated` is
+set, preserving case and failure counts. They exclude event properties,
+request bodies, cookies, storage, and environment variables; URL details, email
+addresses, common credential patterns, and named sensitive fields are redacted
+from retained text. Existing detailed `*-latest.json` reports keep their format.
+Schedule, ten-minute child timeout, one synthetic retry, immediate UTM alert policy,
+navigation/click timeouts, fixed readiness/event waits, and notification routing
+are unchanged. Diagnostic tests use mocked browsers/children and temporary files;
+they do not launch browsers, visit production, or send notifications.
+
 ## Stale runs
 
 The separate heartbeat checks the last completed scheduled main check and fails after 95 minutes or an unsuccessful conclusion. Manual runs do not satisfy the heartbeat. It has separate incident state. This catches a stuck/disabled main workflow and irregular schedules, but both workflows depend on GitHub scheduling. It cannot independently detect a total GitHub Actions outage. A truly independent deadman service/connection remains an approval and setup task.

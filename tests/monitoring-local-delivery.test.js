@@ -38,3 +38,16 @@ test('a check result counts only if this run wrote it and the child finished', (
     assert.deepEqual(run('check.js', out, {}, child({ status: 1 }, { failures: ['/ link sent 0 click events'] })).failures, ['/ link sent 0 click events']);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('a failure alerts only when the retry run has the same case', () => {
+  const { confirmedFailures } = require('../monitoring/local-tracking-monitor');
+  const timeout = d => 'UTM handoff: UTM handoff desktop /landing-pages/meal-planning: monitor execution failure (navigation): ' + d;
+  const missing = 'UTM handoff: iPhone 13 /paid: click event missing utm_source (iphone-paid)';
+  const hang = how => 'Monitor execution failure: monitoring/utm-handoff-check.js did not finish (exit null, ' + how + '); production tracking status is unconfirmed';
+  assert.deepEqual(confirmedFailures([timeout('page.goto: Timeout 35000ms exceeded.')], []), []);
+  assert.deepEqual(confirmedFailures([timeout('page.goto: Timeout 35000ms exceeded.')], [timeout('net::ERR_TIMED_OUT')]), [timeout('net::ERR_TIMED_OUT')]);
+  assert.deepEqual(confirmedFailures([missing], [missing]), [missing]);
+  assert.deepEqual(confirmedFailures([missing], []), []);
+  assert.deepEqual(confirmedFailures([hang('SIGTERM')], [hang('ETIMEDOUT')]), [hang('ETIMEDOUT')]);
+  assert.deepEqual(confirmedFailures([timeout('x')], [missing]), []);
+});
