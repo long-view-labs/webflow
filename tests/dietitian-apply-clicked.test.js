@@ -76,7 +76,9 @@ function attrs(key, overrides = {}) {
 // Keep in sync when the Webflow markup changes.
 const APPLY_CTAS = {
   hero: `<a ${attrs("hero")} data-wf--button--variant="brand" href="/dietitian-application" class="btn is-round is-icon w-inline-block"><div>Apply now</div></a>`,
-  earnings: `<a ${attrs("earnings")} data-wf--button--variant="white" href="/become-a-dietitian/pay-calculator" class="btn is-round is-icon w-variant-86e5b5d2-ae85-7df2-4a3d-450cfdef57d8 w-inline-block"><div>Apply now</div></a>`,
+  // Earnings CTA destination is the application (owner-approved Oct 2026),
+  // not the pay calculator the pre-attribute markup pointed at.
+  earnings: `<a ${attrs("earnings")} data-wf--button--variant="white" href="/dietitian-application" class="btn is-round is-icon w-variant-86e5b5d2-ae85-7df2-4a3d-450cfdef57d8 w-inline-block"><div>Apply now</div></a>`,
   platform: `<a ${attrs("platform")} data-wf--button--variant="brand" href="/dietitian-application" class="btn is-round is-icon w-inline-block"><div>Apply now</div></a>`,
   footer: `<a ${attrs("footer")} id="footer-splash-cta" data-cta="footer" href="/dietitian-application" class="btn is-round is-white w-button">Apply now</a>`,
 };
@@ -235,7 +237,7 @@ test("Dietitian Apply Clicked", async (t) => {
             element: ".btn.is-round.is-icon.w-inline-block",
           }),
           expectedProps("earnings", {
-            destinationPath: "/become-a-dietitian/pay-calculator",
+            destinationPath: "/dietitian-application",
             element: ".btn.is-round.is-icon.w-variant-86e5b5d2-ae85-7df2-4a3d-450cfdef57d8.w-inline-block",
           }),
           expectedProps("platform", {

@@ -1487,9 +1487,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   // cta_id, cta_name, cta_section, cta_action, page_path, destination_host,
   // destination_path. url is the full clicked link; destination_*
   // are host and path; nothing is read from form fields or DOM text.
-  // The "earnings" CTA says Apply now but opens the pay calculator: that is
-  // calculator engagement, not an application start — distinguish it by
-  // cta_section / destination_path, never by dropping the event.
+  // Every Apply now CTA counts, wherever it links (the "earnings" one sits
+  // beside the pay calculator); distinguish placements by cta_section and
+  // the actual target by destination_path, never by dropping the event.
   // Scoped to the page itself (normalised path, so trailing slash counts);
   // delegated from document so repeated, mobile and late-inserted CTAs are
   // covered; one listener (idempotence flag); never calls preventDefault; and
