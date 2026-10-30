@@ -155,3 +155,7 @@ Thumbs.db
 # Webflow specific
 .webflow/
 monitoring-local/
+
+# Local tool and monitor output
+.playwright-mcp/
+utm-handoff-results.json
