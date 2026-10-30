@@ -159,3 +159,7 @@ monitoring-local/
 # Local tool and monitor output
 .playwright-mcp/
 utm-handoff-results.json
+
+# Internal notes kept local (public repo): changelog with Slack links, audits
+docs/
+design-explorations/
