@@ -51,6 +51,19 @@ export function applyConsole(result, check) {
   return result;
 }
 
+// Whether yesterday's screenshots compare with today's. Chrome updates itself about weekly and a
+// patch build of the same major version renders these pages the same, so only the major version
+// counts; any other change (major version, browser binary, capture policy, Playwright, OS) skips
+// the comparison for one run, as the checker's fingerprint does.
+export function sameCaptureEnvironment(before = {}, after = {}) {
+  if (before.environmentFingerprint === after.environmentFingerprint) return true;
+  const a = before.environment, b = after.environment;
+  if (!a || !b) return false;
+  const major = (v) => String(v ?? '').split('.')[0];
+  const shape = (e) => JSON.stringify(Object.keys(e).sort().map((k) => [k, k === 'browserVersion' ? major(e[k]) : e[k]]));
+  return major(a.browserVersion) !== '' && shape(a) === shape(b);
+}
+
 // Marks each indexing issue new or still open against the previous run (same kind and path).
 export function seoNewness(seo, previous) {
   if (!seo?.issues) return seo;

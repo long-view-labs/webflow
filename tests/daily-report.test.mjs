@@ -736,3 +736,19 @@ test('captures hide the OneTrust banner: it appears 0.3-0.8 s after load, so a c
     assert.match(c.finalState?.css ?? '', /#onetrust-consent-sdk\{display:none!important\}/, c.key);
   }
 });
+
+test('screenshots compare across a Chrome patch update, not across a major one or other setting changes', async () => {
+  const {sameCaptureEnvironment} = await import('../monitoring/daily-report/summary.mjs');
+  // The Oct 29 -> Oct 30 2026 environments: Chrome updated itself from .49 to .74 overnight.
+  const env = {os: 'darwin', arch: 'arm64', node: '22.22.3', browserVersion: '156.0.8078.49', browserPath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    backstop: '6.3.25', playwright: '1.64.1', capturePolicy: 'viewport-ready-freeze-v5-counter-raster-unknown', adapterVersion: 1};
+  const run = (e, fp) => ({environment: e, environmentFingerprint: fp});
+  assert.equal(sameCaptureEnvironment(run(env, 'a'), run(env, 'a')), true);
+  assert.equal(sameCaptureEnvironment(run(env, 'a'), run({...env, browserVersion: '156.0.8078.74'}, 'b')), true);
+  assert.equal(sameCaptureEnvironment(run(env, 'a'), run({...env, browserVersion: '157.0.8100.12'}, 'b')), false);
+  assert.equal(sameCaptureEnvironment(run(env, 'a'), run({...env, browserVersion: '156.0.8078.74', capturePolicy: 'viewport-ready-freeze-v6'}, 'b')), false);
+  assert.equal(sameCaptureEnvironment(run(env, 'a'), run({...env, browserPath: '/other/chrome'}, 'b')), false);
+  // A page set new since the last run has no environment to compare with.
+  assert.equal(sameCaptureEnvironment({results: []}, run(env, 'b')), false);
+  assert.equal(sameCaptureEnvironment(run(undefined, 'a'), run(env, 'b')), false);
+});

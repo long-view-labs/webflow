@@ -20,7 +20,7 @@ import {fetchPageAnalytics} from './page-analytics.mjs';
 import {fetchCrux} from './crux.mjs';
 import {checkConsole} from './console-check.mjs';
 import {checkSeo} from './seo-check.mjs';
-import {applyExpectedNoindex, applyKnownErrors, combineInteraction, applyConsole, seoNewness} from './summary.mjs';
+import {applyExpectedNoindex, applyKnownErrors, combineInteraction, applyConsole, seoNewness, sameCaptureEnvironment} from './summary.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '../..');
@@ -199,7 +199,7 @@ async function main() {
           const prior = before.results.find((p) => p.key === r.key);
           const result = await compareCandidateImages({before: prior?.visual.measurementStatus === 'captured' ? prior.visual.image : null,
             after: r.visual.measurementStatus === 'captured' ? r.visual.image : null, destination: path.join(root, 'candidate-changes', r.key),
-            compatible: before.environmentFingerprint === set.run.environmentFingerprint && prior?.caseFingerprint === r.caseFingerprint});
+            compatible: sameCaptureEnvironment(before, set.run) && prior?.caseFingerprint === r.caseFingerprint});
           report.previousCandidates.rows.push({key: r.key, ...result});
         }
       }
