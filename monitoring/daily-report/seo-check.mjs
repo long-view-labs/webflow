@@ -24,16 +24,19 @@ const EMPLOYERS = ['bcg', 'cigna', 'dollartree', 'haribo', 'harley-davidson', 'o
 export const AD_PATTERNS = [
   // -b/-c variant suffixes, outside the blog (/blog/nourish-announces-series-b is a post).
   /^\/paid/, /^\/landing-pages?\//, /^\/landing\//, /^\/lp-/, /^(?!\/blog\/).*-[bc]$/, /^\/dev\//, /^\/wip\//,
-  /^\/forbes$/, /^\/money-saving-mom$/, new RegExp(`^/(?:${EMPLOYERS.join('|')})$`), /^\/nutrition-program$/, /^\/condition\/glp-1s$/,
+  /^\/forbes$/, /^\/money-saving-mom$/, new RegExp(`^/(?:${EMPLOYERS.join('|')})$`), /^\/nutrition-program$/,
 ];
 // Indexable on purpose even where a pattern above would match.
-export const INDEXABLE_ON_PURPOSE = [/^\/quiz\//, /^\/gut-health-quiz$/, /^\/signup\/weight-loss$/, /^\/refer$/, /^\/refer-a-friend$/];
+// /condition/glp-1s is the organic GLP-1 page (/conditions/glp-1s 301s to it); back in the index Oct 30 2026.
+export const INDEXABLE_ON_PURPOSE = [/^\/quiz\//, /^\/gut-health-quiz$/, /^\/signup\/weight-loss$/, /^\/refer$/, /^\/refer-a-friend$/, /^\/condition\/glp-1s$/];
 // Known and accepted for now; shown once as a group, never as new issues.
 export const KNOWN = [
   {id: 'cms-noindex-in-sitemap', kind: 'noindex-in-sitemap', test: /^\/(?:landing-page|landing|partners)\//,
     note: 'Noindex CMS items still in the sitemap: Webflow has no per-template sitemap toggle for CMS collections'},
   {id: 'partnerships-modify', kind: 'ad-page-indexable', test: /^\/partnerships\/nourish-modify-/,
     note: 'Partnership CMS pages /partnerships/nourish-modify-* are still indexable (open item, Oct 29 2026)'},
+  {id: 'conditions-glp-1s-redirect', kind: 'sitemap-not-200', test: /^\/conditions\/glp-1s$/,
+    note: '/conditions/glp-1s is a Conditions CMS item that redirects to the organic GLP-1 page /condition/glp-1s on purpose'},
 ];
 
 export const isAdPath = (p) => AD_PATTERNS.some((re) => re.test(p)) && !INDEXABLE_ON_PURPOSE.some((re) => re.test(p));
@@ -66,7 +69,11 @@ export function classifySeo(rows, {businessUnit = TRUSTPILOT_BUSINESS_UNIT} = {}
     if (r.status === 200 && r.inSitemap && r.noindex) add('noindex-in-sitemap', r.path, 'in the sitemap but serves noindex');
     const knownAd = KNOWN.some((k) => k.kind === 'ad-page-indexable' && k.test.test(r.path));
     if (r.status === 200 && !r.noindex && (isAdPath(r.path) || knownAd)) add('ad-page-indexable', r.path, `ad/variant page is indexable${r.inSitemap ? ' and in the sitemap' : ''}`);
-    if (r.inSitemap && r.status !== 200) issues.push({kind: 'sitemap-not-200', level: 'review', path: r.path, detail: `sitemap URL answers ${r.status}${r.location ? ` → ${r.location}` : ''}`});
+    if (r.inSitemap && r.status !== 200) {
+      const k = KNOWN.find((k) => k.kind === 'sitemap-not-200' && k.test.test(r.path));
+      if (k) known[k.id].paths.push(r.path);
+      else issues.push({kind: 'sitemap-not-200', level: 'review', path: r.path, detail: `sitemap URL answers ${r.status}${r.location ? ` → ${r.location}` : ''}`});
+    }
     if (r.status !== 200 && !r.inSitemap && r.status !== 404 && !(r.status >= 300 && r.status < 400)) issues.push({kind: 'fetch-failed', level: 'review', path: r.path, detail: `answers ${r.status}`});
   }
   const trustpilot = rows.flatMap((r) => (r.trustpilot ?? []).filter((id) => id !== businessUnit).map((id) => ({path: r.path, businessUnit: id || '(none)'})));

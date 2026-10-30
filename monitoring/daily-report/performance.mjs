@@ -71,8 +71,10 @@ export function labCases(sets) {
 }
 
 // One Lighthouse load. The checker writes lighthouse/<page>--<viewport>.json; the analytics
-// count is taken again from that file with Nourish's hosts, so a load with no saved network
-// log (Lighthouse threw) stays `null`: unverified, never assumed clean.
+// count is taken from that file with Nourish's hosts only, so a load with no saved network
+// log (Lighthouse threw) stays `null`: unverified, never assumed clean. The checker's own
+// count is ignored: it follows the checker's definition of a leak, which on Oct 30 2026 became
+// "any host outside Unify's allowlist" and counted nourish.com itself.
 export async function measureLab(c, runDir, {measure = measurePerformance, launch = nourishLaunch()} = {}) {
   const log = path.join(runDir, 'lighthouse', `${c.pageId}--${c.viewport.id}.json`);
   await fs.rm(log, {force: true});
@@ -80,7 +82,7 @@ export async function measureLab(c, runDir, {measure = measurePerformance, launc
   let analyticsRequests = null;
   try {
     const lhr = JSON.parse(await fs.readFile(log, 'utf8'));
-    analyticsRequests = Math.max(Number(r.analyticsRequests) || 0, countAnalyticsRequests(lhr));
+    analyticsRequests = countAnalyticsRequests(lhr);
   } catch {}
   return {...r, analyticsRequests};
 }

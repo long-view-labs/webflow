@@ -85,7 +85,7 @@ function seoSection(report, o) {
   return `<h2>Search indexing</h2><p>${s.sitemapCount} URLs in the sitemap, ${s.checked} pages checked, ${s.indexable} indexable. ${o.seoNew.length + o.seoStanding.length ? `<span class="b bad">${o.seoNew.length + o.seoStanding.length} issue${o.seoNew.length + o.seoStanding.length === 1 ? '' : 's'}</span>` : '<span class="b ok">No issues</span>'}${o.seoReview.length ? ` · ${o.seoReview.length} to review` : ''}.</p>
 ${rows ? `<table><tr><th></th><th>Finding</th><th>Page</th><th>Detail</th></tr>${rows}</table>` : ''}
 ${known ? `<p class="muted">Known and accepted for now, not counted:</p><ul class="muted">${known}</ul>` : ''}
-<p class="muted">Plain requests to the sitemap, every URL in it, the static pages it leaves out (pages/static-paths.txt) and this report's pages; no JavaScript runs. Ad and variant pages (/paid*, /landing-pages/*, /landing/*, /lp-*, -b/-c variants, /dev/*, /wip/*, /forbes, /money-saving-mom, employer pages, /nutrition-program, /condition/glp-1s) must be noindex; /quiz/*, /gut-health-quiz, /signup/weight-loss, /refer and /refer-a-friend are indexable on purpose.</p>`;
+<p class="muted">Plain requests to the sitemap, every URL in it, the static pages it leaves out (pages/static-paths.txt) and this report's pages; no JavaScript runs. Ad and variant pages (/paid*, /landing-pages/*, /landing/*, /lp-*, -b/-c variants, /dev/*, /wip/*, /forbes, /money-saving-mom, employer pages, /nutrition-program) must be noindex; /quiz/*, /gut-health-quiz, /signup/weight-loss, /refer, /refer-a-friend and /condition/glp-1s (the organic GLP-1 page) are indexable on purpose.</p>`;
 }
 
 function formsTable(report) {

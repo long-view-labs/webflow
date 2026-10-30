@@ -254,6 +254,12 @@ test('lab: the analytics count comes from the saved network log; a load with no 
   assert.equal(leaked.analyticsRequests, 1);
   const clean = await measureLab(c, dir, {launch: {}, measure: () => writes([{url: 'https://dataplane-proxy.usenourish.com/v1/track', statusCode: -1}])});
   assert.equal(clean.analyticsRequests, 0);
+  // Oct 30 2026: the checker counted every non-Unify host (nourish.com, OneTrust) as a leak.
+  const checkerCount = await measureLab(c, dir, {launch: {}, measure: async () => {
+    await writes([{url: 'https://www.nourish.com/', statusCode: 200}, {url: 'https://cdn.cookielaw.org/consent/x.json', statusCode: 200}, {url: 'https://dataplane-proxy.usenourish.com/v1/page', statusCode: -1}]);
+    return {status: 'measured', score: 70, analyticsRequests: 360};
+  }});
+  assert.equal(checkerCount.analyticsRequests, 0, 'only Nourish analytics hosts in the saved log count');
   const thrown = await measureLab(c, dir, {launch: {}, measure: async () => ({status: 'capture-failure', error: 'boom'})});
   assert.equal(thrown.analyticsRequests, null, 'the previous attempt\'s log must not be reused');
 });
@@ -626,8 +632,8 @@ test('seo: robots read from either attribute order and from X-Robots-Tag', async
 
 test('seo: noindex in the sitemap and indexable ad pages are issues; CMS gaps grouped; intended pages and blog -b posts left alone', async () => {
   const {classifySeo, isAdPath} = await import('../monitoring/daily-report/seo-check.mjs');
-  for (const p of ['/paid', '/paid-qa', '/landing-pages/weight-concerns/a', '/landing-pages/pcos-b', '/lp-weight-concerns-b', '/dev/x', '/wip/tables', '/forbes', '/money-saving-mom', '/usaa', '/harley-davidson', '/nutrition-program', '/condition/glp-1s', '/start-b']) assert.equal(isAdPath(p), true, p);
-  for (const p of ['/', '/quiz/ibs', '/gut-health-quiz', '/signup/weight-loss', '/refer', '/refer-a-friend', '/blog/nourish-announces-series-b', '/about', '/conditions/glp-1s']) assert.equal(isAdPath(p), false, p);
+  for (const p of ['/paid', '/paid-qa', '/landing-pages/weight-concerns/a', '/landing-pages/pcos-b', '/lp-weight-concerns-b', '/dev/x', '/wip/tables', '/forbes', '/money-saving-mom', '/usaa', '/harley-davidson', '/nutrition-program', '/start-b']) assert.equal(isAdPath(p), true, p);
+  for (const p of ['/', '/quiz/ibs', '/gut-health-quiz', '/signup/weight-loss', '/refer', '/refer-a-friend', '/blog/nourish-announces-series-b', '/about', '/conditions/glp-1s', '/condition/glp-1s']) assert.equal(isAdPath(p), false, p);
   const row = (path, inSitemap, noindex, extra = {}) => ({path, inSitemap, status: 200, noindex, trustpilot: [], ...extra});
   const {issues, known} = classifySeo([
     row('/about', true, false), row('/home-lp', true, true), row('/paid-qa', false, false), row('/paid', false, true),
@@ -635,10 +641,11 @@ test('seo: noindex in the sitemap and indexable ad pages are issues; CMS gaps gr
     row('/quiz/ibs', false, false), row('/blog/nourish-announces-series-b', true, false),
     {path: '/blog/old-post', inSitemap: true, status: 301, location: '/blog/new-post'},
     row('/forbes', false, true, {trustpilot: [DEAD_BU, LIVE_BU]}),
+    row('/condition/glp-1s', true, false), {path: '/conditions/glp-1s', inSitemap: true, status: 301, location: '/condition/glp-1s'},
   ]);
   assert.deepEqual(issues.map((i) => `${i.kind} ${i.path}${i.level ? ' ' + i.level : ''}`), [
     'noindex-in-sitemap /home-lp', 'ad-page-indexable /paid-qa', 'sitemap-not-200 /blog/old-post review', 'trustpilot-id /forbes']);
-  assert.deepEqual(known.map((k) => `${k.id} ${k.paths.length}`), ['cms-noindex-in-sitemap 2', 'partnerships-modify 1']);
+  assert.deepEqual(known.map((k) => `${k.id} ${k.paths.length}`), ['cms-noindex-in-sitemap 2', 'partnerships-modify 1', 'conditions-glp-1s-redirect 1']);
 });
 
 test('seo fire drill: the whole check, sitemap to findings, against a fake site', async () => {

@@ -98,7 +98,9 @@ async function main() {
     const report = readJson(path.join(runDir, 'report.json')) ?? {errors: ['worker wrote no report'], outcome: 'execution-error'};
     if (timedOut) (report.errors ??= []).push(`timed out after ${TIMEOUT_MS / 60000} minutes`);
     if (code !== 0 && !timedOut && report.outcome !== 'execution-error') (report.errors ??= []).push(`worker exited ${code}`);
-    const completed = !!report.finishedAt && !timedOut && report.runs?.length > 0;
+    // A run that captured nothing (Oct 30 2026: every page load blocked) is neither the next
+    // comparison base nor "done for today", so the 11:00 and 15:00 retries still run.
+    const completed = !!report.finishedAt && !timedOut && report.runs?.length > 0 && report.counts?.captured > 0;
     if (completed) Object.assign(state, {lastCompletedDirectory: runDir, lastCompletedDate: ptDate(started)});
 
     const latest = path.join(STORE, 'latest');
