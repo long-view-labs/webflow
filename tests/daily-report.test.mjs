@@ -486,3 +486,246 @@ test('publish: the report goes to nourish-web-report; the old address only redir
   assert.equal(fs.readFileSync(path.join(out, '_redirects'), 'utf8'), '/* https://nourish-web-report.pages.dev/:splat 301\n');
   assert.match(fs.readFileSync(path.join(out, '_headers'), 'utf8'), /noindex/);
 });
+
+test('publish gate: an unfinished run is never published, even when its speed-test loads were clean', async () => {
+  const {publishGate} = await import('../monitoring/daily-report/publish.mjs');
+  const clean = {ok: true}, leaked = {ok: false, reason: 'the speed test reached analytics on 2 of 172 loads'};
+  assert.deepEqual(publishGate({completed: true, proof: clean}), {ok: true});
+  assert.match(publishGate({completed: false, proof: clean}).detail, /^not published: the run did not finish; see monitoring-local/);
+  assert.match(publishGate({completed: true, proof: leaked}).detail, /reached analytics on 2 of 172 loads/);
+  assert.equal(publishGate({completed: true, proof: clean, skip: true}).detail, 'skipped: --no-publish');
+});
+
+test('crux: no Keychain key means unavailable and no request', async () => {
+  const {fetchCrux} = await import('../monitoring/daily-report/crux.mjs');
+  const r = await fetchCrux({pageUrls: {paid: 'https://www.nourish.com/paid'}, key: null, fetcher: () => { throw new Error('no call'); }});
+  assert.equal(r.status, 'unavailable'); assert.match(r.reason, /nourish-crux-api/);
+});
+
+test('crux: page record when Chrome has one, origin fallback otherwise, p75 rated by Core Web Vitals thresholds, key never in errors', async () => {
+  const {fetchCrux} = await import('../monitoring/daily-report/crux.mjs');
+  const rec = (lcp, inp, cls) => ({record: {metrics: {largest_contentful_paint: {percentiles: {p75: lcp}}, interaction_to_next_paint: {percentiles: {p75: inp}}, cumulative_layout_shift: {percentiles: {p75: String(cls)}}},
+    collectionPeriod: {firstDate: {year: 2026, month: 10, day: 1}, lastDate: {year: 2026, month: 10, day: 28}}}});
+  const bodies = [];
+  const fetcher = async (url, opts) => {
+    assert.match(url, /^https:\/\/chromeuxreport\.googleapis\.com\/v1\/records:queryRecord\?key=K%26/);
+    const b = JSON.parse(opts.body); bodies.push(b);
+    assert.ok(b.metrics.includes('interaction_to_next_paint'));
+    if (b.origin) return {ok: true, status: 200, json: async () => rec(b.formFactor === 'PHONE' ? 3100 : 1500, 180, 0.05)};
+    if (b.url.endsWith('/paid') && b.formFactor === 'PHONE') return {ok: true, status: 200, json: async () => rec(4200, 250, 0.08)};
+    if (b.url.endsWith('/faq')) return {ok: false, status: 500};
+    return {ok: false, status: 404};
+  };
+  const r = await fetchCrux({pageUrls: {paid: 'https://www.nourish.com/paid', faq: 'https://www.nourish.com/faq'}, key: 'K&', fetcher});
+  assert.equal(r.status, 'ok'); assert.equal(r.origin, 'https://www.nourish.com'); assert.equal(r.queries, 6);
+  assert.deepEqual(bodies[0], {origin: 'https://www.nourish.com', formFactor: 'PHONE', metrics: bodies[0].metrics});
+  const m = r.pages.paid.mobile;
+  assert.equal(m.scope, 'page'); assert.deepEqual(m.metrics.lcp, {p75: 4200, rating: 'poor'}); assert.deepEqual(m.metrics.inp, {p75: 250, rating: 'needs-improvement'}); assert.deepEqual(m.metrics.cls, {p75: 0.08, rating: 'good'});
+  assert.deepEqual(m.period, {from: '2026-10-01', to: '2026-10-28'});
+  assert.equal(r.pages.paid.desktop.scope, 'origin'); assert.equal(r.pages.paid.desktop.metrics.lcp.p75, 1500);
+  assert.deepEqual(r.pages.faq.mobile, {scope: 'error', error: 'CrUX HTTP 500'});
+  assert.doesNotMatch(JSON.stringify(r), /K&|key=/);
+});
+
+test('detail page: real-user vitals sit after the lab scores, page or whole-site scope labelled, not private', async () => {
+  const {renderDetailPage} = await import('../monitoring/daily-report/detail-page.mjs');
+  const crux = {status: 'ok', pages: {paid: {mobile: {scope: 'page', metrics: {lcp: {p75: 4200, rating: 'poor'}, inp: {p75: 250, rating: 'needs-improvement'}, cls: {p75: 0.08, rating: 'good'}}, period: {from: '2026-10-01', to: '2026-10-28'}},
+    desktop: {scope: 'origin', metrics: {lcp: {p75: 900, rating: 'good'}}}}}};
+  const h = renderDetailPage({page: {id: 'paid', url: 'https://www.nourish.com/paid'}, report: {...reportFixture(), crux}, root: RROOT, history});
+  assert.ok(h.indexOf('Lighthouse (lab)') < h.indexOf('Real users (Chrome UX Report)'));
+  assert.match(h, /<td>mobile<\/td><td><span class="b bad" title="Poor">4\.2 s<\/span><\/td><td><span class="b warn" title="Needs improvement">250 ms<\/span><\/td><td><span class="b ok" title="Good">0\.08<\/span><\/td>/);
+  assert.match(h, /<td>desktop<\/td><td><span class="b ok" title="Good">900 ms<\/span><\/td><td class="muted">–<\/td>/);
+  assert.match(h, /Whole site \(page has too little traffic\)/); assert.match(h, /2026-10-01 to 2026-10-28/);
+  const crSection = h.slice(h.indexOf('Real users (Chrome UX Report)'), h.indexOf('<h2>Analytics'));
+  assert.doesNotMatch(crSection, /analytics:start/);
+  const none = renderDetailPage({page: {id: 'paid', url: 'https://www.nourish.com/paid'}, report: reportFixture(), root: RROOT, history});
+  assert.match(none, /Real-user Core Web Vitals not available today \(CrUX not configured; store a Google API key in the Keychain item &quot;nourish-crux-api&quot;\)/);
+});
+
+test('crux: key from nourish-crux-api, else the Unify PageSpeed key', async () => {
+  const {cruxKey} = await import('../monitoring/daily-report/crux.mjs');
+  const keychain = (items) => (cmd, args) => { const v = items[args[args.indexOf('-s') + 1]]; if (v == null) throw new Error('not found'); return v + '\n'; };
+  assert.equal(cruxKey(keychain({'nourish-crux-api': 'N', 'unify-psi-api': 'U'})), 'N');
+  assert.equal(cruxKey(keychain({'unify-psi-api': 'U'})), 'U');
+  assert.equal(cruxKey(keychain({})), null);
+});
+
+test('form check: private prefill must stay off the link and arrive only on the signup visit', async () => {
+  const {splitExpected, leakedPrefill, linkFailures, PRIVATE_PARAMS} = await import('../monitoring/daily-report/form-check.mjs');
+  assert.deepEqual(PRIVATE_PARAMS, ['nourishPayerId', 'firstName', 'lastName', 'patientBirthday']);
+  const {pub, priv} = splitExpected({nourishPayerId: true, state: 'CA', firstName: 'Monitor'});
+  assert.deepEqual(pub, {state: 'CA'}); assert.deepEqual(priv, {nourishPayerId: true, firstName: 'Monitor'});
+  const q = (s) => new URLSearchParams(s);
+  assert.deepEqual(leakedPrefill(q('landingPageVariation=x&state=CA')), []);
+  assert.deepEqual(leakedPrefill(q('state=CA&firstName=Monitor')), ['link carries firstName (private prefill must be added only at click)']);
+  const before = q('landingPageVariation=x');
+  assert.deepEqual(linkFailures(before, q('landingPageVariation=x&state=CA&nourishPayerId=3&firstName=Monitor'), {...pub, ...priv}, 'signup visit'), []);
+  assert.deepEqual(linkFailures(before, q('state=CA'), {...pub, ...priv}, 'signup visit'),
+    ['signup visit has no nourishPayerId after choosing it', 'signup visit has no firstName after choosing it', 'signup visit lost landingPageVariation']);
+});
+
+// Console/network and search-indexing checks (Oct 29 2026: blank Trustpilot widgets from a retired
+// business unit, and ad-only variants left indexable, both missed by the report).
+const DEAD_BU = '6480f128811d0a0b3ba2b211', LIVE_BU = '69cd80f7c278f2faf5031ff2';
+
+test('console check: a Trustpilot widget API 400 and a retired business unit are issues; what the check blocked is not', async () => {
+  const {classifyConsole, TRUSTPILOT_BUSINESS_UNIT} = await import('../monitoring/daily-report/console-check.mjs');
+  assert.equal(TRUSTPILOT_BUSINESS_UNIT, LIVE_BU);
+  const {issues, ignored} = classifyConsole({
+    responses: [{url: `https://widget.trustpilot.com/trustbox-data/53aa8807dec7e10d38f59f36?businessUnitId=${DEAD_BU}`, status: 400}],
+    failures: [
+      {url: 'https://dataplane-proxy.nourish.com/v1/page', error: 'net::ERR_BLOCKED_BY_CLIENT.Inspector'},
+      {url: 'https://api.rudderstack.com/sourceConfig/?p=cdn', error: 'net::ERR_NAME_NOT_RESOLVED'},
+      {url: 'https://www.nourish.com/video.mp4', error: 'net::ERR_ABORTED'},
+      {url: 'https://ddwl4m2hdecbv.cloudfront.net/b/X/X.js.gz', error: 'net::ERR_BLOCKED_BY_ORB'},
+    ],
+    consoleErrors: [
+      {text: '%c RS SDK %c XhrQueuePlugin:: Failed to deliver event(s) to https://dataplane-proxy.nourish.com/v1/page. The event(s) will be dropped.', source: 'https://cdn.rudderlabs.com/v3/rsa.min.js'},
+      {text: 'Failed to update counter: ', source: 'https://cdn.jsdelivr.net/gh/videsigns/webflow-tools@latest/multi-step.js'},
+      {text: 'Failed to load resource: the server responded with a status of 400 ()', source: 'https://widget.trustpilot.com/x'},
+      {text: 'Uncaught widget config missing', source: 'https://www.nourish.com/'},
+    ],
+    widgets: [{businessUnit: DEAD_BU, template: '53aa8807dec7e10d38f59f36'}, {businessUnit: LIVE_BU}],
+  });
+  assert.deepEqual(issues.map((i) => i.kind), ['http', 'net', 'console', 'trustpilot-id']);
+  assert.match(issues[0].detail, /HTTP 400 from widget\.trustpilot\.com \(widget API/);
+  assert.equal(issues[0].url, 'https://widget.trustpilot.com/trustbox-data/53aa8807dec7e10d38f59f36'); // query dropped
+  assert.match(issues[1].detail, /ERR_BLOCKED_BY_ORB from ddwl4m2hdecbv\.cloudfront\.net/);
+  assert.match(issues[2].detail, /Uncaught widget config missing/);
+  assert.match(issues[3].detail, new RegExp(`business unit ${DEAD_BU}, not ${LIVE_BU}`));
+  assert.equal(ignored.length, 5);
+  // The counter excuse is tied to the script that logs it.
+  assert.equal(classifyConsole({consoleErrors: [{text: 'Failed to update counter: ', source: 'https://www.nourish.com/app.js'}]}).issues.length, 1);
+});
+
+test('console check: findings join the page health once, new vs still open as usual', async () => {
+  const {applyConsole} = await import('../monitoring/daily-report/summary.mjs');
+  const r = {key: 'forbes--default--desktop', health: {status: 'pass', errors: [], failedAssets: [{url: 'https://www.nourish.com/a.js', status: 404}]}};
+  applyConsole(r, {status: 'fail', issues: [
+    {kind: 'http', url: 'https://www.nourish.com/a.js', status: 404, detail: 'HTTP 404 from www.nourish.com'},
+    {kind: 'http', url: 'https://widget.trustpilot.com/trustbox-data/x', status: 400, detail: 'HTTP 400 …'},
+    {kind: 'trustpilot-id', detail: `Trustpilot widget uses business unit ${DEAD_BU}, not ${LIVE_BU}`}]});
+  assert.equal(r.health.status, 'findings');
+  assert.deepEqual(r.health.failedAssets.map((a) => a.url), ['https://www.nourish.com/a.js', 'https://widget.trustpilot.com/trustbox-data/x']);
+  assert.deepEqual(r.health.errors, [`Trustpilot widget uses business unit ${DEAD_BU}, not ${LIVE_BU}`]);
+  const clean = {health: {status: 'pass', errors: [], failedAssets: []}};
+  assert.equal(applyConsole(clean, {status: 'pass', issues: []}).health.status, 'pass');
+});
+
+test('seo: robots read from either attribute order and from X-Robots-Tag', async () => {
+  const {robotsOf, trustpilotIds, sitemapUrls} = await import('../monitoring/daily-report/seo-check.mjs');
+  assert.equal(robotsOf('<meta content="noindex" name="robots"/>').noindex, true);
+  assert.equal(robotsOf('<meta name="robots" content="noindex, nofollow" />').noindex, true);
+  assert.equal(robotsOf('<meta name="googlebot" content="none">').noindex, true);
+  assert.equal(robotsOf('<meta name="robots" content="index, follow">').noindex, false);
+  assert.equal(robotsOf('<meta name="description" content="noindex in copy">').noindex, false);
+  assert.equal(robotsOf('<html>', 'noindex').noindex, true);
+  assert.deepEqual(trustpilotIds(`<div class="trustpilot-widget" data-locale="en-US" data-businessunit-id="${DEAD_BU}"></div><div class="x trustpilot-widget"></div>`), [DEAD_BU, '']);
+  assert.deepEqual(sitemapUrls('<url><loc>https://www.nourish.com/a?x=1&amp;y=2</loc></url><url><loc> https://www.nourish.com/b </loc></url>'), ['https://www.nourish.com/a?x=1&y=2', 'https://www.nourish.com/b']);
+});
+
+test('seo: noindex in the sitemap and indexable ad pages are issues; CMS gaps grouped; intended pages and blog -b posts left alone', async () => {
+  const {classifySeo, isAdPath} = await import('../monitoring/daily-report/seo-check.mjs');
+  for (const p of ['/paid', '/paid-qa', '/landing-pages/weight-concerns/a', '/landing-pages/pcos-b', '/lp-weight-concerns-b', '/dev/x', '/wip/tables', '/forbes', '/money-saving-mom', '/usaa', '/harley-davidson', '/nutrition-program', '/condition/glp-1s', '/start-b']) assert.equal(isAdPath(p), true, p);
+  for (const p of ['/', '/quiz/ibs', '/gut-health-quiz', '/signup/weight-loss', '/refer', '/refer-a-friend', '/blog/nourish-announces-series-b', '/about', '/conditions/glp-1s']) assert.equal(isAdPath(p), false, p);
+  const row = (path, inSitemap, noindex, extra = {}) => ({path, inSitemap, status: 200, noindex, trustpilot: [], ...extra});
+  const {issues, known} = classifySeo([
+    row('/about', true, false), row('/home-lp', true, true), row('/paid-qa', false, false), row('/paid', false, true),
+    row('/landing-page/anorexia', true, true), row('/partners/nurx', true, true), row('/partnerships/nourish-modify-low-fodmap', true, false),
+    row('/quiz/ibs', false, false), row('/blog/nourish-announces-series-b', true, false),
+    {path: '/blog/old-post', inSitemap: true, status: 301, location: '/blog/new-post'},
+    row('/forbes', false, true, {trustpilot: [DEAD_BU, LIVE_BU]}),
+  ]);
+  assert.deepEqual(issues.map((i) => `${i.kind} ${i.path}${i.level ? ' ' + i.level : ''}`), [
+    'noindex-in-sitemap /home-lp', 'ad-page-indexable /paid-qa', 'sitemap-not-200 /blog/old-post review', 'trustpilot-id /forbes']);
+  assert.deepEqual(known.map((k) => `${k.id} ${k.paths.length}`), ['cms-noindex-in-sitemap 2', 'partnerships-modify 1']);
+});
+
+test('seo fire drill: the whole check, sitemap to findings, against a fake site', async () => {
+  const {checkSeo} = await import('../monitoring/daily-report/seo-check.mjs');
+  const pages = {
+    '/sitemap.xml': {body: '<urlset><url><loc>https://www.nourish.com/</loc></url><url><loc>https://www.nourish.com/start</loc></url><url><loc>https://www.nourish.com/landing-page/anxiety</loc></url></urlset>'},
+    '/': {body: `<head><meta name="robots" content="index"></head><div class="trustpilot-widget" data-businessunit-id="${LIVE_BU}"></div>`},
+    '/start': {body: '<meta content="noindex" name="robots"/>'},
+    '/landing-page/anxiety': {body: '', headers: {'x-robots-tag': 'noindex'}},
+    '/forbes': {body: `<div class="trustpilot-widget" data-businessunit-id="${DEAD_BU}"></div>`},
+    '/paid-qa': {body: '<title>Paid QA</title>'},
+  };
+  const asked = [];
+  const fetcher = async (url, opts = {}) => {
+    const p = new URL(url).pathname; asked.push(p);
+    assert.notEqual(opts.redirect === 'follow', true);
+    const page = pages[p];
+    return new Response(page ? page.body : 'not found', {status: page ? 200 : 404, headers: page?.headers});
+  };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'seo-'));
+  const staticPathsFile = path.join(dir, 'static.txt');
+  fs.writeFileSync(staticPathsFile, '# comment\n/forbes\n/paid-qa\n/gone\n');
+  const r = await checkSeo({fetcher, staticPathsFile, extraUrls: ['https://www.nourish.com/'], concurrency: 2});
+  assert.equal(r.status, 'ok'); assert.equal(r.sitemapCount, 3); assert.equal(r.checked, 6); assert.equal(r.indexable, 3);
+  assert.deepEqual(r.issues.map((i) => `${i.kind} ${i.path}`).sort(), ['ad-page-indexable /forbes', 'ad-page-indexable /paid-qa', 'noindex-in-sitemap /start', 'trustpilot-id /forbes']);
+  assert.deepEqual(r.known.map((k) => k.paths), [['/landing-page/anxiety']]);
+  assert.ok(!asked.includes('/dietitian-application'));
+  const down = await checkSeo({fetcher: async () => new Response('', {status: 503}), staticPathsFile});
+  assert.equal(down.status, 'error'); assert.match(down.reason, /sitemap\.xml HTTP 503/);
+});
+
+test('seo: new issues make the day red and get a Slack line; still-open ones only a review line', async () => {
+  const {seoNewness} = await import('../monitoring/daily-report/summary.mjs');
+  const seo = (issues) => ({status: 'ok', sitemapCount: 3, checked: 6, indexable: 3, issues, known: [], rows: []});
+  const today = seo([{kind: 'noindex-in-sitemap', path: '/start', detail: 'in the sitemap but serves noindex'}, {kind: 'ad-page-indexable', path: '/paid-qa', detail: 'ad/variant page is indexable'},
+    {kind: 'sitemap-not-200', level: 'review', path: '/blog/old', detail: 'sitemap URL answers 301'}]);
+  seoNewness(today, seo([{kind: 'noindex-in-sitemap', path: '/start'}]));
+  assert.deepEqual(today.issues.map((i) => i.isNew), [false, true, true]);
+  const o = overall({...quietReport(), seo: today}, PAGES);
+  assert.equal(o.tone, 'bad'); assert.equal(o.headline, '1 new issue (1 still open)');
+  const {n, text} = message({...quietReport(), seo: today});
+  assert.equal(n.status.code, 'site_failure');
+  assert.match(text, /🔴 \*Indexing:\* 1: \/paid-qa ad\/variant page is indexable/);
+  assert.match(text, /🟡 \*Indexing, still open:\* 1: \/start in the sitemap but serves noindex/);
+  const quiet = seo([{kind: 'sitemap-not-200', level: 'review', path: '/blog/old', detail: 'sitemap URL answers 301'}]);
+  seoNewness(quiet, null);
+  assert.equal(message({...quietReport(), seo: quiet}).n.status.code, 'no_change');
+});
+
+test('report: indexing and console sections are public; detail pages show the page own rows', async () => {
+  const {renderNourishReport} = await import('../monitoring/daily-report/render.mjs');
+  const {renderDetailPage} = await import('../monitoring/daily-report/detail-page.mjs');
+  const report = {...reportFixture(),
+    console: [{key: 'paid--default--desktop', status: 'fail', widgets: 1, issues: [{kind: 'trustpilot-id', detail: `Trustpilot widget uses business unit ${DEAD_BU}, not ${LIVE_BU}`}]},
+      {key: 'paid--default--mobile', status: 'pass', widgets: 1, issues: []}, {key: 'home--default--desktop', status: 'pass', widgets: 0, issues: []}, {key: 'home--default--mobile', status: 'error', error: 'Timeout 30000ms', issues: []}],
+    seo: {status: 'ok', sitemapCount: 1421, checked: 1442, indexable: 1321, rows: [{path: '/paid', inSitemap: false, status: 200, noindex: false}],
+      issues: [{kind: 'ad-page-indexable', path: '/paid', detail: 'ad/variant page is indexable', isNew: true}],
+      known: [{id: 'cms-noindex-in-sitemap', note: 'Noindex CMS items still in the sitemap', paths: ['/landing-page/a', '/landing/b']}]}};
+  const html = renderNourishReport(report, RROOT);
+  const pub = html.replace(/<!--analytics:start-->[\s\S]*?<!--analytics:end-->/g, '');
+  assert.match(pub, /<h2>Search indexing<\/h2><p>1421 URLs in the sitemap, 1442 pages checked, 1321 indexable\. <span class="b bad">1 issue<\/span>/);
+  assert.match(pub, /<span class="b bad">New<\/span><\/td><td>Ad\/variant page is indexable<\/td><td><a href="https:\/\/www\.nourish\.com\/paid"/);
+  assert.match(pub, /Noindex CMS items still in the sitemap: 2 pages/);
+  assert.match(pub, /<h2>Console and network<\/h2><p><span class="b bad">1 of 4<\/span> page states/);
+  assert.match(pub, new RegExp(`Paid</a> · desktop</td><td>Trustpilot widget uses business unit ${DEAD_BU}`));
+  assert.match(pub, /1 page state could not be checked/);
+  assert.ok(pub.indexOf('<h2>Search indexing') < pub.indexOf('<h2>Pages and visuals'));
+  const page = renderDetailPage({page: {id: 'paid', url: 'https://www.nourish.com/paid'}, report, root: RROOT});
+  assert.match(page, /<h2>Console and network<\/h2><table>.*desktop<\/td><td><span class="b bad">Issue<\/span><\/td><td>Trustpilot widget uses business unit/s);
+  assert.match(page, /mobile<\/td><td><span class="b ok">OK<\/span><\/td><td>No console errors or failed requests; 1 Trustpilot widget on the live business unit/);
+  assert.match(page, /<h2>Search indexing<\/h2><p>Not in the sitemap · indexable<\/p><ul class="issues"><li class="issue"><strong>ad-page-indexable/);
+  const home = renderDetailPage({page: {id: 'home', url: 'https://www.nourish.com/'}, report, root: RROOT});
+  assert.match(home, /Not checked<\/span><\/td><td>Timeout 30000ms/);
+  assert.match(home, /This page was not in today's indexing check/);
+});
+
+test('paid and /landing-pages/ report pages expect noindex (ad-only, set noindex Oct 29 2026)', () => {
+  for (const [, file] of SITES) for (const p of JSON.parse(fs.readFileSync(file, 'utf8')).pages) {
+    const path = new URL(p.url).pathname;
+    if (/^\/paid|^\/landing-pages?\/|^\/landing\//.test(path)) assert.equal(p.expectNoindex, true, path);
+  }
+});
+
+test('captures hide the OneTrust banner: it appears 0.3-0.8 s after load, so a capture could land either side of it', async () => {
+  const {checker} = await import('../monitoring/daily-report/checker.mjs');
+  const {selectCases} = await checker('src/model.mjs');
+  for (const [, file] of SITES) for (const c of selectCases(JSON.parse(fs.readFileSync(file, 'utf8')), 'smoke')) {
+    assert.match(c.finalState?.css ?? '', /#onetrust-consent-sdk\{display:none!important\}/, c.key);
+  }
+});

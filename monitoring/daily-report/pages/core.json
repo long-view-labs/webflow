@@ -40,6 +40,7 @@
       "reason": "multi-step.js setup self-check expects data-form=\"multistep\"; the quiz still works (walked by the form check)"
     }
   ],
+  "finalStateCss": "#onetrust-consent-sdk{display:none!important}",
   "pages": [
     {
       "id": "home",

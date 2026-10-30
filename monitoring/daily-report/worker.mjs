@@ -2,7 +2,8 @@
 //   visual + health (page checker) for each page set in SITES, same-run repeat
 //   capture (noise check), nav/menu check, quiz + insurance-search check, Lighthouse
 //   lab scores (all four categories, analytics blocked and verified per load), change
-//   vs the previous run (2% threshold), tracking stability, one detail page per page.
+//   vs the previous run (2% threshold), tracking stability, one detail page per page,
+//   console/network errors per page state (console-check.mjs) and search indexing (seo-check.mjs).
 // Writes report.json, index.html and pages/<id>.html into the run directory. Never approves baselines.
 // Usage: node worker.mjs <runDir> [previousRunDir]
 import fs from 'node:fs/promises';
@@ -16,7 +17,10 @@ import {renderNourishReport, renderNourishComparison} from './render.mjs';
 import {renderDetailPage} from './detail-page.mjs';
 import {labCases, measureLab, medianRun, LAB_RUNS, labRow, buildPerformance, performanceArea} from './performance.mjs';
 import {fetchPageAnalytics} from './page-analytics.mjs';
-import {applyExpectedNoindex, applyKnownErrors, combineInteraction} from './summary.mjs';
+import {fetchCrux} from './crux.mjs';
+import {checkConsole} from './console-check.mjs';
+import {checkSeo} from './seo-check.mjs';
+import {applyExpectedNoindex, applyKnownErrors, combineInteraction, applyConsole, seoNewness} from './summary.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '../..');
@@ -46,7 +50,7 @@ async function main() {
   for (const [name, file] of SITES) { const site = await readJson(file); sets.push({name, file, site, cases: selectCases(site, 'smoke')}); }
   const expected = sets.reduce((n, s) => n + s.cases.length, 0);
   const report = {schemaVersion: 1, client: 'nourish', startedAt: new Date().toISOString(), expectedCases: expected,
-    baselineStatus: 'Human approval required; no automatic promotion', runs: [], repeatability: [], headings: [], nav: [], forms: [], errors: []};
+    baselineStatus: 'Human approval required; no automatic promotion', runs: [], repeatability: [], headings: [], nav: [], forms: [], console: [], errors: []};
   const save = async () => {
     report.elapsedSeconds = (Date.now() - started) / 1000;
     await writeJson(path.join(root, 'report.json'), report);
@@ -101,14 +105,19 @@ async function main() {
         const page = site.pages.find((p) => p.id === c.pageId);
         const nav = await checkNav(browser, {url: c.url, viewport: c.viewport, nav: page.nav}, {protectPage});
         const forms = await checkForms(browser, {url: c.url, viewport: c.viewport}, {protectPage});
+        const cons = await checkConsole(browser, {url: c.url, viewport: c.viewport}, {protectPage});
         report.nav.push({key: c.key, ...nav});
         report.forms.push({key: c.key, ...forms});
+        report.console.push({key: c.key, ...cons});
         // Feed both into the checker's own "interaction" slot so its report and
         // outcome rules treat a broken menu, quiz or search like Unify's failed menu check.
         const res = run.results.find((r) => r.key === c.key);
         if (res?.health && res.health.status !== 'not-run') {
           res.health.interaction = combineInteraction(nav, forms);
           applyKnownErrors(res, forms, site.knownErrors ?? []);
+          // Console errors, third-party 4xx/net failures and a retired Trustpilot id count as page
+          // findings, so they get the checker's new / still-open handling.
+          applyConsole(res, cons);
         }
       }
     } catch (e) { report.errors.push(`${name} nav/form check: ${e.message}`); }
@@ -160,10 +169,20 @@ async function main() {
 
   // Per-page Amplitude numbers (page cards and detail pages). Never fails the run; without the
   // Keychain key the cards say so.
+  const pageUrls = Object.fromEntries(sets.flatMap((s) => s.site.pages.map((p) => [p.id, p.url])));
   try {
-    const pageUrls = Object.fromEntries(sets.flatMap((s) => s.site.pages.map((p) => [p.id, p.url])));
     report.pageAnalytics = await fetchPageAnalytics({pageUrls});
   } catch (e) { report.pageAnalytics = {status: 'unavailable', reason: String(e.message).split('\n')[0].slice(0, 120), days: [], pages: {}}; }
+  // Real-user Core Web Vitals from CrUX (Chrome's dataset; nothing loads the page). Never fails the run.
+  try { report.crux = await fetchCrux({pageUrls}); }
+  catch (e) { report.crux = {status: 'unavailable', reason: String(e.message).split('\n')[0].slice(0, 120), pages: {}}; }
+  // Search indexing: plain GETs of the sitemap and static pages (no JavaScript). Never fails the run.
+  try {
+    report.seo = await checkSeo({extraUrls: Object.values(pageUrls)});
+    let previousSeo = null;
+    if (previousRoot) { try { previousSeo = (await readJson(path.join(previousRoot, 'report.json'))).seo ?? null; } catch {} }
+    seoNewness(report.seo, previousSeo);
+  } catch (e) { report.seo = {status: 'error', reason: String(e.message).split('\n')[0].slice(0, 120), issues: [], known: [], rows: []}; }
   await save();
 
   report.finishedAt = new Date().toISOString();
@@ -193,6 +212,7 @@ async function main() {
     failedAssets: results.reduce((n, r) => n + (r.health.failedAssets?.length ?? 0), 0),
     contentFindings: results.reduce((n, r) => n + (r.health.content?.failures.length ?? 0), 0),
     navFailures: report.nav.filter((n) => n.status !== 'pass').length,
+    consoleFailures: report.console.filter((n) => n.status === 'fail').length,
     formChecks: report.forms.reduce((n, f) => n + (f.checked ?? 0), 0),
     formFailures: report.forms.reduce((n, f) => n + (f.quiz && f.quiz.status !== 'pass' ? 1 : 0) + (f.search ?? []).filter((m) => m.status !== 'pass').length + (f.error ? 1 : 0), 0),
     knownErrors: results.reduce((n, r) => n + (r.health.knownErrors?.length ?? 0), 0),

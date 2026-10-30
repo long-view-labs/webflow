@@ -64,6 +64,16 @@ export function stage(src, out, {keepAnalytics = false} = {}) {
   return out;
 }
 
+// Whether a finished run goes out: only a completed run (an unfinished one would replace a good
+// report with a half-empty one), and only when the speed test proved it reached no analytics.
+export function publishGate({completed, proof, skip = false}) {
+  const local = 'see monitoring-local/daily-report/latest/index.html';
+  if (skip) return {ok: false, detail: 'skipped: --no-publish'};
+  if (!completed) return {ok: false, detail: `not published: the run did not finish; ${local}`};
+  if (!proof?.ok) return {ok: false, detail: `not published: ${proof?.reason ?? 'no speed-test proof'}; ${local}`};
+  return {ok: true};
+}
+
 function deploy(dir, project) {
   const npx = ['/opt/homebrew/bin/npx', '/usr/local/bin/npx', path.join(path.dirname(process.execPath), 'npx')].find((p) => fs.existsSync(p));
   if (!npx) throw new Error('npx not found');

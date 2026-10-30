@@ -6,7 +6,7 @@
 import path from 'node:path';
 import {checker} from './checker.mjs';
 import {pageName} from './performance.mjs';
-import {analyticsSection, METRICS_CSS, CHART_CSS} from './page-metrics.mjs';
+import {analyticsSection, cruxSection, METRICS_CSS, CHART_CSS} from './page-metrics.mjs';
 
 const {caseStatus, caseParts, STATE_LABELS, escape} = await checker('src/report-html.mjs');
 const {pageGauges, GAUGE_CSS, band} = await checker('src/gauges.mjs');
@@ -39,6 +39,24 @@ function checksTable(report, pageId) {
   }
   if (!rows.length) return '<p class="muted">No navigation or form checks ran for this page.</p>';
   return `<table><tr><th>Viewport</th><th>Check</th><th>Result</th><th>Detail</th></tr>${rows.map((r) => `<tr><td>${escape(r[0])}</td><td>${escape(r[1])}</td><td>${pass(r[2])}</td><td>${escape(scrub(r[3]))}</td></tr>`).join('')}</table>`;
+}
+
+// Console/network check results for this page, desktop and mobile (console-check.mjs).
+function consoleTable(report, pageId) {
+  const rows = (report.console ?? []).filter((c) => caseParts(c.key).pageId === pageId);
+  if (!rows.length) return '<p class="muted">The console and network check did not run for this page.</p>';
+  return `<table><tr><th>Viewport</th><th>Result</th><th>Detail</th></tr>${rows.map((c) => `<tr><td>${escape(caseParts(c.key).viewport)}</td><td>${c.status === 'error' ? '<span class="b">Not checked</span>' : pass(c.status === 'pass')}</td><td>${c.status === 'error' ? escape(scrub(c.error)) : c.issues.length ? c.issues.map((i) => `${escape(i.detail)}${i.url ? `<br><span class="muted">${escape(noQuery(i.url))}</span>` : ''}`).join('<br>') : `No console errors or failed requests${c.widgets ? `; ${c.widgets} Trustpilot widget${c.widgets === 1 ? '' : 's'} on the live business unit` : ''}`}</td></tr>`).join('')}</table>`;
+}
+
+// This page's row from the indexing check (seo-check.mjs).
+function seoLine(report, page) {
+  const s = report.seo;
+  if (!s?.rows?.length) return '<p class="muted">Search indexing was not checked today.</p>';
+  const p = (() => { const x = new URL(page.url).pathname; return x.length > 1 ? x.replace(/\/+$/, '') : x; })();
+  const r = s.rows.find((r) => r.path === p);
+  if (!r) return '<p class="muted">This page was not in today\'s indexing check.</p>';
+  const found = (s.issues ?? []).filter((i) => i.path === p);
+  return `<p>${r.inSitemap ? 'In the sitemap' : 'Not in the sitemap'} · ${r.status === 200 ? (r.noindex ? 'noindex' : 'indexable') : `answers ${escape(r.status)}`}${page.expectNoindex ? ' · noindex expected' : ''}</p>${found.length ? `<ul class="issues">${found.map((i) => `<li class="issue"><strong>${escape(i.kind)}</strong><span>${escape(i.detail)}</span></li>`).join('')}</ul>` : ''}`;
 }
 
 // root: run directory the screenshots live under; the page is written to <root>/pages/<id>.html.
@@ -95,7 +113,10 @@ ${METRICS_CSS}
 <p><a href="../candidate-changes/index.html#page-${escape(page.id)}">Previous run vs latest, side by side →</a></p>
 <h2>Health findings</h2>${findings ? `<ul class="issues">${findings}</ul>` : '<p class="muted">Nothing new on this page today.</p>'}${known.length ? `<p class="muted">Known third-party error, not counted: ${escape(known[0].message)} (${escape(known[0].reason)}).</p>` : ''}${a11y.size ? `<p class="muted">Automated accessibility rules flagged (reference only): ${escape([...a11y].join(', '))}.</p>` : ''}
 <h2>Navigation, quiz and insurance search</h2>${checksTable(report, page.id)}
+<h2>Console and network</h2>${consoleTable(report, page.id)}
+<h2>Search indexing</h2>${seoLine(report, page)}
 <h2>Lighthouse (lab)</h2><div class="lab">${lab}</div>
+<h2>Real users (Chrome UX Report)</h2>${cruxSection(report.crux, page.id)}
 <h2>Analytics (Amplitude)</h2>${analyticsSection(report.pageAnalytics, page.id)}
 </main></html>`;
 }

@@ -32,6 +32,37 @@ export function applyKnownErrors(result, formCheck, known = []) {
   return result;
 }
 
+// The console check's findings join the checker's own health result: network failures as failed
+// files (skipping any URL health already lists), console errors and a retired Trustpilot id as
+// page errors. healthSignature then tells new findings from still-open ones as for any other.
+export function applyConsole(result, check) {
+  const h = result.health;
+  if (!h || !check?.issues?.length) return result;
+  h.failedAssets ??= []; h.errors ??= [];
+  const listed = new Set(h.failedAssets.map((a) => String(a.url ?? a).replace(/[?#].*$/, '')));
+  for (const i of check.issues) {
+    if (i.kind === 'http' || i.kind === 'net') {
+      if (listed.has(i.url)) continue;
+      listed.add(i.url);
+      h.failedAssets.push({url: i.url, ...(i.status ? {status: i.status} : {error: i.detail}), type: 'console-check'});
+    } else h.errors.push(i.detail);
+  }
+  if (h.status === 'pass') h.status = 'findings';
+  return result;
+}
+
+// Marks each indexing issue new or still open against the previous run (same kind and path).
+export function seoNewness(seo, previous) {
+  if (!seo?.issues) return seo;
+  const before = previous?.issues ? new Set(previous.issues.map((i) => `${i.kind}:${i.path}`)) : null;
+  for (const i of seo.issues) i.isNew = before ? !before.has(`${i.kind}:${i.path}`) : true;
+  return seo;
+}
+const seoSplit = (seo) => {
+  const issues = (seo?.issues ?? []).filter((i) => i.level !== 'review');
+  return {fresh: issues.filter((i) => i.isNew !== false), standing: issues.filter((i) => i.isNew === false), review: (seo?.issues ?? []).filter((i) => i.level === 'review')};
+};
+
 export function combineInteraction(nav, forms) {
   const failed = [nav, forms].filter((x) => x && x.status !== 'pass');
   return {status: failed.length ? 'fail' : 'pass', assertion: (failed.length ? failed : [nav, forms]).filter(Boolean).map((x) => x.assertion).join(' | ')};
@@ -57,15 +88,18 @@ export function overall(report, pages) {
   const newIssues = pageIssues.filter(isNew), standing = pageIssues.filter((i) => !isNew(i));
   const pageChanges = pages.now.filter((i) => i.level === 'changed');
   const failed = report.outcome === 'execution-error' || (report.errors ?? []).length > 0;
-  const issues = newIssues.length + t.issues.length;
-  const still = standing.length ? ` (${standing.length} still open)` : '';
-  const tone = failed || issues ? 'bad' : pageChanges.length || t.changes.length || standing.length ? 'warn' : 'good';
+  const seo = seoSplit(report.seo);
+  const issues = newIssues.length + t.issues.length + seo.fresh.length;
+  const open = standing.length + seo.standing.length;
+  const still = open ? ` (${open} still open)` : '';
+  const tone = failed || issues ? 'bad' : pageChanges.length || t.changes.length || open || seo.review.length ? 'warn' : 'good';
   const headline = failed ? 'Run did not finish cleanly'
     : issues ? `${issues} new issue${issues > 1 ? 's' : ''}${still}`
-    : pageChanges.length || t.changes.length ? `Changes to review, no new issues${still}`
-    : standing.length ? `No new issues${still}`
+    : pageChanges.length || t.changes.length || seo.review.length ? `Changes to review, no new issues${still}`
+    : open ? `No new issues${still}`
     : 'All clear';
-  return {tone, headline, newIssues, standing, pageChanges, trackingIssues: t.issues, trackingChanges: t.changes, failed};
+  return {tone, headline, newIssues, standing, pageChanges, trackingIssues: t.issues, trackingChanges: t.changes, failed,
+    seoNew: seo.fresh, seoStanding: seo.standing, seoReview: seo.review};
 }
 
 const fmt = (n) => (n == null ? '–' : Math.round(n).toLocaleString('en-US'));
@@ -105,7 +139,7 @@ export function dailyNotification(report, pages, {link = null, published = false
   const captured = Number.isInteger(c.captured) && c.captured >= 0 ? c.captured : null;
   const partial = expected !== null && captured !== null && captured < expected;
   const checkerError = o.failed || partial;
-  let code = checkerError ? 'checker_error' : o.newIssues.length ? 'site_failure'
+  let code = checkerError ? 'checker_error' : o.newIssues.length || o.seoNew.length ? 'site_failure'
     : o.pageChanges.length || ['changed-needs-review', 'review-required', 'first-run-review-required'].includes(report.outcome) ? 'review_needed' : 'no_change';
 
   const affectedChecks = [];
@@ -123,6 +157,10 @@ export function dailyNotification(report, pages, {link = null, published = false
     add('Amplitude', e.status === 'issue' ? 'site_failure' : e.status === 'error' ? 'checker_error' : 'review_needed',
       e.status === 'error' ? `${e.label}: could not fetch (${e.reason})` : `${e.label} ${fmt(e.yesterday)} yesterday (${pct(e.vsLastWeek)} vs last week, ${pct(e.vsAvg7)} vs the 7-day average): ${e.reason}`);
   }
+  const seoLine = (items) => `${items.length}: ${items.slice(0, 3).map((i) => `${i.path} ${i.detail}`).join('; ')}${items.length > 3 ? ` +${items.length - 3} more` : ''}`;
+  if (o.seoNew.length) add('Indexing', 'site_failure', seoLine(o.seoNew));
+  if (o.seoStanding.length) add('Indexing, still open', 'review_needed', seoLine(o.seoStanding));
+  if (report.seo?.status === 'error') add('Indexing', 'checker_error', `check failed: ${report.seo.reason}`);
   for (const a of (report.areas ?? []).filter((a) => ['seo', 'ga4', 'gsc'].includes(a.id) && ['issue', 'changed'].includes(a.status))) add(a.label, a.status === 'issue' ? 'site_failure' : 'review_needed', a.text);
 
   const unknowns = [];

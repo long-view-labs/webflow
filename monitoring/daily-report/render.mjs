@@ -5,6 +5,7 @@ import {checker, siteAudit} from './checker.mjs';
 import {overall, localAreas, MARK} from './summary.mjs';
 import {pageName} from './performance.mjs';
 import {privately, cardAnalytics, METRICS_CSS} from './page-metrics.mjs';
+import {TRUSTPILOT_BUSINESS_UNIT, IDLE_MS} from './console-check.mjs';
 
 const {renderDailyReport, renderComparisonPage, deriveIssues, caseParts} = await checker('src/report-html.mjs');
 const {chartsSection, seriesCards} = await siteAudit('src/daily/charts.mjs');
@@ -58,6 +59,35 @@ function googleHtml(report) {
   return html;
 }
 
+// Console and network errors per page state (console-check.mjs). The same findings also show on
+// the page cards through the health result; this is the cross-site view.
+function consoleSection(report) {
+  const rows = report.console ?? [];
+  if (!rows.length) return '';
+  const failing = rows.filter((r) => r.status === 'fail'), broken = rows.filter((r) => r.status === 'error');
+  const widgets = rows.reduce((n, r) => n + (r.widgets ?? 0), 0);
+  const list = failing.map((r) => `<tr><td><a href="pages/${escape(caseParts(r.key).pageId)}.html">${escape(pageName(caseParts(r.key).pageId))}</a> · ${escape(caseParts(r.key).viewport)}</td><td>${r.issues.map((i) => `${escape(i.detail)}${i.url ? `<br><span class="muted">${escape(i.url)}</span>` : ''}`).join('<br>')}</td></tr>`).join('');
+  return `<h2>Console and network</h2><p>${failing.length ? `<span class="b bad">${failing.length} of ${rows.length}</span> page states logged errors or had requests fail` : `<span class="b ok">OK</span> No console errors or failed requests on ${rows.length} page states`}. ${widgets} Trustpilot widget${widgets === 1 ? '' : 's'} checked for business unit ${escape(TRUSTPILOT_BUSINESS_UNIT)}.${broken.length ? ` <span class="muted">${broken.length} page state${broken.length === 1 ? '' : 's'} could not be checked.</span>` : ''}</p>
+${list ? `<table><tr><th>Page</th><th>What failed</th></tr>${list}</table>` : ''}
+<p class="muted">A fresh load of each page state with ${IDLE_MS / 1000} s idle, analytics and writes blocked as in the other checks. Requests the check blocks, and console errors that only report them, are not counted; any 4xx from a widget API (Trustpilot) always is.</p>`;
+}
+
+// Search indexing (seo-check.mjs): sitemap URLs serving noindex, ad/variant pages left indexable,
+// sitemap URLs that redirect, and a site-wide Trustpilot id scan of the same HTML.
+const SEO_KIND = {'noindex-in-sitemap': 'In the sitemap but noindex', 'ad-page-indexable': 'Ad/variant page is indexable', 'sitemap-not-200': 'Sitemap URL redirects or errors', 'trustpilot-id': 'Retired Trustpilot id', 'fetch-failed': 'Could not fetch'};
+function seoSection(report, o) {
+  const s = report.seo;
+  if (!s) return '';
+  if (s.status === 'error' && !s.rows?.length) return `<h2>Search indexing</h2><p class="muted">Not checked today (${escape(s.reason)}).</p>`;
+  const row = (i, tag) => `<tr><td>${tag}</td><td>${escape(SEO_KIND[i.kind] ?? i.kind)}</td><td><a href="${escape('https://www.nourish.com' + i.path)}" rel="noopener noreferrer">${escape(i.path)}</a></td><td>${escape(i.detail)}</td></tr>`;
+  const rows = [...o.seoNew.map((i) => row(i, '<span class="b bad">New</span>')), ...o.seoStanding.map((i) => row(i, '<span class="b bad">Still open</span>')), ...o.seoReview.map((i) => row(i, '<span class="b warn">Review</span>'))].join('');
+  const known = (s.known ?? []).map((k) => `<li>${escape(k.note)}: ${k.paths.length} page${k.paths.length === 1 ? '' : 's'} <span class="muted">(${escape(k.paths.slice(0, 3).join(', '))}${k.paths.length > 3 ? ', …' : ''})</span></li>`).join('');
+  return `<h2>Search indexing</h2><p>${s.sitemapCount} URLs in the sitemap, ${s.checked} pages checked, ${s.indexable} indexable. ${o.seoNew.length + o.seoStanding.length ? `<span class="b bad">${o.seoNew.length + o.seoStanding.length} issue${o.seoNew.length + o.seoStanding.length === 1 ? '' : 's'}</span>` : '<span class="b ok">No issues</span>'}${o.seoReview.length ? ` · ${o.seoReview.length} to review` : ''}.</p>
+${rows ? `<table><tr><th></th><th>Finding</th><th>Page</th><th>Detail</th></tr>${rows}</table>` : ''}
+${known ? `<p class="muted">Known and accepted for now, not counted:</p><ul class="muted">${known}</ul>` : ''}
+<p class="muted">Plain requests to the sitemap, every URL in it, the static pages it leaves out (pages/static-paths.txt) and this report's pages; no JavaScript runs. Ad and variant pages (/paid*, /landing-pages/*, /landing/*, /lp-*, -b/-c variants, /dev/*, /wip/*, /forbes, /money-saving-mom, employer pages, /nutrition-program, /condition/glp-1s) must be noindex; /quiz/*, /gut-health-quiz, /signup/weight-loss, /refer and /refer-a-friend are indexable on purpose.</p>`;
+}
+
 function formsTable(report) {
   const rows = (report.forms ?? []).flatMap((f) => [
     ...(f.quiz ? [[f.key, 'Quiz', f.quiz.status, f.quiz.detail]] : []),
@@ -91,11 +121,13 @@ export function renderNourishReport(report, root) {
       .replace(`<p><a href="pages/${id}.html">Details and analytics →</a>`, (m) => metrics + m);
   }
   html = html.replace('</style>', () => METRICS_CSS + '</style>');
-  const top = `<section class="verdict ${o.tone}"><strong>${escape(o.headline)}</strong>Pages: ${o.newIssues.length} new issue${o.newIssues.length === 1 ? '' : 's'}, ${o.standing.length} still open, ${o.pageChanges.length} visual change${o.pageChanges.length === 1 ? '' : 's'}. Tracking and analytics: ${o.trackingIssues.length} issue${o.trackingIssues.length === 1 ? '' : 's'}, ${o.trackingChanges.length} change${o.trackingChanges.length === 1 ? '' : 's'}.</section>
+  const top = `<section class="verdict ${o.tone}"><strong>${escape(o.headline)}</strong>Pages: ${o.newIssues.length} new issue${o.newIssues.length === 1 ? '' : 's'}, ${o.standing.length} still open, ${o.pageChanges.length} visual change${o.pageChanges.length === 1 ? '' : 's'}. Tracking and analytics: ${o.trackingIssues.length} issue${o.trackingIssues.length === 1 ? '' : 's'}, ${o.trackingChanges.length} change${o.trackingChanges.length === 1 ? '' : 's'}.${report.seo ? ` Search indexing: ${o.seoNew.length} new issue${o.seoNew.length === 1 ? '' : 's'}, ${o.seoStanding.length} still open, ${o.seoReview.length} to review.` : ''}</section>
 ${privately(`<table class="areas">${[...localAreas(report, o), ...(report.areas ?? [])].map((a) => `<tr><td>${MARK[a.status] ?? '⚪'}</td><th>${escape(a.label)}</th><td>${escape(a.text)}</td></tr>`).join('')}</table>
 ${chartsSection({cards: seriesCards({amplitude: report.tracking?.events, google: report.google}), links: report.dashboardLinks ?? [], note: 'Last 14 days per day; the darkest column is the latest day.'})}
 ${trackingSection(report)}
 ${googleHtml(report)}`)}
+${seoSection(report, o)}
+${consoleSection(report)}
 <h2>Pages and visuals</h2>`;
   // The checker's own verdict box doesn't know which issues are still open; the top one replaces it.
   html = html.replace(/<section class="verdict[^"]*">[\s\S]*?<\/section>/, () => top);

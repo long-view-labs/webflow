@@ -15,13 +15,16 @@ import {fileURLToPath} from 'node:url';
 import {dailyNotification, renderDailyMessage, shouldPost, neededAttention} from './summary.mjs';
 import {leakProof} from './performance.mjs';
 import {checker} from './checker.mjs';
-import {publish} from './publish.mjs';
+import {publish, publishGate} from './publish.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '../..');
 const STORE = process.env.NOURISH_DAILY_DIR || path.join(REPO, 'monitoring-local/daily-report');
 const RUNS = path.join(STORE, 'runs');
 const STATE = path.join(STORE, 'state.json');
+// Lighthouse runs in the worker's own process and its memory grows with every load: 159 of the
+// 258 loads used up node's default 4 GB heap on Oct 29 2026, so the worker gets more room.
+const WORKER_HEAP_MB = 10240;
 const TIMEOUT_MS = 150 * 60 * 1000; // 86 page states, repeat captures, nav + form checks, 3 × 86 Lighthouse loads
 const RETAIN_RUNS = 30;
 const RETAIN_BYTES = 2 * 1024 ** 3;
@@ -46,7 +49,7 @@ function lock() {
 function runWorker(runDir, previous) {
   return new Promise((resolve) => {
     const log = fs.openSync(path.join(runDir, 'worker.log'), 'w');
-    const child = spawn(process.execPath, [path.join(HERE, 'worker.mjs'), runDir, ...(previous ? [previous] : [])],
+    const child = spawn(process.execPath, [`--max-old-space-size=${WORKER_HEAP_MB}`, path.join(HERE, 'worker.mjs'), runDir, ...(previous ? [previous] : [])],
       {cwd: REPO, stdio: ['ignore', log, log], detached: true});
     let timedOut = false;
     // Kill the whole group: the worker's browsers are its children.
@@ -104,12 +107,11 @@ async function main() {
     fs.renameSync(latest + '.tmp', latest);
 
     const {deriveIssues} = await checker('src/report-html.mjs');
-    // Published copy (noindex, HTML/images only), and only when every Lighthouse load's network
-    // log shows zero answered analytics requests; the message falls back to the local file otherwise.
-    const proof = leakProof(report.performance);
+    // Published copy (noindex, HTML/images only), only for a completed run whose every Lighthouse
+    // load's network log shows zero answered analytics requests; the message falls back to the local file otherwise.
+    const gate = publishGate({completed, proof: leakProof(report.performance), skip: args.has('--no-publish')});
     let link = path.join(latest, 'index.html');
-    if (args.has('--no-publish')) state.published = {ok: false, detail: 'skipped: --no-publish'};
-    else if (!proof.ok) state.published = {ok: false, detail: `not published: ${proof.reason}; see monitoring-local/daily-report/latest/index.html`};
+    if (!gate.ok) state.published = {ok: false, detail: gate.detail};
     else {
       try { link = publish(runDir); state.published = {ok: true, url: link, at: new Date().toISOString()}; }
       catch (e) { state.published = {ok: false, detail: e.message.slice(0, 300)}; }

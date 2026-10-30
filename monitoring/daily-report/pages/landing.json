@@ -40,6 +40,7 @@
       "reason": "multi-step.js setup self-check expects data-form=\"multistep\"; the quiz still works (walked by the form check)"
     }
   ],
+  "finalStateCss": "#onetrust-consent-sdk{display:none!important}",
   "pages": [
     {
       "id": "landing-meal-planning",
@@ -54,7 +55,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-glp-1s",
@@ -69,7 +71,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-pcos-b",
@@ -84,7 +87,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-gut-health-b",
@@ -99,7 +103,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-online-sports-nutritionist-b",
@@ -114,7 +119,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-menopause-b",
@@ -129,7 +135,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-fitness-health",
@@ -144,7 +151,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-intuitive-eating",
@@ -159,7 +167,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-anti-inflammatory",
@@ -174,7 +183,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "landing-mediterranean-diet",
@@ -189,7 +199,8 @@
       ],
       "nav": {
         "kind": "minimal"
-      }
+      },
+      "expectNoindex": true
     },
     {
       "id": "ad-binge-eating-disorder-treatment",
