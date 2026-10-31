@@ -12,7 +12,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { execFileSync, spawnSync } = require('node:child_process');
-const { incidentDecision } = require('./contracts');
+const { isAlertable, confirmedFailures, decideIncidents, coverageComplete } = require('./tracking-incidents');
 const { sendOwnerDM } = require('./alerts');
 const { createAttempt, finishAttempt } = require('./diagnostics');
 const { renderNotification, notificationTitle } = require('./notification-template.cjs');
@@ -22,23 +22,33 @@ const ROOT = path.resolve(__dirname, '..');
 const STATE_DIR = process.env.TRACKING_MONITOR_DIR || path.join(ROOT, 'monitoring-local');
 const TIMEOUT_MS = 10 * 60 * 1000;
 
-function isAlertable(failure) {
-  return !/: (page error|asset failure): /.test(failure);
+// The checks drive real browsers. When this Mac is swamped (Oct 30 2026: load average 83 on 14
+// cores, swap full) every page.goto times out and the channel gets a "checker error" that says
+// nothing about the site. So a run first waits for the load to fall; if it doesn't within
+// BUSY_WAIT_MS, the run is skipped without touching incident state, unless the last completed run
+// is older than BUSY_MAX_SKIP_HOURS (then it runs anyway, so overload can never hide the site for long).
+const BUSY_LOAD_PER_CORE = 2;
+const BUSY_WAIT_MS = 20 * 60 * 1000;
+const BUSY_POLL_MS = 60 * 1000;
+const BUSY_MAX_SKIP_HOURS = 6;
+
+function machineLoad(loadavg = os.loadavg, cpus = os.cpus().length) {
+  const load1 = loadavg()[0];
+  return { load1: Math.round(load1 * 10) / 10, cores: cpus, busy: load1 > cpus * BUSY_LOAD_PER_CORE };
 }
+const loadText = (l) => 'Mac load ' + l.load1 + ' on ' + l.cores + ' cores';
 
-const failureCase = f => f.replace(/\((exit|navigation)[^)]*\)/g, '').replace(/(monitor execution failure)[\s\S]*$/i, '$1').trim();
-
-// Failures from the second run that the first run also had (same case), so one
-// flaky run never alerts on its own.
-function confirmedFailures(first = [], second = []) {
-  const seen = new Set((first || []).map(failureCase));
-  return (second || []).filter(f => seen.has(failureCase(f)));
+// Waits for a usable machine. Returns the last reading; .busy means it never settled.
+function waitForMachine({ measure = machineLoad, waitMs = BUSY_WAIT_MS, pollMs = BUSY_POLL_MS, sleep = ms => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms) } = {}) {
+  let l = measure();
+  for (let waited = 0; l.busy && waited < waitMs; waited += pollMs) { sleep(pollMs); l = measure(); }
+  return l;
 }
 
 // A report counts only if this run wrote it and the child finished: the old file
 // is removed first, so a crash, timeout or launch failure can never reuse an
 // earlier passing result.
-function run(script, output, extraEnv = {}, spawn = spawnSync) {
+function run(script, output, extraEnv = {}, spawn = spawnSync, measure = machineLoad) {
   const attempt = createAttempt(output, script);
   fs.rmSync(output, { force: true });
   const r = spawn(process.execPath, [path.join(ROOT, script)], {
@@ -53,14 +63,21 @@ function run(script, output, extraEnv = {}, spawn = spawnSync) {
   if (r.error || r.signal) executionFailure = script + ' did not finish (' + how + ')';
   else if (!report) executionFailure = script + ' did not produce results (' + how + ')';
   else if (!Array.isArray(report.failures)) executionFailure = script + ' wrote a report without a failures list (' + how + ')';
-  else if (report.complete === false) executionFailure = script + ' did not complete its cases (' + how + ')';
+  else if (!Array.isArray(report.cases)) executionFailure = script + ' wrote a report without a cases list (' + how + ')';
+  else if (!coverageComplete(report)) executionFailure = script + ' did not complete its cases (' + how + ')';
   else if (r.status !== 0 && !report.failures.length) executionFailure = script + ' exited non-zero with no failures listed (' + how + ')';
+  // Say so when the Mac was swamped: the failure is then about this machine, not the site.
+  const load = executionFailure && measure();
+  if (load?.busy) executionFailure += '; this Mac was overloaded (' + loadText(load) + ')';
   const outcome = executionFailure || report?.failureKind === 'monitor-execution'
     ? 'monitor-execution-failure' : report.failures.length ? 'check-failure' : 'pass';
   finishAttempt(attempt, r, report, outcome);
   if (executionFailure) return {
+    ...(report && Array.isArray(report.failures) ? report : {}),
+    complete: false,
+    cases: Array.isArray(report?.cases) ? report.cases : [],
     failureKind: 'monitor-execution',
-    failures: ['Monitor execution failure: ' + executionFailure + '; production tracking status is unconfirmed'],
+    failures: [...(Array.isArray(report?.failures) ? report.failures : []), 'Monitor execution failure: ' + executionFailure + '; production tracking status is unconfirmed'],
     diagnostics: attempt.directory,
   };
   return report;
@@ -123,6 +140,28 @@ async function deliver(message) {
 
 const delivered = d => d && Object.values(d).some(v => v === 'sent' || v === 'submitted');
 
+// Injectable delivery keeps policy/transition tests entirely offline.
+async function processResults({previous, utm1, utm, site, site2, stamp, evidence, send, finishedAt}) {
+  const decision = decideIncidents(previous, {utm: utm1, site}, {utm, site: site2});
+  const alertable = decision.incidents.map(f => f.summary);
+  const reportOnly = [...(site2.failures || [])].filter(f => !isAlertable(f));
+  let delivery = null;
+  if (decision.kind === 'failure' || decision.kind === 'recovery') {
+    delivery = await send(trackingNotification({decision: decision.kind, alertable, findings: decision.incidents,
+      pending: decision.pending, reportOnly, utm, site: site2, startedAt: stamp, finishedAt, evidence}));
+  }
+  return {checkedAt: stamp, decision: decision.kind, signature: decision.signature,
+    incidentVersion: 2, incidents: decision.incidents, pending: decision.pending,
+    recoveryPending: decision.recoveryPending, alertable, reportOnly, delivery};
+}
+
+// Skip only while the last completed run is recent; past BUSY_MAX_SKIP_HOURS it runs regardless.
+function skipForLoad(load, previous, now = Date.now()) {
+  if (!load.busy) return false;
+  const last = Date.parse(previous?.checkedAt ?? '');
+  return Number.isFinite(last) && now - last < BUSY_MAX_SKIP_HOURS * 3600e3;
+}
+
 async function main() {
   if (process.argv.includes('--test-alert')) {
     const d = await deliver({schemaVersion: 1, client: 'Nourish', check: 'Hourly tracking', status: {code: 'unknown', sourceStatus: 'test', sourceOutcome: null},
@@ -135,6 +174,16 @@ async function main() {
     return;
   }
   fs.mkdirSync(STATE_DIR, { recursive: true });
+  const stateFile = path.join(STATE_DIR, 'state.json');
+  let previous = null;
+  try { previous = JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch {}
+  const load = waitForMachine();
+  if (skipForLoad(load, previous)) {
+    const at = new Date().toISOString();
+    fs.appendFileSync(path.join(STATE_DIR, 'history.jsonl'), JSON.stringify({ checkedAt: at, decision: 'skipped-busy', load: load.load1, cores: load.cores }) + '\n');
+    console.log(at + ' skipped: ' + loadText(load) + ' after waiting ' + BUSY_WAIT_MS / 60000 + ' min; no checks run, incident state unchanged');
+    return;
+  }
   const stamp = new Date().toISOString();
   const utmFile = path.join(STATE_DIR, 'utm-latest.json');
   const siteFile = path.join(STATE_DIR, 'site-latest.json');
@@ -145,29 +194,13 @@ async function main() {
   const site2 = site.failures?.some(f => isAlertable(f) && !/UTM handoff/.test(f))
     ? run('synthetic-rudderstack-check.js', siteFile, { MONITOR_OUTPUT: siteFile }) // one retry: single-route SDK timing flakes
     : site;
-  // A failure must appear in both runs of its check to alert. Execution failures
-  // are matched by case, since the timeout or exit detail differs between runs.
-  const confirmedUtm = confirmedFailures(utm1.failures, utm.failures);
-  const confirmedSite = confirmedFailures(site.failures, site2.failures).filter(isAlertable);
-  const alertable = [...confirmedUtm, ...confirmedSite].sort();
-  const reportOnly = [...(site2.failures || [])].filter(f => !isAlertable(f));
-
-  const stateFile = path.join(STATE_DIR, 'state.json');
-  let previous = null;
-  try { previous = JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch {}
-  const decision = incidentDecision(previous, alertable);
-  let delivery = null;
-  if (decision.kind === 'failure' || decision.kind === 'recovery') {
-    delivery = await deliver(trackingNotification({decision: decision.kind, alertable, reportOnly, utm, site: site2,
-      startedAt: stamp, finishedAt: new Date().toISOString(), evidence: STATE_DIR}));
-  }
-
-  const record = { checkedAt: stamp, decision: decision.kind, signature: decision.signature, alertable, reportOnly, delivery };
+  const record = await processResults({previous, utm1, utm, site, site2, stamp, evidence: STATE_DIR,
+    send: deliver, finishedAt: new Date().toISOString()});
   // An alert no channel delivered must not advance incident state, so the next run retries it.
-  if (!delivery || delivered(delivery)) fs.writeFileSync(stateFile, JSON.stringify(record, null, 2));
-  fs.appendFileSync(path.join(STATE_DIR, 'history.jsonl'), JSON.stringify({ checkedAt: stamp, decision: decision.kind, alertable: alertable.length, reportOnly: reportOnly.length }) + '\n');
-  console.log(stamp + ' ' + decision.kind + ': ' + alertable.length + ' alertable, ' + reportOnly.length + ' report-only');
+  if (!record.delivery || delivered(record.delivery)) fs.writeFileSync(stateFile, JSON.stringify(record, null, 2));
+  fs.appendFileSync(path.join(STATE_DIR, 'history.jsonl'), JSON.stringify({ checkedAt: stamp, decision: record.decision, alertable: record.alertable.length, reportOnly: record.reportOnly.length }) + '\n');
+  console.log(stamp + ' ' + record.decision + ': ' + record.alertable.length + ' alertable, ' + record.reportOnly.length + ' report-only');
 }
 
 if (require.main === module) main().catch(e => { console.error(e.message); process.exitCode = 1; });
-module.exports = { isAlertable, confirmedFailures, emailMessage, delivered, run };
+module.exports = { isAlertable, confirmedFailures, emailMessage, delivered, run, processResults, machineLoad, waitForMachine, skipForLoad };

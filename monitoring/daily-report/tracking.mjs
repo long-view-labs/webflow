@@ -38,13 +38,16 @@ export function summarizeMonitor(dir, now = new Date()) {
       .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
   } catch {}
   const dayAgo = now.getTime() - 24 * 3600e3;
-  const recent = history.filter((h) => Date.parse(h.checkedAt) >= dayAgo);
+  // Runs skipped because this Mac was overloaded (local-tracking-monitor.js) are not runs.
+  const lastDay = history.filter((h) => Date.parse(h.checkedAt) >= dayAgo);
+  const recent = lastDay.filter((h) => h.decision !== 'skipped-busy');
   const lastAt = state?.checkedAt ?? history.at(-1)?.checkedAt ?? null;
   const ageHours = lastAt ? (now.getTime() - Date.parse(lastAt)) / 3600e3 : null;
   const issues = [];
   if (!state) issues.push('Hourly tracking monitor has no results (monitoring-local/state.json missing)');
   else if (ageHours > MONITOR_STALE_HOURS) issues.push(`Hourly tracking monitor last ran ${ageHours.toFixed(1)}h ago (expected hourly)`);
   for (const f of state?.alertable ?? []) issues.push('Tracking monitor failure: ' + f);
+  if (state?.decision === 'pending' || state?.pending?.length) issues.push('Hourly tracking measurement awaits confirmation; no healthy result is established');
   return {
     status: issues.length ? 'issue' : 'ok',
     issues,
@@ -52,6 +55,7 @@ export function summarizeMonitor(dir, now = new Date()) {
     decision: state?.decision ?? null,
     runsLast24h: recent.length,
     failingRunsLast24h: recent.filter((h) => h.alertable > 0).length,
+    skippedBusyLast24h: lastDay.length - recent.length,
     utm: utm && {checkedAt: utm.checkedAt, failures: utm.failures?.length ?? null, cases: utm.cases?.length ?? null},
     site: site && {checkedAt: site.checkedAt, failures: site.failures?.length ?? null, cases: site.cases?.length ?? null},
     // Page script errors etc.: reported by the monitor, never alerted.

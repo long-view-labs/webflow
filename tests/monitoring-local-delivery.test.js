@@ -32,10 +32,13 @@ test('a check result counts only if this run wrote it and the child finished', (
     stalePass();
     assert.match(run('check.js', out, {}, child({ status: 0 })).failures[0], /did not produce results/);
     // Non-zero exit with an empty failures list is contradictory.
-    assert.match(run('check.js', out, {}, child({ status: 1 }, { failures: [] })).failures[0], /exited non-zero with no failures listed/);
+    assert.match(run('check.js', out, {}, child({ status: 1 }, { complete: true, cases: [{failures: []}], failures: [] })).failures[0], /exited non-zero with no failures listed/);
     // A fresh report is passed through, passing or failing.
-    assert.deepEqual(run('check.js', out, {}, child({ status: 0 }, { failures: [] })).failures, []);
-    assert.deepEqual(run('check.js', out, {}, child({ status: 1 }, { failures: ['/ link sent 0 click events'] })).failures, ['/ link sent 0 click events']);
+    assert.deepEqual(run('check.js', out, {}, child({ status: 0 }, { complete: true, cases: [{failures: []}], failures: [] })).failures, []);
+    assert.deepEqual(run('check.js', out, {}, child({ status: 1 }, { complete: true, cases: [{failures: []}], failures: ['/ link sent 0 click events'] })).failures, ['/ link sent 0 click events']);
+    assert.equal(run('check.js', out, {}, child({ status: 0 }, { failures: [], cases: {} })).complete, false);
+    assert.equal(run('check.js', out, {}, child({ status: 0 }, { failures: [], cases: [] })).complete, false);
+    assert.equal(run('check.js', out, {}, child({ status: 0 }, { complete: true, failures: [], cases: [] })).complete, false);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -50,4 +53,29 @@ test('a failure alerts only when the retry run has the same case', () => {
   assert.deepEqual(confirmedFailures([missing], []), []);
   assert.deepEqual(confirmedFailures([hang('SIGTERM')], [hang('ETIMEDOUT')]), [hang('ETIMEDOUT')]);
   assert.deepEqual(confirmedFailures([timeout('x')], [missing]), []);
+});
+
+test('an overloaded Mac delays the run, then skips it quietly, but never for more than 6 hours', () => {
+  const { machineLoad, waitForMachine, skipForLoad, run } = require('../monitoring/local-tracking-monitor');
+  assert.deepEqual(machineLoad(() => [83.1, 68, 50], 14), { load1: 83.1, cores: 14, busy: true });
+  assert.equal(machineLoad(() => [20, 0, 0], 14).busy, false);
+  // Waits while busy and returns as soon as the load falls.
+  const readings = [true, true, false].map((busy) => ({ load1: busy ? 40 : 5, cores: 14, busy }));
+  let slept = 0;
+  assert.equal(waitForMachine({ measure: () => readings.shift(), waitMs: 600000, pollMs: 60000, sleep: () => slept++ }).busy, false);
+  assert.equal(slept, 2);
+  // Gives up after the wait budget and reports it still busy.
+  assert.equal(waitForMachine({ measure: () => ({ load1: 40, cores: 14, busy: true }), waitMs: 180000, pollMs: 60000, sleep: () => {} }).busy, true);
+  const now = Date.parse('2026-10-31T04:00:00Z');
+  const busy = { load1: 40, cores: 14, busy: true };
+  assert.equal(skipForLoad(busy, { checkedAt: '2026-10-31T01:00:00Z' }, now), true);
+  assert.equal(skipForLoad(busy, { checkedAt: '2026-10-30T21:00:00Z' }, now), false, 'last run over 6h ago: run anyway');
+  assert.equal(skipForLoad(busy, null, now), false, 'no previous run: run anyway');
+  assert.equal(skipForLoad({ ...busy, busy: false }, { checkedAt: '2026-10-31T03:30:00Z' }, now), false);
+  // A run that times out on a swamped Mac says so in the failure.
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'monitor-busy-')), 'latest.json');
+  const timedOut = () => ({ status: null, signal: 'SIGTERM', error: Object.assign(new Error('t'), { code: 'ETIMEDOUT' }) });
+  assert.match(run('check.js', out, {}, timedOut, () => busy).failures[0], /did not finish \(exit null, SIGTERM, ETIMEDOUT\); this Mac was overloaded \(Mac load 40 on 14 cores\); production tracking status is unconfirmed/);
+  assert.doesNotMatch(run('check.js', out, {}, timedOut, () => ({ ...busy, busy: false })).failures[0], /overloaded/);
 });

@@ -39,6 +39,16 @@ classification, `stdout.log` and `stderr.log` retain redacted child output, and
 is a **monitor execution failure**; it does not establish a production tracking
 regression. Partial reports never count as passing results.
 
+**Overloaded Mac (Oct 30 2026).** The checks drive real browsers, so when this Mac is
+swamped every `page.goto` and click times out (that evening: load average 83 on 14
+cores, 17 of 18 GB swap in use, both checks ETIMEDOUT, "Checker error" in the
+channel). Before running, the wrapper now waits up to 20 minutes for the 1-minute
+load average to fall to 2× the core count or below. If it doesn't, the run is skipped:
+a `skipped-busy` line goes to `history.jsonl`, nothing is sent and incident state is
+untouched. A run is never skipped when the last completed one is 6+ hours old, and
+the daily report flags the monitor as stale after 2.5 hours either way. A timeout on a
+busy machine adds "this Mac was overloaded (Mac load N on M cores)" to the failure.
+
 Both checks also write `progress.json` before each awaited phase and after each
 completed case. It includes completed case summaries, the current
 route/device/consent/operation, and the last 32 operation timestamps so timeout
