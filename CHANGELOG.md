@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.9] - 2026-10-30
+
+Load each Trustpilot widget once. footer.js loads Trustpilot's bootstrap when a widget nears the viewport; the bootstrap draws the widgets it finds, and footer.js then drew them again, which replaced each widget's iframe and cancelled the first load (the daily site check reported it as net::ERR_ABORTED on the /landing ad pages). footer.js now only inits widgets the bootstrap left without an iframe. Nothing else changed; global.js stays at v2.623.7.
+
 ## [2.623.8] - 2026-10-30
 
 Remove the RB2B visitor-identification loader from footer.js. Its script (ddwl4m2hdecbv.cloudfront.net/b/VN080HXGZ56J/VN080HXGZ56J.js.gz) returns 403 for every visitor, so it has not been loading and only produced a failed request on each page. Nothing else in footer.js changed; it still loads hero-filter-search.js, timed-tabs.js and navbar.js from v2.623.7, and global.js stays at v2.623.7. RudderStack, UTMs and other pixels are unchanged.
