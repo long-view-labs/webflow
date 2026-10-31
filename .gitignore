@@ -154,3 +154,7 @@ Thumbs.db
 
 # Webflow specific
 .webflow/
+monitoring-local/
+monitoring-results.json
+monitoring-state.json
+utm-handoff-results.json
