@@ -320,12 +320,16 @@ const reportFixture = () => ({schemaVersion: 1, client: 'nourish', startedAt: '2
   areas: [{id: 'performance', label: 'Performance', status: 'issue', text: 'Paid (mobile) dropped 15 points since yesterday (76 → 61); other pages steady'}]});
 const history = {days: ['2026-10-23', '2026-10-24', '2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29'], scores: {'paid--mobile': [null, 60, 61, 70, null, 76, 61]}};
 
-test('detail page: states, health, nav and forms, the four gauges per viewport with metrics, the 7-day strip, Amplitude charts kept private', async () => {
+test('detail page: states, health, nav and forms, the four gauges per viewport with metrics, the 7-day scores, Amplitude charts kept private', async () => {
   const {renderDetailPage} = await import('../monitoring/daily-report/detail-page.mjs');
   const h = renderDetailPage({page: {id: 'paid', url: 'https://www.nourish.com/paid'}, report: reportFixture(), root: RROOT, history});
-  const order = ['<h1>Paid', 'Captured states', 'Previous run vs latest', 'Health findings', 'Navigation, quiz and insurance search', 'Lighthouse (lab)', '<h2>Analytics (Amplitude)</h2>'].map((t) => h.indexOf(t));
+  const order = ['<h1>Paid', 'Captured states', 'Previous run vs latest', '<h2>Health</h2>', 'Navigation, quiz and insurance search', 'Lighthouse (lab)', '<h2>Analytics (Amplitude)</h2>'].map((t) => h.indexOf(t));
   assert.ok(order.every((i) => i > 0), String(order)); assert.deepEqual([...order].sort((a, b) => a - b), order);
-  assert.match(h, /<h3>Desktop<\/h3>/); assert.match(h, /<h3>Mobile<\/h3>/);
+  assert.match(h, /<figcaption><strong>Desktop<\/strong>/); assert.match(h, /<figcaption><strong>Mobile<\/strong>/);
+  assert.match(h, /<div class="shots pair">/);
+  assert.match(h, /<div class="callout"><span class="b bad">Regressed<\/span>mobile Performance score dropped from 76 to 61/);
+  assert.match(h, /Mobile performance<\/div><div class="v">61<small>\/ 100<\/small>/);
+  assert.match(h, /<meta name="robots" content="noindex,nofollow">/);
   assert.match(h, /src="\.\.\/shots\/paid--default--desktop\.png"/); assert.doesNotMatch(h, /home--default/);
   assert.match(h, /1 file failed to load/); assert.doesNotMatch(h, /token=1/);
   assert.equal((h.match(/<figure class="gauge"/g) || []).length, 8);
@@ -346,20 +350,34 @@ test('detail page: states, health, nav and forms, the four gauges per viewport w
   assert.doesNotMatch(home, /score dropped/);
 });
 
-test('main report: page cards carry the private Amplitude line and no Lighthouse scores or vitals; gauges only on the detail pages', async () => {
+test('main report: page rows carry the private Amplitude line and no Lighthouse scores or vitals; gauges only on the detail pages', async () => {
   const {renderNourishReport} = await import('../monitoring/daily-report/render.mjs');
   const html = renderNourishReport(reportFixture(), RROOT);
-  assert.match(html, /<h3><a href="pages\/home\.html">Home<\/a>/); assert.match(html, /<h3><a href="pages\/paid\.html">Paid<\/a>/);
+  assert.match(html, /<a class="pname" href="pages\/home\.html">Home<\/a>/); assert.match(html, /<a class="pname" href="pages\/paid\.html">Paid<\/a>/);
   assert.match(html, /<a href="pages\/paid\.html" aria-label="Paid details"><img/);
-  assert.equal((html.match(/Details and analytics →/g) || []).length, 2);
-  // Card: the Amplitude line before the card's links; no score chips, no LCP/CLS/TBT (Gemin: detail pages only).
-  const paid = html.slice(html.indexOf('<h3><a href="pages/paid.html">'), html.indexOf('<a href="pages/paid.html">Details and analytics'));
+  assert.equal((html.match(/">Details<\/a>/g) || []).length, 2);
+  // A page with an issue or a score drop sorts first, with the drop as a red badge.
+  assert.ok(html.indexOf('class="pname" href="pages/paid.html"') < html.indexOf('class="pname" href="pages/home.html"'));
+  assert.match(html, /<span class="b bad">mobile 76 → 61<\/span>/);
+  assert.match(html, /<input id="pagefilter" type="search"[^>]*><span id="pagecount" class="muted">2 of 2 pages<\/span>/);
+  assert.match(html, /<script>\(function\(\)\{\s*var q=document\.getElementById\('pagefilter'\)/);
+  assert.match(html, /<meta name="robots" content="noindex,nofollow">/); assert.doesNotMatch(html, /fonts\.googleapis|<link /);
+  // Row: the Amplitude line before the row's links; no score chips, no LCP/CLS/TBT (Gemin: detail pages only).
+  const paid = html.slice(html.indexOf('<a class="pname" href="pages/paid.html">'), html.indexOf('<a href="pages/paid.html">Details'));
   assert.doesNotMatch(paid, /class="pm"|<th>Lighthouse<\/th>|<span class="b ok">90<\/span>|1\.2 s|50 ms|spread today/);
   assert.match(paid, /<!--analytics:start--><p class="pm-amp"><span class="muted">Amplitude, last 7 days:<\/span> <strong>700<\/strong> page views · <strong>70<\/strong> Get Started clicks <span class="muted">\(10% of views\)<\/span> · <strong>40%<\/strong> of 50 clickers reached FlowLoaded<\/p><!--analytics:end-->/);
   assert.match(html, /\.pm-amp\{/);
   assert.equal((html.match(/<figure class="gauge"/g) || []).length, 0);
-  assert.match(html, /<h2>Performance<\/h2><section class="verdict bad"[^>]*>.*Paid \(mobile\) dropped 15 points since yesterday/);
-  assert.match(html, /<th>Performance<\/th><td>Paid \(mobile\) dropped 15 points/);
+  assert.match(html, /<h2>Performance<\/h2> <span class="b bad">Regressed<\/span><\/header><div class="bd"><p>Paid \(mobile\) dropped 15 points since yesterday/);
+  assert.match(html, /<td><a href="pages\/paid\.html">Paid<\/a><\/td><td>mobile<\/td><td class="n">76<\/td><td class="n">61<\/td><td class="n" style="color:var\(--bad\)">−15<\/td>/);
+  assert.match(html, /Performance<\/div><div class="v">1<small>dropped<\/small><\/div><div class="s">since yesterday/);
+  assert.match(html, /<td>Performance<\/td><td>Paid \(mobile\) dropped 15 points/);
+  // Published copy: the note sits in the verdict line; areas, charts and tracking cards are gone.
+  const {stripAnalytics} = await import('../monitoring/daily-report/publish.mjs');
+  const pub = stripAnalytics(html);
+  assert.match(pub, /<div class="verdict"><span class="dot bad"><\/span>[^<]*<span class="muted"><span class="muted">Traffic and conversion numbers are in the local copy/);
+  assert.doesNotMatch(pub, /id="areas"|id="charts"|id="tracking"|700<\/strong> page views/);
+  assert.match(html, /id="tracking"/);
   assert.match(html, /Nourish daily site check/); assert.doesNotMatch(html, /Unify daily visual check/);
 });
 
@@ -390,10 +408,10 @@ test('publish staging: HTML and images only, noindex, refuses local paths', asyn
 test('publish: analytics numbers and charts stay off the public copy', async () => {
   const {stage, stripAnalytics} = await import('../monitoring/daily-report/publish.mjs');
   const html = '<h1>Report</h1><!--analytics:start--><svg>sessions 1,234</svg><!--analytics:end--><h2>Pages</h2>';
-  assert.equal(stripAnalytics(html), '<h1>Report</h1><p class="muted">Traffic and conversion numbers are in the local copy of this report and the Slack DM.</p><h2>Pages</h2>');
+  assert.equal(stripAnalytics(html), '<h1>Report</h1><span class="muted">Traffic and conversion numbers are in the local copy of this report and the Slack DM.</span><h2>Pages</h2>');
   assert.equal(stripAnalytics('<p>a</p><!--analytics:start-->unterminated 1,234'), '<p>a</p>');
   // One note per page, however many page cards had numbers.
-  assert.equal(stripAnalytics(html + '<!--analytics:start--><p>700 views</p><!--analytics:end--><p>card</p>'), '<h1>Report</h1><p class="muted">Traffic and conversion numbers are in the local copy of this report and the Slack DM.</p><h2>Pages</h2><p>card</p>');
+  assert.equal(stripAnalytics(html + '<!--analytics:start--><p>700 views</p><!--analytics:end--><p>card</p>'), '<h1>Report</h1><span class="muted">Traffic and conversion numbers are in the local copy of this report and the Slack DM.</span><h2>Pages</h2><p>card</p>');
   const src = fs.mkdtempSync(path.join(os.tmpdir(), 'nourish-pub2-')), out = path.join(os.tmpdir(), 'nourish-pub2-out-' + process.pid);
   fs.writeFileSync(path.join(src, 'index.html'), html);
   stage(src, out);
@@ -706,17 +724,17 @@ test('report: indexing and console sections are public; detail pages show the pa
       known: [{id: 'cms-noindex-in-sitemap', note: 'Noindex CMS items still in the sitemap', paths: ['/landing-page/a', '/landing/b']}]}};
   const html = renderNourishReport(report, RROOT);
   const pub = html.replace(/<!--analytics:start-->[\s\S]*?<!--analytics:end-->/g, '');
-  assert.match(pub, /<h2>Search indexing<\/h2><p>1421 URLs in the sitemap, 1442 pages checked, 1321 indexable\. <span class="b bad">1 issue<\/span>/);
+  assert.match(pub, /<h2>Search indexing<\/h2><span class="r"><span class="b bad">1 issue<\/span><\/span><\/header><div class="bd"><p class="stats"><span><b>1421<\/b> URLs in the sitemap<\/span><span><b>1442<\/b> pages checked<\/span><span><b>1321<\/b> indexable/);
   assert.match(pub, /<span class="b bad">New<\/span><\/td><td>Ad\/variant page is indexable<\/td><td><a href="https:\/\/www\.nourish\.com\/paid"/);
   assert.match(pub, /Noindex CMS items still in the sitemap: 2 pages/);
-  assert.match(pub, /<h2>Console and network<\/h2><p><span class="b bad">1 of 4<\/span> page states/);
+  assert.match(pub, /<h2>Console and network<\/h2> <span class="b bad">1 of 4<\/span><\/header><div class="bd"><p>1 of 4 page states logged errors/);
   assert.match(pub, new RegExp(`Paid</a> · desktop</td><td>Trustpilot widget uses business unit ${DEAD_BU}`));
   assert.match(pub, /1 page state could not be checked/);
-  assert.ok(pub.indexOf('<h2>Search indexing') < pub.indexOf('<h2>Pages and visuals'));
+  assert.ok(pub.indexOf('<h2>Search indexing') < pub.indexOf('<h2>Pages</h2>'));
   const page = renderDetailPage({page: {id: 'paid', url: 'https://www.nourish.com/paid'}, report, root: RROOT});
-  assert.match(page, /<h2>Console and network<\/h2><table>.*desktop<\/td><td><span class="b bad">Issue<\/span><\/td><td>Trustpilot widget uses business unit/s);
+  assert.match(page, /<h2>Console and network<\/h2>.*?<table>.*?desktop<\/td><td><span class="b bad">Issue<\/span><\/td><td>Trustpilot widget uses business unit/s);
   assert.match(page, /mobile<\/td><td><span class="b ok">OK<\/span><\/td><td>No console errors or failed requests; 1 Trustpilot widget on the live business unit/);
-  assert.match(page, /<h2>Search indexing<\/h2><p>Not in the sitemap · indexable<\/p><ul class="issues"><li class="issue"><strong>ad-page-indexable/);
+  assert.match(page, /<dt>Search indexing<\/dt><dd><p>Not in the sitemap · indexable<\/p><ul class="issues"><li class="issue"><strong>ad-page-indexable/);
   const home = renderDetailPage({page: {id: 'home', url: 'https://www.nourish.com/'}, report, root: RROOT});
   assert.match(home, /Not checked<\/span><\/td><td>Timeout 30000ms/);
   assert.match(home, /This page was not in today's indexing check/);

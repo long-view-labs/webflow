@@ -20,9 +20,10 @@ export const REPORT_URL = `https://${PROJECT}.pages.dev/`;
 const PUBLISHABLE = /\.(html|css|png|jpe?g|webp|gif|svg)$/i;
 
 const START = '<!--analytics:start-->', END = '<!--analytics:end-->';
-// The first removed block says where the numbers are; later ones (one per page card) leave nothing.
+// The first removed block (inside the report's verdict line) says where the numbers are; later
+// ones (one per page row, the private cards) leave nothing.
 export function stripAnalytics(html) {
-  return html.split(START).map((part, i) => (i === 0 ? part : part.includes(END) ? (i === 1 ? '<p class="muted">Traffic and conversion numbers are in the local copy of this report and the Slack DM.</p>' : '') + part.slice(part.indexOf(END) + END.length) : '')).join('');
+  return html.split(START).map((part, i) => (i === 0 ? part : part.includes(END) ? (i === 1 ? '<span class="muted">Traffic and conversion numbers are in the local copy of this report and the Slack DM.</span>' : '') + part.slice(part.indexOf(END) + END.length) : '')).join('');
 }
 
 function publishAnalytics() {
