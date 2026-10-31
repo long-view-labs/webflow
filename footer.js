@@ -109,11 +109,13 @@
     script.src = TP_SRC;
     script.async = true;
     document.body.appendChild(script);
-    // Late-loaded bootstrap doesn't auto-scan; init widgets explicitly.
+    // The bootstrap draws the widgets it finds as it runs. Init only the ones it left without an
+    // iframe: re-initing a drawn widget swaps its iframe and cancels the first load (seen on the
+    // /landing ad pages, Oct 30 2026).
     script.onload = function () {
       if (window.Trustpilot) {
         document.querySelectorAll(".trustpilot-widget").forEach(function (el) {
-          window.Trustpilot.loadFromElement(el, true);
+          if (!el.querySelector("iframe")) window.Trustpilot.loadFromElement(el, true);
         });
       }
     };
