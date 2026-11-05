@@ -19,7 +19,7 @@ jobs:
       - name: Run zero-interaction page-view check
         run: node synthetic-rudderstack-check.js
       - name: Notify Slack on failure
-        if: failure()
+        if: ${{ false }} # Slack notifications disabled; keep the scheduled check running.
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_ALERT_WEBHOOK }}
         run: |
