@@ -16,6 +16,7 @@
 //   7. SEO/DOM UTILITIES       canonical for pagination, hidden-element cleanup
 //   8. GET STARTED TRACKING    signup click tracking + link param injection,
 //                              plus "Dietitian Apply Clicked" on /become-a-dietitian
+//                              and "Page Engaged" sitewide (staging only for now)
 // ============================================================================
 
 // ============================================================================
@@ -982,6 +983,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
 // - Tracks "Dietitian Apply Clicked" (same 5-prop schema plus additive cta_*
 //   properties) on anchors carrying the data-cta-* contract, on
 //   /become-a-dietitian only — see the block at the end of this IIFE.
+// - Tracks "Page Engaged" (initPageEngaged, top of this IIFE).
 //
 // ⚠ ANALYTICS-CRITICAL: the variation mapping and event schema feed signup
 // attribution. Get data-team review before modifying.
@@ -991,6 +993,129 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   var EVENT = "Get Started Clicked";
   var VAR_KEY = "landingPageVariation";
   var VAR_NAME_KEY = "variationName";
+
+  // "Page Engaged": once per browser per page, ever, on the first real sign of
+  // interaction. Sits above the jQuery guard because it does not need jQuery.
+  (function initPageEngaged() {
+    if (window.__nourishPageEngagedBound) return;
+    window.__nourishPageEngagedBound = true;
+
+    // Staging only until launch. The site footer's global.js pin is shared with
+    // production, so this keeps a QA pin from sending anything from prod.
+    // LAUNCH: delete this line and the "stays off on production" test.
+    if (!/\.webflow\.io$/.test(window.location.hostname)) return;
+
+    var STORAGE_KEY = "nourish_page_engaged";
+    var pagePath = window.location.pathname.replace(/\/+$/, "") || "/";
+    var fired = false;
+    var hasUserGesture = false;
+    var lastPressAt = 0;
+    var scrollCheckQueued = false;
+    var CAPTURE = { capture: true, passive: true };
+
+    function readSeen() {
+      try {
+        return JSON.parse(window.localStorage.getItem(STORAGE_KEY)) || {};
+      } catch (e) {
+        return {}; // Blocked or corrupt storage: fall back to once per page load.
+      }
+    }
+
+    function remember() {
+      try {
+        var seen = readSeen();
+        seen[pagePath] = 1;
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seen));
+      } catch (e) {}
+    }
+
+    function isConsentUi(target) {
+      return !!(target && target.closest && target.closest("#onetrust-consent-sdk"));
+    }
+
+    function fire(trigger) {
+      if (fired) return;
+      if (!window.rudderanalytics || typeof window.rudderanalytics.track !== "function") return;
+      fired = true;
+      removeListeners();
+      if (readSeen()[pagePath]) return; // Another tab got there first.
+      try {
+        var props = nourishMergeUtmsIntoProps(nourishBasePageProps());
+        props.trigger = trigger;
+        props.page_path = pagePath;
+        props.deviceType = deviceType();
+        var variation = getVariationParams(window.location.pathname);
+        if (variation) props.landingPageVariation = variation.landingPageVariation;
+        window.rudderanalytics.track("Page Engaged", props);
+        remember();
+      } catch (e) {} // Analytics failures must never affect the page.
+    }
+
+    // The header is the first visible section below the nav. Some templates'
+    // first section is the whole page (blog posts), so anything ending past 1.5
+    // screens falls back to one screen of scrolling.
+    function scrollLimit() {
+      var screen = window.innerHeight;
+      var sections = document.querySelectorAll('[class*="section_"]');
+      for (var i = 0; i < sections.length; i++) {
+        var el = sections[i];
+        if (el.offsetHeight > 0 && !el.closest("nav, .w-nav, #onetrust-consent-sdk")) {
+          var bottom = el.getBoundingClientRect().bottom + window.scrollY;
+          return bottom <= screen * 1.5 ? bottom : screen;
+        }
+      }
+      return screen;
+    }
+
+    function onClick(e) {
+      if (e.isTrusted && !isConsentUi(e.target)) fire("click");
+    }
+    // A press focuses buttons and inputs before its click arrives, and on touch
+    // that focus lands just after the finger lifts. Only keyboard focus is "focus".
+    function onFocus(e) {
+      if (!e.isTrusted || isConsentUi(e.target)) return;
+      fire(Date.now() - lastPressAt < 500 ? "click" : "focus");
+    }
+    function onInput(e) {
+      if (e.isTrusted && !isConsentUi(e.target)) fire("input");
+    }
+    // Anchor jumps, scroll restoration and scripted scrolls all arrive as plain
+    // scroll events, so a scroll only counts after the visitor has done something.
+    function onGesture(e) {
+      if (!e.isTrusted) return;
+      hasUserGesture = true;
+      if (e.type === "pointerdown") lastPressAt = Date.now();
+    }
+    function onScroll() {
+      if (!hasUserGesture || scrollCheckQueued) return;
+      scrollCheckQueued = true;
+      window.requestAnimationFrame(function () {
+        scrollCheckQueued = false;
+        if (window.scrollY >= scrollLimit()) fire("scroll");
+      });
+    }
+
+    var LISTENERS = [
+      [document, "click", onClick],
+      [document, "focusin", onFocus],
+      [document, "input", onInput],
+      [window, "wheel", onGesture],
+      [window, "touchstart", onGesture],
+      [window, "pointerdown", onGesture],
+      [window, "keydown", onGesture],
+      [window, "scroll", onScroll],
+    ];
+    function removeListeners() {
+      LISTENERS.forEach(function (l) {
+        l[0].removeEventListener(l[1], l[2], CAPTURE);
+      });
+    }
+
+    if (readSeen()[pagePath]) return;
+    LISTENERS.forEach(function (l) {
+      l[0].addEventListener(l[1], l[2], CAPTURE);
+    });
+  })();
 
   if (!window.jQuery) return;
   if (window.__nourishCtaTrackingBound) return;
