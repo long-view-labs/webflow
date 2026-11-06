@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.11] - 2026-11-05
+
+Page Engaged no longer fires when the OneTrust banner closes. OneTrust hands focus to the first link on the page as it closes, and that was counted as keyboard focus. Focus arriving from the banner, or within a second of using it, is now ignored. Still on webflow.io staging only. global-footer.html pins global.js to v2.623.11; footer.js stays at v2.623.9.
+
 ## [2.623.10] - 2026-11-05
 
 Add the Page Engaged event, on webflow.io staging only until launch. It fires once per browser per page, ever, on the first click, keyboard focus, typing, or scroll past the first section. The event carries a trigger property. The OneTrust banner does not count, because it takes focus on load. Production sends nothing: the hostname check returns before any listener is added. global-footer.html pins global.js to v2.623.10; footer.js stays at v2.623.9.

@@ -41,7 +41,7 @@ function fixtureHtml({ sdk = STUB_SDK, heroHeight = 600, autofocusInput = false,
   <input id="field" ${autofocusInput ? "autofocus" : ""}>
 </section>
 <section class="section_next" style="height:4000px">Body</section>
-<div id="onetrust-consent-sdk"><div id="onetrust-banner-sdk" tabindex="-1"><button id="onetrust-accept-btn-handler">Accept</button></div></div>
+<div id="onetrust-consent-sdk" style="position:fixed;bottom:0"><div id="onetrust-banner-sdk" tabindex="-1"><button id="onetrust-accept-btn-handler">Accept</button></div></div>
 <script>
   window.__nourish_apex = "nourish.com";
   ${preScript}
@@ -180,6 +180,41 @@ test("Page Engaged", async (t) => {
     assert.deepEqual(await engaged(page), []);
     await context.close();
   });
+
+  // OneTrust hands focus to the first link on the page about 60ms after it closes
+  // (seen on staging in real Chrome, Nov 2026). That move is not the visitor's.
+  for (const how of ["keyboard", "mouse", "mouse where the button takes no focus (Safari)"]) {
+    await t.test(`closing the banner by ${how} hands focus to the page without counting`, async () => {
+      const { page, context } = await open(browser);
+      await page.evaluate((noFocus) => {
+        const button = document.getElementById("onetrust-accept-btn-handler");
+        if (noFocus) button.addEventListener("mousedown", (e) => e.preventDefault());
+        button.addEventListener("click", () => {
+          setTimeout(() => {
+            document.getElementById("nav-link").focus();
+            document.getElementById("onetrust-banner-sdk").style.display = "none";
+          }, 60);
+        });
+      }, how.includes("Safari"));
+      if (how === "keyboard") {
+        await page.focus("#onetrust-accept-btn-handler");
+        await page.keyboard.press("Enter");
+      } else {
+        await page.click("#onetrust-accept-btn-handler");
+      }
+      await page.waitForFunction(() => document.activeElement.id === "nav-link");
+      await page.waitForTimeout(100);
+      assert.deepEqual(await engaged(page), []);
+
+      // The visitor's own next Tab still counts.
+      await page.waitForTimeout(1000);
+      await page.keyboard.press("Tab");
+      const events = await engaged(page);
+      assert.equal(events.length, 1);
+      assert.equal(events[0].props.trigger, "focus");
+      await context.close();
+    });
+  }
 
   await t.test("stays fired on a later visit to the same page, with or without trailing slash", async () => {
     const first = await open(browser);

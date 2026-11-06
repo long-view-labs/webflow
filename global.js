@@ -1010,6 +1010,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     var fired = false;
     var hasUserGesture = false;
     var lastPressAt = 0;
+    var lastConsentInputAt = 0;
     var scrollCheckQueued = false;
     var CAPTURE = { capture: true, passive: true };
 
@@ -1072,8 +1073,13 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     }
     // A press focuses buttons and inputs before its click arrives, and on touch
     // that focus lands just after the finger lifts. Only keyboard focus is "focus".
+    // OneTrust hands focus to the first link on the page as it closes, so focus
+    // arriving from the banner, or just after using it, is not the visitor's own.
+    // The timer is for Safari, where clicked buttons don't take focus and the move
+    // has no relatedTarget.
     function onFocus(e) {
-      if (!e.isTrusted || isConsentUi(e.target)) return;
+      if (!e.isTrusted || isConsentUi(e.target) || isConsentUi(e.relatedTarget)) return;
+      if (Date.now() - lastConsentInputAt < 1000) return;
       fire(Date.now() - lastPressAt < 500 ? "click" : "focus");
     }
     function onInput(e) {
@@ -1085,6 +1091,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       if (!e.isTrusted) return;
       hasUserGesture = true;
       if (e.type === "pointerdown") lastPressAt = Date.now();
+      if (isConsentUi(e.target)) lastConsentInputAt = Date.now();
     }
     function onScroll() {
       if (!hasUserGesture || scrollCheckQueued) return;
