@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.10] - 2026-11-05
+
+Add the Page Engaged event, on webflow.io staging only until launch. It fires once per browser per page, ever, on the first click, keyboard focus, typing, or scroll past the first section. The event carries a trigger property. The OneTrust banner does not count, because it takes focus on load. Production sends nothing: the hostname check returns before any listener is added. global-footer.html pins global.js to v2.623.10; footer.js stays at v2.623.9.
+
 ## [2.623.9] - 2026-10-30
 
 Load each Trustpilot widget once. footer.js loads Trustpilot's bootstrap when a widget nears the viewport; the bootstrap draws the widgets it finds, and footer.js then drew them again, which replaced each widget's iframe and cancelled the first load (the daily site check reported it as net::ERR_ABORTED on the /landing ad pages). footer.js now only inits widgets the bootstrap left without an iframe. Nothing else changed; global.js stays at v2.623.7.
