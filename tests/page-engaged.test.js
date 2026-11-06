@@ -107,7 +107,7 @@ test("Page Engaged", async (t) => {
     assert.equal(Object.hasOwn(p, "page_path"), false);
     assert.equal(p.url, STAGING + "/does-my-insurance-cover-nutrition?utm_source=fb");
     assert.equal(Object.hasOwn(p, "deviceType"), false);
-    assert.equal(p.landingPageVariation, "Am_I_Covered");
+    assert.equal(Object.hasOwn(p, "landingPageVariation"), false);
     assert.equal(p.utm_source, "fb");
     await context.close();
   });
@@ -120,6 +120,7 @@ test("Page Engaged", async (t) => {
       assert.equal(event.props.path, pagePath);
       assert.equal(Object.hasOwn(event.props, "page_path"), false);
       assert.equal(Object.hasOwn(event.props, "deviceType"), false);
+      assert.equal(Object.hasOwn(event.props, "landingPageVariation"), false);
       await context.close();
     }
   });

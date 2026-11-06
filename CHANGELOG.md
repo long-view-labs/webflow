@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.14] - 2026-11-06
+
+Also remove landingPageVariation from Page Engaged per the revised request. Together with v2.623.13, only page_path, deviceType and landingPageVariation are removed from this event. Trigger, inherited page context, UTMs, once-per-visit behavior, staging-only guard and all other events are unchanged. global-footer.html pins global.js to v2.623.14; footer.js stays at v2.623.9.
+
 ## [2.623.13] - 2026-11-06
 
 Remove only Page Engaged's custom page_path and deviceType event properties. The existing path property, page context, UTMs, trigger and landingPageVariation remain unchanged. Native device metadata and other events are untouched. The once-per-visit behavior and webflow.io-only guard are unchanged. global-footer.html pins global.js to v2.623.13; footer.js stays at v2.623.9.

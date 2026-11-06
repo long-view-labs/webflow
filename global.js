@@ -1025,8 +1025,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       try {
         var props = nourishMergeUtmsIntoProps(nourishBasePageProps());
         props.trigger = trigger;
-        var variation = getVariationParams(window.location.pathname);
-        if (variation) props.landingPageVariation = variation.landingPageVariation;
         window.rudderanalytics.track("Page Engaged", props);
       } catch (e) {} // Analytics failures must never affect the page.
     }
