@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.12] - 2026-11-06
+
+Count Page Engaged once per page visit instead of once ever per browser/path. Reloads, new tabs and return navigation can report fresh engagement. Back/forward-cache restoration re-arms listeners and resets gesture state without counting restored scroll position; stale queued scroll checks are discarded. Existing persistent markers are ignored, not deleted. Cookie-banner exclusions, event properties, CTA tracking and the webflow.io-only guard remain unchanged. global-footer.html pins global.js to v2.623.12; footer.js stays at v2.623.9. Local isolated tests: 24 focused and 311 full-suite results pass (existing jsdom 24.1.3 provided through NODE_PATH). BFCache lifecycle coverage is simulated, not a real cached round trip. Viewed Page remains unchanged.
+
 ## [2.623.11] - 2026-11-05
 
 Page Engaged no longer fires when the OneTrust banner closes. OneTrust hands focus to the first link on the page as it closes, and that was counted as keyboard focus. Focus arriving from the banner, or within a second of using it, is now ignored. Still on webflow.io staging only. global-footer.html pins global.js to v2.623.11; footer.js stays at v2.623.9.

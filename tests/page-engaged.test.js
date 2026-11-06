@@ -1,4 +1,4 @@
-// "Page Engaged" — fires once per browser per page on the first real sign of
+// "Page Engaged" — fires once per page visit on the first real sign of
 // interaction (global.js section 8).
 //
 // Runs global.js in headless Chromium against a local fixture. Every request is
@@ -216,7 +216,7 @@ test("Page Engaged", async (t) => {
     });
   }
 
-  await t.test("stays fired on a later visit to the same page, with or without trailing slash", async () => {
+  await t.test("fires again on a later visit to the same page, with or without trailing slash", async () => {
     const first = await open(browser);
     await first.page.click("#btn");
     assert.equal((await engaged(first.page)).length, 1);
@@ -224,10 +224,73 @@ test("Page Engaged", async (t) => {
     for (const pagePath of ["/does-my-insurance-cover-nutrition", "/does-my-insurance-cover-nutrition/"]) {
       const again = await open(browser, { context: first.context, pagePath, search: "?later=1" });
       await again.page.click("#btn");
-      assert.deepEqual(await engaged(again.page), []);
+      assert.equal((await engaged(again.page)).length, 1);
+      await again.page.click("#btn");
+      assert.equal((await engaged(again.page)).length, 1);
       await again.page.close();
     }
     await first.context.close();
+  });
+
+  await t.test("reload and same-browser tabs each get their own event", async () => {
+    const first = await open(browser);
+    await first.page.click("#btn");
+    await first.page.reload();
+    assert.deepEqual(await engaged(first.page), []);
+    await first.page.click("#btn");
+    await first.page.click("#btn");
+    assert.equal((await engaged(first.page)).length, 1);
+    const tab = await open(browser, { context: first.context });
+    await tab.page.click("#btn");
+    assert.equal((await engaged(tab.page)).length, 1);
+    await first.context.close();
+  });
+
+  await t.test("legacy persistent markers do not suppress a new visit or get changed", async () => {
+    const preScript = `localStorage.setItem("nourish_page_engaged", JSON.stringify({"/does-my-insurance-cover-nutrition": 1}));`;
+    const { page, context } = await open(browser, { fixture: { preScript } });
+    await page.click("#btn");
+    assert.equal((await engaged(page)).length, 1);
+    assert.equal(await page.evaluate(() => localStorage.getItem("nourish_page_engaged")), '{"/does-my-insurance-cover-nutrition":1}');
+    await context.close();
+  });
+
+  // Deterministic lifecycle coverage. Browser BFCache eligibility varies; these
+  // events exercise the persisted restoration path without sending analytics.
+  await t.test("a persisted return re-arms once and ignores restored scroll and consent", async () => {
+    const { page, context } = await open(browser);
+    await page.click("#btn");
+    await page.evaluate(() => {
+      window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true }));
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+      window.scrollTo(0, 1000);
+    });
+    await page.waitForTimeout(100);
+    assert.equal((await engaged(page)).length, 1);
+    await page.click("#onetrust-accept-btn-handler");
+    assert.equal((await engaged(page)).length, 1);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.click("#btn");
+    await page.click("#btn");
+    assert.equal((await engaged(page)).length, 2);
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: false })));
+    await page.click("#btn");
+    assert.equal((await engaged(page)).length, 2);
+    await context.close();
+  });
+
+  await t.test("navigation away and back allows fresh engagement", async () => {
+    const { page, context } = await open(browser);
+    await page.click("#btn");
+    await page.goto(STAGING + "/");
+    await page.click("#btn");
+    assert.equal((await engaged(page)).length, 1);
+    await page.goBack();
+    assert.deepEqual(await engaged(page), []);
+    await page.click("#btn");
+    await page.click("#btn");
+    assert.equal((await engaged(page)).length, 1);
+    await context.close();
   });
 
   await t.test("a different page fires on its own", async () => {

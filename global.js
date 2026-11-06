@@ -994,7 +994,7 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   var VAR_KEY = "landingPageVariation";
   var VAR_NAME_KEY = "variationName";
 
-  // "Page Engaged": once per browser per page, ever, on the first real sign of
+  // "Page Engaged": once per page visit, on the first real sign of
   // interaction. Sits above the jQuery guard because it does not need jQuery.
   (function initPageEngaged() {
     if (window.__nourishPageEngagedBound) return;
@@ -1005,30 +1005,14 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     // LAUNCH: delete this line and the "stays off on production" test.
     if (!/\.webflow\.io$/.test(window.location.hostname)) return;
 
-    var STORAGE_KEY = "nourish_page_engaged";
     var pagePath = window.location.pathname.replace(/\/+$/, "") || "/";
     var fired = false;
     var hasUserGesture = false;
     var lastPressAt = 0;
     var lastConsentInputAt = 0;
     var scrollCheckQueued = false;
+    var visitGeneration = 0;
     var CAPTURE = { capture: true, passive: true };
-
-    function readSeen() {
-      try {
-        return JSON.parse(window.localStorage.getItem(STORAGE_KEY)) || {};
-      } catch (e) {
-        return {}; // Blocked or corrupt storage: fall back to once per page load.
-      }
-    }
-
-    function remember() {
-      try {
-        var seen = readSeen();
-        seen[pagePath] = 1;
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seen));
-      } catch (e) {}
-    }
 
     function isConsentUi(target) {
       return !!(target && target.closest && target.closest("#onetrust-consent-sdk"));
@@ -1039,7 +1023,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       if (!window.rudderanalytics || typeof window.rudderanalytics.track !== "function") return;
       fired = true;
       removeListeners();
-      if (readSeen()[pagePath]) return; // Another tab got there first.
       try {
         var props = nourishMergeUtmsIntoProps(nourishBasePageProps());
         props.trigger = trigger;
@@ -1048,7 +1031,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
         var variation = getVariationParams(window.location.pathname);
         if (variation) props.landingPageVariation = variation.landingPageVariation;
         window.rudderanalytics.track("Page Engaged", props);
-        remember();
       } catch (e) {} // Analytics failures must never affect the page.
     }
 
@@ -1096,7 +1078,9 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     function onScroll() {
       if (!hasUserGesture || scrollCheckQueued) return;
       scrollCheckQueued = true;
+      var generation = visitGeneration;
       window.requestAnimationFrame(function () {
+        if (generation !== visitGeneration) return;
         scrollCheckQueued = false;
         if (window.scrollY >= scrollLimit()) fire("scroll");
       });
@@ -1118,10 +1102,29 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       });
     }
 
-    if (readSeen()[pagePath]) return;
-    LISTENERS.forEach(function (l) {
-      l[0].addEventListener(l[1], l[2], CAPTURE);
+    function startVisit() {
+      visitGeneration++;
+      fired = false;
+      hasUserGesture = false;
+      lastPressAt = 0;
+      lastConsentInputAt = 0;
+      scrollCheckQueued = false;
+      LISTENERS.forEach(function (l) {
+        l[0].addEventListener(l[1], l[2], CAPTURE);
+      });
+    }
+
+    // A back/forward-cache restore keeps this document and its fired flag alive.
+    // Suspend on departure; re-arm only on a real restored visit, without treating
+    // restored scroll position as engagement. Ordinary pageshow must not reset it.
+    window.addEventListener("pagehide", function () {
+      visitGeneration++;
+      removeListeners();
     });
+    window.addEventListener("pageshow", function (e) {
+      if (e.persisted) startVisit();
+    });
+    startVisit();
   })();
 
   if (!window.jQuery) return;
