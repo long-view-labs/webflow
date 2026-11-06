@@ -103,11 +103,25 @@ test("Page Engaged", async (t) => {
     assert.equal(events.length, 1);
     const p = events[0].props;
     assert.equal(p.trigger, "click");
-    assert.equal(p.page_path, "/does-my-insurance-cover-nutrition");
+    assert.equal(p.path, "/does-my-insurance-cover-nutrition");
+    assert.equal(Object.hasOwn(p, "page_path"), false);
     assert.equal(p.url, STAGING + "/does-my-insurance-cover-nutrition?utm_source=fb");
-    assert.equal(p.deviceType, "desktop");
+    assert.equal(Object.hasOwn(p, "deviceType"), false);
+    assert.equal(p.landingPageVariation, "Am_I_Covered");
     assert.equal(p.utm_source, "fb");
     await context.close();
+  });
+
+  await t.test("keeps the inherited path unchanged for root and trailing-slash URLs", async () => {
+    for (const pagePath of ["/", "/does-my-insurance-cover-nutrition/"]) {
+      const { page, context } = await open(browser, { pagePath });
+      await page.click("#btn");
+      const [event] = await engaged(page);
+      assert.equal(event.props.path, pagePath);
+      assert.equal(Object.hasOwn(event.props, "page_path"), false);
+      assert.equal(Object.hasOwn(event.props, "deviceType"), false);
+      await context.close();
+    }
   });
 
   await t.test("clicking a signup CTA sends it before Get Started Clicked", async () => {
@@ -301,7 +315,7 @@ test("Page Engaged", async (t) => {
     await second.page.click("#btn");
     const events = await engaged(second.page);
     assert.equal(events.length, 1);
-    assert.equal(events[0].props.page_path, "/does-my-insurance-cover-nutrition");
+    assert.equal(events[0].props.path, "/does-my-insurance-cover-nutrition");
     await first.context.close();
   });
 

@@ -1005,7 +1005,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
     // LAUNCH: delete this line and the "stays off on production" test.
     if (!/\.webflow\.io$/.test(window.location.hostname)) return;
 
-    var pagePath = window.location.pathname.replace(/\/+$/, "") || "/";
     var fired = false;
     var hasUserGesture = false;
     var lastPressAt = 0;
@@ -1026,8 +1025,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
       try {
         var props = nourishMergeUtmsIntoProps(nourishBasePageProps());
         props.trigger = trigger;
-        props.page_path = pagePath;
-        props.deviceType = deviceType();
         var variation = getVariationParams(window.location.pathname);
         if (variation) props.landingPageVariation = variation.landingPageVariation;
         window.rudderanalytics.track("Page Engaged", props);

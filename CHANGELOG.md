@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.13] - 2026-11-06
+
+Remove only Page Engaged's custom page_path and deviceType event properties. The existing path property, page context, UTMs, trigger and landingPageVariation remain unchanged. Native device metadata and other events are untouched. The once-per-visit behavior and webflow.io-only guard are unchanged. global-footer.html pins global.js to v2.623.13; footer.js stays at v2.623.9.
+
 ## [2.623.12] - 2026-11-06
 
 Count Page Engaged once per page visit instead of once ever per browser/path. Reloads, new tabs and return navigation can report fresh engagement. Back/forward-cache restoration re-arms listeners and resets gesture state without counting restored scroll position; stale queued scroll checks are discarded. Existing persistent markers are ignored, not deleted. Cookie-banner exclusions, event properties, CTA tracking and the webflow.io-only guard remain unchanged. global-footer.html pins global.js to v2.623.12; footer.js stays at v2.623.9. Local isolated tests: 24 focused and 311 full-suite results pass (existing jsdom 24.1.3 provided through NODE_PATH). BFCache lifecycle coverage is simulated, not a real cached round trip. Viewed Page remains unchanged.
