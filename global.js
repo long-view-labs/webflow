@@ -16,7 +16,7 @@
 //   7. SEO/DOM UTILITIES       canonical for pagination, hidden-element cleanup
 //   8. GET STARTED TRACKING    signup click tracking + link param injection,
 //                              plus "Dietitian Apply Clicked" on /become-a-dietitian
-//                              and "Page Engaged" sitewide (staging only for now)
+//                              and "Page Engaged" sitewide
 // ============================================================================
 
 // ============================================================================
@@ -999,11 +999,6 @@ document.addEventListener("DOMContentLoaded", eraseHidden);
   (function initPageEngaged() {
     if (window.__nourishPageEngagedBound) return;
     window.__nourishPageEngagedBound = true;
-
-    // Staging only until launch. The site footer's global.js pin is shared with
-    // production, so this keeps a QA pin from sending anything from prod.
-    // LAUNCH: delete this line and the "stays off on production" test.
-    if (!/\.webflow\.io$/.test(window.location.hostname)) return;
 
     var fired = false;
     var hasUserGesture = false;

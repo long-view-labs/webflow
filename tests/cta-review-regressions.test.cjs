@@ -10,10 +10,12 @@ const section=source.slice(source.indexOf('// 8. "GET STARTED" TRACKING'));
 const contract=JSON.parse(fs.readFileSync(path.join(root,'cta-authoring-contract.json'),'utf8'));
 function setup({url='https://www.nourish.com/',consent=true,mode='live'}={}) {
   const handlers=[],ready=[],anchors=[],attempts=[],delivered=[],identity=[];
-  const document={referrer:'https://example.invalid/ref?token=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE',body:null,documentElement:{getAttribute:k=>k==='lang'?'en':null}};
+  // Page Engaged (also in section 8) binds document/window listeners; these spies never fire them.
+  const noListeners={addEventListener(){},removeEventListener(){}};
+  const document={...noListeners,referrer:'https://example.invalid/ref?token=SYNTHETIC_PRIVATE#SYNTHETIC_PRIVATE',body:null,documentElement:{getAttribute:k=>k==='lang'?'en':null}};
   const jq=x=>typeof x==='function'?ready.push(x):{on:(name,fn)=>{if(name==='click')handlers.push(fn)},each:fn=>anchors.forEach(a=>fn.call(a))};
   const ra={track:(...args)=>{attempts.push(args);if(mode==='throwing')throw Error('SDK failure');if(consent&&mode!=='queue')delivered.push(args)},identify:()=>identity.push(1),reset:()=>identity.push(1),setAnonymousId:()=>identity.push(1)};
-  const window={location:new URL(url),jQuery:jq,__nourish_apex:'nourish.com',rudderanalytics:ra,NOURISH_GET_UTMS:()=>({utm_source:'synthetic',utm_firstName:'SYNTHETIC_PRIVATE'})};
+  const window={...noListeners,location:new URL(url),jQuery:jq,__nourish_apex:'nourish.com',rudderanalytics:ra,NOURISH_GET_UTMS:()=>({utm_source:'synthetic',utm_firstName:'SYNTHETIC_PRIVATE'})};
   const context=vm.createContext({window,document,jQuery:jq,URL,URLSearchParams,navigator:{userAgent:'Synthetic desktop'},sessionStorage:{getItem:()=>null},setTimeout:()=>0,clearTimeout:()=>{}});
   const enrichment=source.slice(source.indexOf('function nourishGetUtms()'),source.indexOf('function nourishPatchRudderArrayPush('));
   vm.runInContext(enrichment,context);

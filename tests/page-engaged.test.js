@@ -352,13 +352,18 @@ test("Page Engaged", async (t) => {
     await context.close();
   });
 
-  await t.test("stays off on production until launch", async () => {
-    const { page, context } = await open(browser, { origin: PROD });
-    await page.click("#btn");
-    await page.keyboard.press("Tab");
-    await wheelTo(page, 900);
-    assert.deepEqual(await engaged(page), []);
-    assert.equal(await page.evaluate(() => window.localStorage.getItem("nourish_page_engaged")), null);
-    await context.close();
-  });
+  for (const origin of [PROD, "https://www.usenourish.com"]) {
+    await t.test(`fires on production (${new URL(origin).hostname}), once per visit`, async () => {
+      const { page, context } = await open(browser, { origin, search: "?utm_source=fb" });
+      await page.click("#btn");
+      await page.keyboard.press("Tab");
+      await wheelTo(page, 900);
+      const events = await engaged(page);
+      assert.equal(events.length, 1);
+      assert.equal(events[0].props.trigger, "click");
+      assert.equal(events[0].props.url, origin + "/does-my-insurance-cover-nutrition?utm_source=fb");
+      assert.equal(events[0].props.utm_source, "fb");
+      await context.close();
+    });
+  }
 });

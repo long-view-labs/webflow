@@ -293,7 +293,7 @@ test("Dietitian Apply Clicked", async (t) => {
       });
       const sel = await insertAnchor(page, `<a data-cta-id="patient-directory-content" data-cta-name="Find a dietitian" data-cta-location="content" data-cta-section="provider_directory" data-cta-action="directory-navigation" data-cta-version="2" href="${href}"><span>Find a dietitian</span></a>`);
       await page.locator(sel).locator("span").click();
-      const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
+      const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page" && c.event !== "Page Engaged"));
       assert.equal(events.length, 1);
       assert.equal(events[0].event, "Get Started Clicked");
       assert.equal(events[0].props.cta_action, "provider-directory");
@@ -320,7 +320,7 @@ test("Dietitian Apply Clicked", async (t) => {
         '<a data-cta="nav" href="http://signup.nourish.com/">Start</a>',
         '<a data-cta="nav" href="https://signup.nourish.com/your-privacy-choices">Privacy</a>',
       ]) await clickFirst(page, await insertAnchor(page, html));
-      const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page"));
+      const events = await page.evaluate(() => window.__trackCalls().filter(c => c.event !== "Viewed Page" && c.event !== "Page Engaged"));
       assert.deepEqual(events.map(e => [e.event, e.props.cta_id]), [
         ["Get Started Clicked", "patient-signup-other"],
         ["Get Started Clicked", "patient-signup-other"],

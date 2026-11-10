@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.17] - 2026-11-10
+
+Launch Page Engaged on production. Removes the webflow.io-only hostname check, so the event now fires on www.nourish.com and www.usenourish.com: once per page visit, on the first click, keyboard focus, typing, or scroll past the first section, with the trigger property, the usual page context and UTMs. Cookie banner interaction still does not count. Behavior is otherwise unchanged from v2.623.14. Test harnesses for CTA tracking now leave Page Engaged out of their per-click event counts. global-footer.html pins global.js to v2.623.17; footer.js stays at v2.623.16.
+
 ## [2.623.16] - 2026-11-10
 
 Load the embedded provider directory on the visitor's first interaction. The /conditions, /local-dietitians, /insurance-dietitians and /partners templates only set the directory iframe's src once it scrolled into view, so it visibly loaded late. footer.js now loads every iframe.lazyload on the first scroll, touch, mouse move, key or click (10s after load at the latest), with the same UTM merge the templates do for signup.nourish.com. The templates' own loaders still fire on view; their write of the same URL is ignored, so the directory does not reload. This also removes the double load those templates caused on arrival (src set once without UTMs, then again with them). Note: the directory app sends Provider Directory Loaded and directory provider matching results viewed when it loads, so those now fire for visitors who interact with the page, not only those who scroll to the directory. global-footer.html pins footer.js to v2.623.16; global.js stays at v2.623.14.
