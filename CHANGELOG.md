@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.16] - 2026-11-10
+
+Load the embedded provider directory on the visitor's first interaction. The /conditions, /local-dietitians, /insurance-dietitians and /partners templates only set the directory iframe's src once it scrolled into view, so it visibly loaded late. footer.js now loads every iframe.lazyload on the first scroll, touch, mouse move, key or click (10s after load at the latest), with the same UTM merge the templates do for signup.nourish.com. The templates' own loaders still fire on view; their write of the same URL is ignored, so the directory does not reload. This also removes the double load those templates caused on arrival (src set once without UTMs, then again with them). Note: the directory app sends Provider Directory Loaded and directory provider matching results viewed when it loads, so those now fire for visitors who interact with the page, not only those who scroll to the directory. global-footer.html pins footer.js to v2.623.16; global.js stays at v2.623.14.
+
+## [2.623.15] - 2026-11-09
+
+Load Trustpilot on the visitor's first interaction. footer.js used to fetch Trustpilot's bootstrap only when a widget came within 600px of the viewport, so the widgets visibly popped in as visitors scrolled to them (e.g. the reviews section on /paid). It now also starts on the first scroll, touch, mouse move, key or click (10s after load at the latest), the same trigger the other deferred scripts use, so widgets are drawn before the visitor reaches them. Nothing loads before the first interaction, so page-load performance is unchanged. global-footer.html pins footer.js to v2.623.15; global.js stays at v2.623.14.
+
 ## [2.623.14] - 2026-11-06
 
 Also remove landingPageVariation from Page Engaged per the revised request. Together with v2.623.13, only page_path, deviceType and landingPageVariation are removed from this event. Trigger, inherited page context, UTMs, once-per-visit behavior, staging-only guard and all other events are unchanged. global-footer.html pins global.js to v2.623.14; footer.js stays at v2.623.9.

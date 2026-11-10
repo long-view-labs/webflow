@@ -94,8 +94,8 @@
 
 // ============================================================================
 // TRUSTPILOT BOOTSTRAP
-// Only fetch it when an official Trustpilot widget is on the page and
-// approaching the viewport (600px lookahead).
+// Only fetch it when an official Trustpilot widget is on the page, on the
+// first interaction (10s fallback) or when a widget nears the viewport.
 // ============================================================================
 (function () {
   var TP_SRC =
@@ -124,6 +124,11 @@
   function watchWidgets() {
     var widgets = document.querySelectorAll(".trustpilot-widget");
     if (!widgets.length) return;
+
+    // Start on the visitor's first interaction (or 10s after load) so the widgets are drawn
+    // before the visitor scrolls to them. Nothing loads before then, so Lighthouse is unchanged.
+    // The viewport watcher below stays for widgets that are near the screen on arrival.
+    window.__nourishRunDeferred(loadTrustpilot);
 
     if (!("IntersectionObserver" in window)) {
       loadTrustpilot();
@@ -155,6 +160,87 @@
   } else {
     watchWidgets();
   }
+})();
+
+// ============================================================================
+// PROVIDER DIRECTORY IFRAMES (iframe.lazyload with data-src)
+// The /conditions, /local-dietitians, /insurance-dietitians and /partners
+// templates each carry an inline loader in their Webflow page code that copies
+// data-src into src only when the iframe scrolls into view, so the directory
+// visibly loads late. Load it on the visitor's first interaction instead (10s
+// fallback). The inline loader still fires on view and assigns the same URL;
+// that assignment is ignored so the directory does not reload.
+// ============================================================================
+(function () {
+  var SRC = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "src");
+  if (!SRC || !SRC.set || !SRC.get) return;
+
+  function sameUrl(a, b) {
+    try {
+      return new URL(a, location.href).href === new URL(b, location.href).href;
+    } catch (_) {
+      return a === b;
+    }
+  }
+
+  // Same UTM merge the inline loader does, limited to Nourish's signup host
+  // (the rule global.js uses for signup iframes).
+  function withUtms(raw) {
+    try {
+      var url = new URL(raw, location.href);
+      if (url.hostname !== "signup." + (window.__nourish_apex || "nourish.com")) return raw;
+      if (typeof window.NOURISH_GET_UTMS !== "function") return raw;
+      var utms = window.NOURISH_GET_UTMS() || {};
+      var changed = false;
+      Object.keys(utms).forEach(function (k) {
+        if (utms[k] && !url.searchParams.has(k)) {
+          url.searchParams.set(k, utms[k]);
+          changed = true;
+        }
+      });
+      return changed ? url.toString() : raw;
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  function loadIframe(iframe) {
+    var current = iframe.getAttribute("src");
+    if (current && current !== "about:blank") return;
+    var target = withUtms(iframe.getAttribute("data-src"));
+    if (!target) return;
+    iframe.setAttribute("data-src", target);
+    SRC.set.call(iframe, target);
+    Object.defineProperty(iframe, "src", {
+      configurable: true,
+      get: function () {
+        return SRC.get.call(this);
+      },
+      set: function (value) {
+        if (!sameUrl(value, SRC.get.call(this))) SRC.set.call(this, value);
+      },
+    });
+  }
+
+  function loadAll() {
+    document.querySelectorAll("iframe.lazyload[data-src]").forEach(loadIframe);
+  }
+
+  // Wait until the inline loaders (DOMContentLoaded listeners) are attached, so
+  // they watch these same iframes rather than ones loaded behind their back.
+  window.__nourishRunDeferred(function () {
+    if (document.readyState === "loading") {
+      document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+          setTimeout(loadAll, 0);
+        },
+        { once: true },
+      );
+    } else {
+      setTimeout(loadAll, 0);
+    }
+  });
 })();
 
 // ============================================================================
