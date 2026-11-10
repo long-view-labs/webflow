@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.15] - 2026-11-09
+
+Load Trustpilot on the visitor's first interaction. footer.js used to fetch Trustpilot's bootstrap only when a widget came within 600px of the viewport, so the widgets visibly popped in as visitors scrolled to them (e.g. the reviews section on /paid). It now also starts on the first scroll, touch, mouse move, key or click (10s after load at the latest), the same trigger the other deferred scripts use, so widgets are drawn before the visitor reaches them. Nothing loads before the first interaction, so page-load performance is unchanged. global-footer.html pins footer.js to v2.623.15; global.js stays at v2.623.14.
+
 ## [2.623.11] - 2026-11-05
 
 Page Engaged no longer fires when the OneTrust banner closes. OneTrust hands focus to the first link on the page as it closes, and that was counted as keyboard focus. Focus arriving from the banner, or within a second of using it, is now ignored. Still on webflow.io staging only. global-footer.html pins global.js to v2.623.11; footer.js stays at v2.623.9.

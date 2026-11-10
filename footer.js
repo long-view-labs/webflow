@@ -94,8 +94,8 @@
 
 // ============================================================================
 // TRUSTPILOT BOOTSTRAP
-// Only fetch it when an official Trustpilot widget is on the page and
-// approaching the viewport (600px lookahead).
+// Only fetch it when an official Trustpilot widget is on the page, on the
+// first interaction (10s fallback) or when a widget nears the viewport.
 // ============================================================================
 (function () {
   var TP_SRC =
@@ -124,6 +124,11 @@
   function watchWidgets() {
     var widgets = document.querySelectorAll(".trustpilot-widget");
     if (!widgets.length) return;
+
+    // Start on the visitor's first interaction (or 10s after load) so the widgets are drawn
+    // before the visitor scrolls to them. Nothing loads before then, so Lighthouse is unchanged.
+    // The viewport watcher below stays for widgets that are near the screen on arrival.
+    window.__nourishRunDeferred(loadTrustpilot);
 
     if (!("IntersectionObserver" in window)) {
       loadTrustpilot();
