@@ -20,3 +20,11 @@
      don't point this stub at any earlier tag.
 ============================================================================ -->
 <script src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.623.6/weight-concerns-split.js"></script>
+
+<!-- Condition LP split tests (heart health, diabetes, PCOS). Same pattern:
+     synchronous so the eligible-traffic 50/50 redirect happens before first
+     paint; path-guarded and inert on every other item in this template.
+     Also loaded deferred from condition-lp-variant-footer.html on the ten
+     variant pages. Keep both pins in step.
+     NOTE: condition-lp-split.js first exists in the tag after v2.623.17. -->
+<script src="https://cdn.jsdelivr.net/gh/long-view-labs/webflow@v2.623.18/condition-lp-split.js"></script>

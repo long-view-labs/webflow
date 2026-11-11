@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.623.18] - 2026-11-11
+
+Add condition-lp-split.js: 50/50 utm_term split tests for the heart health, diabetes and PCOS landing pages, built the same way as the weight concerns test. Visitors whose utm_term is on a family's keyword list (86 exact terms in ten groups) are bucketed once per family; the variant arm goes straight from the control URL to /landing-pages/{family}/{group} before first paint with the full query string kept, the control arm stays. Both arms send Experiment Viewed with experiment_name (lp-heart-health-utm-v1, lp-diabetes-utm-v1, lp-pcos-utm-v1), variation, landing_page, keyword_group and utm_term. Missing or unlisted terms stay on, or return to, the standard page without assignment or exposure. landing-page-head.html loads the script synchronously after weight-concerns-split.js; condition-lp-variant-footer.html is the stub for the ten variant pages. weight-concerns-split.js and its buckets are unchanged. QA: ?lp_split=variant|control|reset, ?lp_split_debug=1|dry.
+
 ## [2.623.17] - 2026-11-10
 
 Launch Page Engaged on production. Removes the webflow.io-only hostname check, so the event now fires on www.nourish.com and www.usenourish.com: once per page visit, on the first click, keyboard focus, typing, or scroll past the first section, with the trigger property, the usual page context and UTMs. Cookie banner interaction still does not count. Behavior is otherwise unchanged from v2.623.14. Test harnesses for CTA tracking now leave Page Engaged out of their per-click event counts. global-footer.html pins global.js to v2.623.17; footer.js stays at v2.623.16.
