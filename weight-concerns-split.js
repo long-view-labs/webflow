@@ -1,49 +1,9 @@
-// Weight Concerns LP — 50/50 split test (control vs the utm_term-personalized pages)
-//
-// CONTROL  /landing-page/weight-concerns   (CMS item on landing-page/{template})
-// VARIANT  the seven group pages under /landing-pages/weight-concerns/{group}
-//          (glp1, bariatric, macros, insurance, fitness, dietitian, diet).
-//
-// Only visitors whose utm_term resolves to one of those seven groups enter
-// the experiment. Eligible control-URL visitors are bucketed once (sticky
-// per browser via localStorage, cookie fallback) and split 50/50:
-//   "variant" -> resolve utm_term to a group RIGHT HERE and location.replace()
-//                straight to that group page before first paint (single hop).
-//   "control" -> stays, fires Experiment Viewed
-// Missing/unmatched terms stay on the standard control URL, or return there
-// from a variant URL, without assignment or Experiment Viewed. Existing
-// buckets remain stored for a later eligible visit; they do not bypass this
-// eligibility gate. Group pages fire Experiment Viewed only for eligible
-// terms with a stored "variant" bucket. The legacy -b entry never fires it.
-//
-// KEYWORD MAP: GROUP_PRIORITY, KEYWORDS, PATTERNS and normalize() below are
-// copied VERBATIM from Alexander Litvinov's inline router on -b (captured
-// 2026-10-19). This file is the live copy for ad traffic through the
-// control; his router on -b still handles matched legacy/direct links. Keep
-// the two in step, or retire his and treat this file as the single source.
-// The redirect reproduces his destination URL exactly (query string kept,
-// lp_variant={group} appended) and writes his sessionStorage stash, so the
-// GTM lp_utm_redirect arrival event on the group pages keeps firing unchanged.
-//
-// Where it loads (same file, path guards make it inert elsewhere):
-//   1. landing-page-head.html  -> landing-page/{template} HEAD, synchronous,
-//      so the redirect happens before paint. Inert on dietitian-b, diabetes
-//      and every other template item.
-//   2. weight-concerns-variant-footer.html -> deferred, pasted on each of the
-//      eight static variant pages (-b + seven group pages); fires the
-//      variant-side event or returns unmatched legacy traffic to control.
-//      __wcSplitRan keeps a double include harmless.
-//
-// QA:  ?wc_split=variant | ?wc_split=control  force + store an eligible bucket
-//      ?wc_split=reset                         clear the stored bucket
-//      ?wc_debug=1                             log decisions to the console
-//      ?wc_debug=dry                           log, store the bucket, but do NOT redirect
-//
-// Event (RudderStack -> Amplitude):
-//   Experiment Viewed { experiment_name, variation, landing_page,
-//                       keyword_group, utm_term }
-//   keyword_group is the resolved group on both arms (path on variant pages,
-//   utm_term match on control).
+// Weight Concerns LP — approved 100% rollout, 2026-11-13.
+// Eligible groups route to their personalized variant regardless of old buckets.
+// Fitness and the four excluded normalized diet keywords stay on control.
+// The same script must load before the legacy -b router and on all group pages.
+// Preserve query/hash, GTM redirect stash and existing variant exposure contract.
+// wc_split=control no longer overrides rollout; reset and wc_debug=dry remain.
 (function () {
   if (window.__wcSplitRan) return;
   window.__wcSplitRan = true;
@@ -286,7 +246,12 @@
     return lookup;
   }
 
+  var EXCLUDED_TERMS = [
+    'intermittent fasting meal plan', 'intermittent fasting',
+    'low fat diet', 'lose 10 pounds in a month'
+  ];
   function resolve(term) {
+    if (EXCLUDED_TERMS.indexOf(term) !== -1) return { slug: null, method: "excluded" };
     if (!term) return { slug: null, method: "no-term" };
     var lookup = buildLookup();
     if (Object.prototype.hasOwnProperty.call(lookup, term)) {
@@ -334,6 +299,9 @@
   var rawTerm = params.get("utm_term");
   var term = rawTerm ? normalize(rawTerm) : "";
   var result = resolve(term);
+  // Retain Fitness in the resolver so exact keywords cannot fall through to
+  // insurance/dietitian, then retire its routing and experiment exposure.
+  if (result.slug === "fitness") result = { slug: null, method: "fitness-retired" };
 
   // Reset remains available even without an eligible term. Forced buckets
   // below cannot enroll an otherwise ineligible visit.
@@ -350,12 +318,6 @@
       if (debugMode !== "dry") window.location.replace(standard);
     }
     return;
-  }
-
-  // --- QA overrides (eligible visits only) ---
-  if (isBucket(force)) {
-    setBucket(force);
-    log("bucket forced", force);
   }
 
   // --- destination for the variant arm ---
@@ -423,33 +385,17 @@
     }
   }
 
-  // --- control: assign, redirect or track (runs pre-paint from the head) ---
-  if (onControl) {
-    var bucket = getBucket();
-    if (!bucket) {
-      bucket = Math.random() < 0.5 ? "variant" : "control";
-      setBucket(bucket);
-      log("assigned", bucket);
-    } else {
-      log("existing bucket", bucket);
-    }
-    if (bucket === "variant") {
-      var dest = buildDestination(result.slug);
-      log("utm_term", rawTerm);
-      log("resolved", result);
-      log("redirecting", dest);
-      if (debugMode === "dry") { log("dry run, not redirecting"); return; }
-      stashForGtm(result, term);
-      window.location.replace(dest);
-      return; // the variant page fires the event on arrival
-    }
-    track("control");
+  // Route every eligible control/legacy/mismatched-page visit to its group.
+  // Old assignments and QA force-control cannot keep a visitor in the retired arm.
+  if (onControl || onVariantEntry || path !== VARIANT_GROUP_PREFIX + result.slug) {
+    setBucket("variant");
+    var dest = buildDestination(result.slug);
+    log("redirecting rollout", dest);
+    if (debugMode === "dry") return;
+    stashForGtm(result, term);
+    window.location.replace(dest);
     return;
   }
-
-  // The legacy entry's inline router sends matched terms to their group.
-  // It is no longer an experiment destination, so never count a -b view.
-  if (onVariantEntry) return;
 
   // --- variant group pages: only count eligible visitors we sent here ---
   var stored = getBucket();
