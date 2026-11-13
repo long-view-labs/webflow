@@ -1,0 +1,23 @@
+name: Offline Finsweet regression
+
+on:
+  pull_request:
+    paths:
+      - tests/finsweet-initialization.test.js
+      - tests/fixtures/finsweet-2.3.59/**
+      - dietitian-application-final.js
+      - .github/workflows/finsweet-regression.yml
+  workflow_dispatch:
+
+jobs:
+  offline-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - run: node --test tests/finsweet-initialization.test.js
