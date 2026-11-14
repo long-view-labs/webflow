@@ -1,6 +1,8 @@
 // Weight Concerns LP — approved 100% rollout, 2026-11-13.
 // Eligible groups route to their personalized variant regardless of old buckets.
 // Fitness and the four excluded normalized diet keywords stay on control.
+// Diet ships only inside the Weight_Loss and MealPlan ad groups; the Google Ads
+// final URL carries the ad group id in utm_content. Other groups ignore it.
 // The same script must load before the legacy -b router and on all group pages.
 // Preserve query/hash, GTM redirect stash and existing variant exposure contract.
 // wc_split=control no longer overrides rollout; reset and wc_debug=dry remain.
@@ -246,6 +248,12 @@
     return lookup;
   }
 
+  // Diet/meal plan rollout is limited to these Google Ads ad groups
+  // (utm_content = ad group id): Weight_Loss and MealPlan, in that order.
+  // Any other or missing id stays on
+  // the standard page with no exposure. A new ad group needs its id added here.
+  var DIET_AD_GROUPS = ['185376731406', '186405763145'];
+
   var EXCLUDED_TERMS = [
     'intermittent fasting meal plan', 'intermittent fasting',
     'low fat diet', 'lose 10 pounds in a month'
@@ -302,6 +310,10 @@
   // Retain Fitness in the resolver so exact keywords cannot fall through to
   // insurance/dietitian, then retire its routing and experiment exposure.
   if (result.slug === "fitness") result = { slug: null, method: "fitness-retired" };
+  var adGroup = String(params.get("utm_content") || "").replace(/\s+/g, "");
+  if (result.slug === "diet" && DIET_AD_GROUPS.indexOf(adGroup) === -1) {
+    result = { slug: null, method: "diet-ad-group-excluded" };
+  }
 
   // Reset remains available even without an eligible term. Forced buckets
   // below cannot enroll an otherwise ineligible visit.
