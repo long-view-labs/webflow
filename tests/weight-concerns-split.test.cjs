@@ -10,11 +10,6 @@ const ENTRY = '/landing-pages/weight-concerns-b';
 const PREFIX = '/landing-pages/weight-concerns/';
 const BUCKET = 'wc_b_variant';
 const STASH = 'lp_wc_redirect';
-// Google Ads ad group ids as they arrive in utm_content (names from Daily Ad Metrics).
-const WEIGHT_LOSS = '185376731406';
-const MEAL_PLAN = '186405763145';
-const WEIGHT_OTHER = '195220782628';
-const adGroupFor = group => (group === 'diet' ? '&utm_content=' + WEIGHT_LOSS : '');
 const groups = {
   glp1: 'glp 1 covered by insurance',
   bariatric: 'bariatric dietitian near me',
@@ -125,7 +120,7 @@ for (const pathname of [ENTRY, ...Object.keys(groups).map(group => PREFIX + grou
 }
 
 for (const [group, term] of Object.entries(groups)) {
-  const search = '?utm_term=' + encodeURIComponent(term) + adGroupFor(group);
+  const search = '?utm_term=' + encodeURIComponent(term);
   test(`${group}: every old assignment rolls out without random allocation`, () => {
     for (const bucket of [undefined, 'control', 'variant', 'invalid']) {
       const result = visit({ search, random: 0.99, local: { [BUCKET]: bucket } });
@@ -168,7 +163,7 @@ for (const [term, group] of [
   ['nutritionist diet support', 'dietitian'],
 ]) {
   test(`fuzzy priority preserved: ${term} => ${group}`, () => {
-    const result = visit({ search: '?utm_term=' + encodeURIComponent(term) + adGroupFor(group) });
+    const result = visit({ search: '?utm_term=' + encodeURIComponent(term) });
     assert.ok(result.redirects[0].startsWith(PREFIX + group + '?'));
     assert.equal(JSON.parse(result.session[STASH]).lp_match_method, 'fuzzy');
   });
@@ -184,7 +179,7 @@ test('normalization and exact-match priority survive; raw query, duplicates, has
 
 test('rollout ignores randomness and upgrades stored control cookie', () => {
   for (const random of [0, 0.499999, 0.5, 0.999999]) {
-    const result = visit({ search: '?utm_term=meal+plan&utm_content=186405763145', random, localBlocked: true, cookie: { [BUCKET]: 'control' } });
+    const result = visit({ search: '?utm_term=meal+plan', random, localBlocked: true, cookie: { [BUCKET]: 'control' } });
     assert.equal(result.cookie[BUCKET], 'variant');
     assert.equal(result.redirects.length, 1);
     assert.equal(result.randomCalls, 0);
@@ -194,15 +189,15 @@ test('rollout ignores randomness and upgrades stored control cookie', () => {
 test('unmatched visit preserves assignment, later eligible visit upgrades it', () => {
   const first = visit({ local: { [BUCKET]: 'control' }, search: '?utm_term=unmapped' });
   assert.equal(first.local[BUCKET], 'control');
-  const later = visit({ local: first.local, search: '?utm_term=meal+plan&utm_content=186405763145' });
+  const later = visit({ local: first.local, search: '?utm_term=meal+plan' });
   assert.equal(later.local[BUCKET], 'variant');
   assert.equal(later.redirects.length, 1);
   assert.equal(later.randomCalls, 0);
 });
 
 test('blocked storage does not crash eligible routing or admit unmatched visitors', () => {
-  const eligible = visit({ allStorageBlocked: true, search: '?utm_term=meal+plan&utm_content=186405763145' });
-  assert.equal(eligible.redirects[0], PREFIX + 'diet?utm_term=meal+plan&utm_content=186405763145&lp_variant=diet');
+  const eligible = visit({ allStorageBlocked: true, search: '?utm_term=meal+plan' });
+  assert.equal(eligible.redirects[0], PREFIX + 'diet?utm_term=meal+plan&lp_variant=diet');
   const unmatched = visit({ allStorageBlocked: true, pathname: ENTRY });
   assert.deepEqual(unmatched.redirects, [CONTROL]);
   assert.deepEqual(unmatched.events, []);
@@ -211,16 +206,16 @@ test('blocked storage does not crash eligible routing or admit unmatched visitor
 
 test('direct eligible group visits without a variant bucket do not emit exposure', () => {
   for (const bucket of [undefined, 'control', 'invalid']) {
-    const result = visit({ pathname: PREFIX + 'diet', search: '?utm_term=meal+plan&utm_content=186405763145', local: bucket ? { [BUCKET]: bucket } : {} });
+    const result = visit({ pathname: PREFIX + 'diet', search: '?utm_term=meal+plan', local: bucket ? { [BUCKET]: bucket } : {} });
     assert.deepEqual(result.events, []);
     assert.equal(result.randomCalls, 0);
   }
 });
 
 test('legacy -b never emits a generic exposure even with a matched term and variant bucket', () => {
-  const result = visit({ pathname: ENTRY, search: '?utm_term=meal+plan&utm_content=186405763145', local: { [BUCKET]: 'variant' } });
+  const result = visit({ pathname: ENTRY, search: '?utm_term=meal+plan', local: { [BUCKET]: 'variant' } });
   assert.deepEqual(result.events, []);
-  assert.deepEqual(result.redirects, [PREFIX + 'diet?utm_term=meal+plan&utm_content=186405763145&lp_variant=diet']);
+  assert.deepEqual(result.redirects, [PREFIX + 'diet?utm_term=meal+plan&lp_variant=diet']);
 });
 
 test('QA force cannot enroll unmatched terms or override eligible rollout', () => {
@@ -229,7 +224,7 @@ test('QA force cannot enroll unmatched terms or override eligible rollout', () =
     assert.deepEqual(unmatched.writes, []);
     assert.deepEqual(unmatched.events, []);
     assert.deepEqual(unmatched.redirects, []);
-    const matched = visit({ search: '?utm_term=meal+plan&utm_content=186405763145&wc_split=' + bucket });
+    const matched = visit({ search: '?utm_term=meal+plan&wc_split=' + bucket });
     assert.equal(matched.local[BUCKET], 'variant');
     assert.equal(matched.randomCalls, 0);
   }
@@ -244,7 +239,7 @@ test('QA reset clears old assignments without enrolling an unmatched visit', () 
 });
 
 test('dry-run suppresses both eligible and unmatched redirects', () => {
-  const matched = visit({ search: '?utm_term=meal+plan&utm_content=186405763145&wc_debug=dry' });
+  const matched = visit({ search: '?utm_term=meal+plan&wc_debug=dry' });
   assert.equal(matched.local[BUCKET], 'variant');
   assert.deepEqual(matched.redirects, []);
   assert.deepEqual(matched.events, []);
@@ -255,7 +250,7 @@ test('dry-run suppresses both eligible and unmatched redirects', () => {
 });
 
 test('eligible exposure still waits for DOM and RudderStack; excluded traffic never schedules it', () => {
-  const eligible = visit({ pathname: PREFIX + 'diet', search: '?utm_term=meal+plan&utm_content=186405763145', local: { [BUCKET]: 'variant' }, readyState: 'loading', analyticsReady: false });
+  const eligible = visit({ pathname: PREFIX + 'diet', search: '?utm_term=meal+plan', local: { [BUCKET]: 'variant' }, readyState: 'loading', analyticsReady: false });
   assert.deepEqual(eligible.events, []);
   assert.deepEqual(eligible.timers, []);
   eligible.domReady();
@@ -271,7 +266,7 @@ test('eligible exposure still waits for DOM and RudderStack; excluded traffic ne
 
 test('other landing pages stay inert', () => {
   for (const pathname of ['/landing-page/dietitian-b', '/landing-page/diabetes', '/paid', '/']) {
-    const result = visit({ pathname, search: '?utm_term=meal+plan&utm_content=186405763145&wc_split=variant' });
+    const result = visit({ pathname, search: '?utm_term=meal+plan&wc_split=variant' });
     assert.deepEqual(result.events, []);
     assert.deepEqual(result.redirects, []);
     assert.deepEqual(result.writes, []);
@@ -295,107 +290,13 @@ for (const term of ['intermittent fasting meal plan', 'intermittent fasting', 'l
   }
 }
 test('retired Fitness URL with another eligible keyword routes to correct variant', () => {
-  const result = visit({ pathname: PREFIX + 'fitness', search: '?utm_term=meal+plan&utm_content=186405763145' });
-  assert.deepEqual(result.redirects, [PREFIX + 'diet?utm_term=meal+plan&utm_content=186405763145&lp_variant=diet']);
+  const result = visit({ pathname: PREFIX + 'fitness', search: '?utm_term=meal+plan' });
+  assert.deepEqual(result.redirects, [PREFIX + 'diet?utm_term=meal+plan&lp_variant=diet']);
   assert.deepEqual(result.events, []);
 });
 test('excluded exact keywords do not disable unrelated macros or diet traffic', () => {
   for (const [term, group] of [['free intermittent fasting app', 'macros'], ['low carb diet', 'diet'], ['nutritionist or dietitian for weight loss near me', 'dietitian']]) {
-    const result = visit({ search: '?utm_term=' + encodeURIComponent(term) + adGroupFor(group) });
+    const result = visit({ search: '?utm_term=' + encodeURIComponent(term) });
     assert.ok(result.redirects[0].startsWith(PREFIX + group + '?'));
-  }
-});
-
-// ---- Diet is limited to the Weight_Loss and MealPlan ad groups ----
-// Keyword -> ad group pairs seen on real Experiment Viewed traffic, Oct 14 - Nov 13 2026.
-const observedDiet = {
-  [MEAL_PLAN]: ['healthy meals', 'healthy eating plan', 'meal plans', 'calorie meal plan',
-    '1500 calorie meal plan', 'meal prep ideas', 'meal planning app', 'high protein low carb meals',
-    'best meal planning app', 'meal plan', 'low carb diet', 'free meal planning app', 'high protein diet'],
-  [WEIGHT_LOSS]: ['meal plan for weight loss', 'nutrition plan for weight loss', 'weight loss nutrition plan',
-    'weight loss meal plan', 'healthy meals for weight loss', 'weight loss programs', 'diet plan for weight loss',
-    'meal plans for weight loss', 'weight loss meal plans', 'meal plan to lose weight'],
-};
-for (const [adGroup, terms] of Object.entries(observedDiet)) {
-  for (const term of terms) {
-    test(`diet in approved ad group ${adGroup}: ${term}`, () => {
-      const search = '?utm_campaign=1&utm_content=' + adGroup + '&utm_term=' + encodeURIComponent(term) + '&gclid=a%2Bb';
-      for (const bucket of [undefined, 'control', 'variant']) {
-        const result = visit({ search, local: { [BUCKET]: bucket } });
-        assert.deepEqual(result.redirects, [PREFIX + 'diet' + search + '&lp_variant=diet']);
-        assert.equal(result.local[BUCKET], 'variant');
-        assert.equal(JSON.parse(result.session[STASH]).lp_match_method, 'exact');
-      }
-      const arrival = visit({ pathname: PREFIX + 'diet', search, local: { [BUCKET]: 'variant' } });
-      assert.deepEqual(arrival.redirects, []);
-      assert.equal(arrival.events.length, 1);
-      assert.equal(arrival.events[0][1].keyword_group, 'diet');
-    });
-  }
-}
-
-const unapprovedAdGroups = {
-  Weight_Other: '&utm_content=' + WEIGHT_OTHER, Diabetes: '&utm_content=185376729006',
-  legacy: '&utm_content=155597148420', Fitness_Health: '&utm_content=195220782668',
-  missing: '', empty: '&utm_content=', template: '&utm_content=%7Badgroupid%7D',
-  prefixed: '&utm_content=1' + WEIGHT_LOSS, suffixed: '&utm_content=' + MEAL_PLAN + '0',
-};
-for (const [name, param] of Object.entries(unapprovedAdGroups)) {
-  for (const term of ['meal plan', 'weight loss meal plan', 'low carb diet', 'meal prep support', 'diet programs']) {
-    for (const pathname of [CONTROL, ENTRY, PREFIX + 'diet', PREFIX + 'macros']) {
-      test(`diet outside approved ad groups stays standard: ${name}, ${term}, ${pathname}`, () => {
-        const search = '?utm_term=' + encodeURIComponent(term) + param + '&wc_split=variant&gclid=a%2Bb';
-        for (const bucket of [undefined, 'control', 'variant']) {
-          const result = visit({ pathname, search, hash: '#book', local: { [BUCKET]: bucket }, analyticsReady: false });
-          assert.deepEqual(result.redirects, pathname === CONTROL ? [] : [CONTROL + search + '#book']);
-          assert.deepEqual(result.events, []);
-          assert.deepEqual(result.writes, []);
-          assert.deepEqual(result.timers, []);
-          assert.deepEqual(result.session, {});
-          assert.equal(result.randomCalls, 0);
-        }
-      });
-    }
-  }
-}
-
-test('the four excluded keywords stay excluded inside the approved ad groups', () => {
-  for (const term of ['intermittent fasting meal plan', 'intermittent fasting', 'low fat diet', 'lose 10 pounds in a month']) {
-    for (const adGroup of [WEIGHT_LOSS, MEAL_PLAN, WEIGHT_OTHER]) {
-      for (const pathname of [CONTROL, PREFIX + 'diet']) {
-        const search = '?utm_content=' + adGroup + '&utm_term=' + encodeURIComponent(term);
-        const result = visit({ pathname, search, local: { [BUCKET]: 'variant' } });
-        assert.deepEqual(result.redirects, pathname === CONTROL ? [] : [CONTROL + search]);
-        assert.deepEqual(result.events, []);
-      }
-    }
-  }
-});
-
-test('ad group id tolerates stray whitespace', () => {
-  const result = visit({ search: '?utm_term=meal+plan&utm_content=+' + MEAL_PLAN + '+' });
-  assert.ok(result.redirects[0].startsWith(PREFIX + 'diet?'));
-});
-
-test('ad group restriction applies to Diet only; other groups ignore utm_content', () => {
-  for (const [group, term] of Object.entries(groups)) {
-    if (group === 'diet') continue;
-    for (const param of Object.values(unapprovedAdGroups).concat('&utm_content=' + WEIGHT_LOSS)) {
-      const search = '?utm_term=' + encodeURIComponent(term) + param;
-      const result = visit({ search });
-      assert.deepEqual(result.redirects, [PREFIX + group + search + '&lp_variant=' + group]);
-      assert.equal(result.local[BUCKET], 'variant');
-    }
-  }
-});
-
-test('Fitness stays retired in every ad group', () => {
-  for (const param of Object.values(unapprovedAdGroups).concat('&utm_content=' + WEIGHT_LOSS, '&utm_content=' + MEAL_PLAN)) {
-    for (const pathname of [CONTROL, PREFIX + 'fitness']) {
-      const search = '?utm_term=personal+trainer' + param;
-      const result = visit({ pathname, search, local: { [BUCKET]: 'variant' } });
-      assert.deepEqual(result.redirects, pathname === CONTROL ? [] : [CONTROL + search]);
-      assert.deepEqual(result.events, []);
-    }
   }
 });
