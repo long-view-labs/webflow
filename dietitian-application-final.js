@@ -169,6 +169,22 @@
   }
 
   /**
+   * Identifies links back to this application, including relative and legacy links.
+   */
+  function isApplicationPageLink(href) {
+    try {
+      const url = new URL(href, "https://www.nourish.com/dietitian-application");
+      return (
+        ["https:", "http:"].includes(url.protocol) &&
+        ["nourish.com", "www.nourish.com", "usenourish.com", "www.usenourish.com"].includes(url.hostname) &&
+        url.pathname.replace(/\/+$/, "") === "/dietitian-application"
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Populates the job description accordion from the Greenhouse schema.
    */
   function renderHeader(schema) {
@@ -184,6 +200,22 @@
       // safety
       tmp.querySelectorAll("script,iframe").forEach((n) => n.remove());
       tmp.querySelectorAll("a[href]").forEach((a) => {
+        if (isApplicationPageLink(a.getAttribute("href"))) {
+          // Remove Greenhouse's redundant apply instructions on our actual
+          // application page, but keep useful surrounding description text.
+          const block = a.closest("h1,h2,h3,h4,h5,h6,p");
+          const copy = block?.textContent.replace(/\s+/g, " ").trim() || "";
+          const label = a.textContent.replace(/\s+/g, " ").trim();
+          if (
+            copy.toLowerCase() === `please apply here: ${label}`.toLowerCase() ||
+            /^apply via the website rather than this job board for a faster response\.?$/i.test(copy)
+          ) {
+            block.remove();
+          } else {
+            a.replaceWith(...a.childNodes);
+          }
+          return;
+        }
         a.target = "_blank";
         a.rel = "noopener noreferrer";
       });
