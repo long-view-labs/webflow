@@ -177,11 +177,14 @@
   }
 
   /**
-   * Identifies links back to this application, including relative and legacy links.
+   * Identifies plain links back to this application, including relative and legacy links.
    */
   function isApplicationPageLink(href) {
+    const target = href.trim();
+    // Preserve query and fragment navigation, even when it uses this route.
+    if (!target || /[?#]/.test(target)) return false;
     try {
-      const url = new URL(href, "https://www.nourish.com/dietitian-application");
+      const url = new URL(target, "https://www.nourish.com/dietitian-application");
       return (
         ["https:", "http:"].includes(url.protocol) &&
         ["nourish.com", "www.nourish.com", "usenourish.com", "www.usenourish.com"].includes(url.hostname) &&
@@ -209,20 +212,22 @@
       tmp.querySelectorAll("script,iframe").forEach((n) => n.remove());
       tmp.querySelectorAll("a[href]").forEach((a) => {
         if (isApplicationPageLink(a.getAttribute("href"))) {
-          // Remove Greenhouse's redundant apply instructions on our actual
-          // application page, but keep useful surrounding description text.
+          // Remove only the two standalone instructions from this posting.
           const block = a.closest("h1,h2,h3,h4,h5,h6,p");
-          const copy = block?.textContent.replace(/\s+/g, " ").trim() || "";
-          const label = a.textContent.replace(/\s+/g, " ").trim();
+          const copy = block?.textContent.replace(/\s+/g, " ").trim().toLowerCase();
+          const label = a.textContent.replace(/\s+/g, " ").trim().toLowerCase();
           if (
-            copy.toLowerCase() === `please apply here: ${label}`.toLowerCase() ||
-            /^apply via the website rather than this job board for a faster response\.?$/i.test(copy)
+            block?.querySelectorAll("a").length === 1 &&
+            label &&
+            (
+              (block.matches("h1,h2,h3,h4,h5,h6") && copy === `please apply here: ${label}`) ||
+              (block.matches("p") && label === "via the website" &&
+                /^apply via the website rather than this job board for a faster response\.?$/.test(copy))
+            )
           ) {
             block.remove();
-          } else {
-            a.replaceWith(...a.childNodes);
+            return;
           }
-          return;
         }
         a.target = "_blank";
         a.rel = "noopener noreferrer";
