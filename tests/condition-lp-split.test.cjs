@@ -4,7 +4,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
 
-const source = fs.readFileSync(path.join(__dirname, '../condition-lp-split.js'), 'utf8');
+const shipped = fs.readFileSync(path.join(__dirname, '../condition-lp-split.js'), 'utf8');
+// The tests are paused in the shipped file. The routing tests below run the
+// same file with only the switch flipped, so turning it back on stays safe.
+const source = shipped.replace('var PAUSED = true;', 'var PAUSED = false;');
 // Independent copy of the request sheet's lists; the script must agree with it.
 const KEYWORDS = require('./fixtures/condition-lp-keywords.json');
 const FAMILIES = {
@@ -18,7 +21,7 @@ const q = term => '?utm_term=' + encodeURIComponent(term).replace(/%20/g, '+');
 // No browser, network, RudderStack SDK, or production events are used here.
 function visit({ pathname, search = '', hash = '', local = {}, cookie = {},
   random = 0.25, localBlocked = false, allStorageBlocked = false,
-  readyState = 'complete', analyticsReady = true } = {}) {
+  readyState = 'complete', analyticsReady = true, code = source } = {}) {
   const state = {
     local: { ...local }, cookie: { ...cookie }, writes: [],
     redirects: [], events: [], timers: [], listeners: {}, randomCalls: 0, logs: [],
@@ -67,7 +70,7 @@ function visit({ pathname, search = '', hash = '', local = {}, cookie = {},
   math.random = () => { state.randomCalls++; return random; };
   const context = vm.createContext({ window, document, console: window.console, URLSearchParams,
     Math: math, setTimeout(callback) { state.timers.push(callback); } });
-  state.runAgain = () => vm.runInContext(source, context);
+  state.runAgain = () => vm.runInContext(code, context);
   state.domReady = () => state.listeners.DOMContentLoaded?.();
   state.analyticsReady = () => { window.rudderanalytics = analytics; };
   state.flushTimer = () => state.timers.shift()?.();
@@ -320,5 +323,69 @@ test('loader stubs pin the same version of the script', () => {
   assert.match(footer, /<script defer src="[^"]+condition-lp-split\.js"><\/script>/);
   for (const [family, groups] of Object.entries(KEYWORDS)) {
     for (const group of Object.keys(groups)) assert.ok(footer.includes(variantPath(family, group)));
+  }
+});
+
+// --- paused: what the shipped file does -----------------------------------
+const paused = options => visit({ code: shipped, ...options });
+
+test('paused: the switch is on in the shipped file and is the only difference', () => {
+  assert.equal(shipped.match(/var PAUSED = true;/g)?.length, 1);
+  assert.notEqual(source, shipped);
+});
+
+for (const [family, groups] of Object.entries(KEYWORDS)) {
+  const spec = FAMILIES[family];
+
+  test(`paused ${family}: the standard page stays put for fresh and returning visitors`, () => {
+    for (const terms of Object.values(groups)) {
+      for (const term of terms) {
+        for (const random of [0.25, 0.75]) untouched(paused({ pathname: spec.control, search: q(term), random }));
+      }
+    }
+    const term = Object.values(groups)[0][0];
+    for (const bucket of ['variant', 'control']) {
+      const local = { [spec.bucket]: bucket };
+      untouched(paused({ pathname: spec.control, search: q(term), local }));
+      untouched(paused({ pathname: spec.control, search: q(term), cookie: local }));
+      untouched(paused({ pathname: spec.control + '/', search: q(term), local, cookie: local }));
+    }
+    for (const extra of ['&lp_split=variant', '&lp_split=control', '&lp_split=reset', '&lp_split_debug=1',
+      '&lp_split_debug=dry', `&lp_variant=${Object.keys(groups)[0]}`]) {
+      untouched(paused({ pathname: spec.control, search: q(term) + extra, local: { [spec.bucket]: 'variant' } }));
+    }
+    untouched(paused({ pathname: spec.control }));
+    untouched(paused({ pathname: spec.control, search: q(term), allStorageBlocked: true }));
+  });
+
+  test(`paused ${family}: each variant page goes to the standard page once with the whole URL tail`, () => {
+    for (const [group, terms] of Object.entries(groups)) {
+      const tail = `${q(terms[0])}&utm_source=google&gclid=G%2F1&fbclid=F1&x=a%20b&lp_variant=${group}&lp_split=variant`;
+      for (const search of ['', '?utm_term=unlisted', tail, tail + '&lp_split_debug=dry']) {
+        for (const bucket of [undefined, 'control', 'variant']) {
+          const local = bucket ? { [spec.bucket]: bucket } : {};
+          for (const slash of ['', '/']) {
+            const result = paused({ pathname: variantPath(family, group) + slash, search, hash: '#faq', local, cookie: local });
+            assert.deepEqual(result.redirects, [`${spec.control}${search}#faq`]);
+            assert.deepEqual([result.events, result.writes, result.timers, result.randomCalls], [[], [], [], 0]);
+          }
+        }
+      }
+    }
+  });
+}
+
+test('paused: a variant page redirects without storage or analytics', () => {
+  const result = paused({ pathname: '/landing-pages/pcos/diet', search: '?gclid=G1', allStorageBlocked: true, analyticsReady: false });
+  assert.deepEqual(result.redirects, ['/landing-page/pcos?gclid=G1']);
+  assert.deepEqual([result.events, result.timers, result.listeners], [[], [], {}]);
+});
+
+test('paused: inert everywhere else, including weight concerns and unknown group pages', () => {
+  for (const pathname of ['/', '/paid', '/landing-page/weight-concerns', '/landing-page/dietitian-b',
+    '/landing-pages/weight-concerns-b', '/landing-pages/weight-concerns/glp1', '/landing-pages/heart-health',
+    '/landing-pages/heart-health/unknown', '/landing-pages/pcos/diet/extra', '/landing-page/diabetes-v2',
+    '/landing-pages/diabetes/constructor']) {
+    untouched(paused({ pathname, search: q('diabetic diet') + '&lp_split=variant' }));
   }
 });

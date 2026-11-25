@@ -47,6 +47,11 @@
   if (window.__clpSplitRan) return;
   window.__clpSplitRan = true;
 
+  // Tests paused: every visitor gets the standard page. Variant URLs go back
+  // to it, nobody is bucketed, nothing is tracked. Set to false to resume;
+  // stored buckets are left alone so returning visitors keep their arm.
+  var PAUSED = true;
+
   var COOKIE_DAYS = 30;
   var VARIANT_ROOT = "/landing-pages/";
   var LP_VARIANT_PARAM = "lp_variant";
@@ -206,6 +211,13 @@
   if (!family) return;
   var spec = FAMILIES[family];
   var onControl = pageGroup === null;
+
+  if (PAUSED) {
+    if (!onControl) {
+      window.location.replace(spec.control + window.location.search + window.location.hash);
+    }
+    return;
+  }
 
   var params;
   try {
